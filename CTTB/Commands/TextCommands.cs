@@ -40,9 +40,24 @@ namespace CTTB.Commands
             {
                 Color = new DiscordColor("#FF0000"),
                 Title = "__**Custom Track Test Pack Links**__",
-                Description = "**v1.0 Base:** *https://drive.google.com/file/d/1tzhaBxycHEvY5G2k5jTzpONBhmq6g08g/view?usp=sharing*" +
+                Description = "**Base Pack:** *https://drive.google.com/file/d/1tzhaBxycHEvY5G2k5jTzpONBhmq6g08g/view?usp=sharing*" +
                 "\n**Installation Tutorial:** *https://youtu.be/Vh3GXTbxHLU*" +
                 "\n**Test Pack Creation Tutorial:** *https://youtu.be/igtfmZAyG3g*",
+                Timestamp = DateTime.UtcNow
+            };
+
+            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+        }
+
+        [Command("source")]
+        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        public async Task SourceCode(CommandContext ctx)
+        {
+            var embed = new DiscordEmbedBuilder
+            {
+                Color = new DiscordColor("#FF0000"),
+                Title = "__**Source Code:**__",
+                Description = "**Github:** *https://github.com/Brawlboxgaming/Custom-Track-Testing-Bot*",
                 Timestamp = DateTime.UtcNow
             };
 
