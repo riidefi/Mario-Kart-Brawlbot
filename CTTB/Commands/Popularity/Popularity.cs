@@ -18,7 +18,8 @@ namespace CTTB.Commands
     public class Popularity : BaseCommandModule
     {
         [Command("update")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        [RequireRoles(RoleCheckMode.Any, "Brawlbox")]
+        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task Update(CommandContext ctx)
         {
             string rtttUrl = "http://tt.chadsoft.co.uk/original-track-leaderboards.json";
