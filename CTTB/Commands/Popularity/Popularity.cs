@@ -12,14 +12,20 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Sheets.v4;
+using Google.Apis.Sheets.v4.Data;
+using Google.Apis.Services;
+using Google.Apis.Util.Store;
+using System.Text;
+using System.Linq.Expressions;
 
 namespace CTTB.Commands
 {
     public class Popularity : BaseCommandModule
     {
         [Command("update")]
-        [RequireRoles(RoleCheckMode.Any, "Brawlbox")]
-        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task Update(CommandContext ctx)
         {
             string rtttUrl = "http://tt.chadsoft.co.uk/original-track-leaderboards.json";
@@ -62,6 +68,115 @@ namespace CTTB.Commands
             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
 
+        [Command("getissues")]
+        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        public async Task GetTrackIssues(CommandContext ctx, [RemainingText] string track = "")
+        {
+            var json = string.Empty;
+            var description = string.Empty;
+            var embed = new DiscordEmbedBuilder { };
+
+            using (var fs = File.OpenRead("config.json"))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+
+            var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+
+            var service = new SheetsService(new BaseClientService.Initializer
+            {
+                ApplicationName = "Custom Track Testing Bot",
+                ApiKey = configJson.ApiKey,
+            });
+
+            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G135");
+            var response = await request.ExecuteAsync();
+            foreach (var t in response.Values)
+            {
+                while (t.Count < 7)
+                {
+                    t.Add("");
+                }
+            }
+
+            try
+            {
+                json = File.ReadAllText("cts.json");
+                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
+
+                int j = 0;
+                Track trackDisplay = new Track();
+                string maj = string.Empty;
+                string min = string.Empty;
+
+                for (int i = 0; i < trackList.Count; i++)
+                {
+                    if (j < 1)
+                    {
+                        if (trackList[i].Name.ToLowerInvariant().Contains(track.ToLowerInvariant()))
+                        {
+                            foreach (var t in response.Values)
+                            {
+                                if (t[0].ToString().ToLowerInvariant().Contains(track.ToLowerInvariant()))
+                                {
+                                    if (t[5].ToString() == "")
+                                    {
+                                        maj = "-No reported bugs";
+                                    }
+                                    else
+                                    {
+                                        maj = t[5].ToString();
+                                    }
+                                    if (t[6].ToString() == "")
+                                    {
+                                        min = "-No reported bugs";
+                                    }
+                                    else
+                                    {
+                                        min = t[6].ToString();
+                                    }
+                                    description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*\n**Source**: *https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004*";
+                                    trackDisplay = trackList[i];
+                                    j++;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (j < 1)
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{track} could not be found.*" +
+                        "\n**c!getissues [name of track]**",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+                else if (j == 1)
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Known issues on {trackDisplay.Name} *(First result)*:**__",
+                        Description = description,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+
+            }
+        }
         [Command("besttime")]
         [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task GetBestTimes(CommandContext ctx, string trackType = "rts", [RemainingText] string track = "")
