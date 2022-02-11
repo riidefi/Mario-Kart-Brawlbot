@@ -69,7 +69,7 @@ namespace CTTB
 
             Commands.RegisterCommands<TextCommands>();
 
-            Commands.RegisterCommands<Popularity>();
+            Commands.RegisterCommands<FunctionalCommands>();
 
             await Client.ConnectAsync();
 
