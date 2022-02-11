@@ -12,7 +12,7 @@ namespace CTTB.Commands
     public class TextCommands : BaseCommandModule
     {
         [Command("help")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task Help(CommandContext ctx)
         {
             var embed = new DiscordEmbedBuilder
@@ -36,7 +36,7 @@ namespace CTTB.Commands
         }
 
         [Command("cttp")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task CTTP(CommandContext ctx)
         {
             var embed = new DiscordEmbedBuilder
@@ -53,7 +53,7 @@ namespace CTTB.Commands
         }
 
         [Command("source")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task SourceCode(CommandContext ctx)
         {
             var embed = new DiscordEmbedBuilder
