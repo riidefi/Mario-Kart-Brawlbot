@@ -283,7 +283,7 @@ namespace CTTB.Commands
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
         }
-        [Command("besttime")]
+        [Command("bkt")]
         //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task GetBestTimes(CommandContext ctx, string trackType = "rts", [RemainingText] string track = "")
         {

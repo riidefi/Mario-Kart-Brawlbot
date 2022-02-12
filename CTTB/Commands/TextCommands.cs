@@ -24,7 +24,7 @@ namespace CTTB.Commands
                 "\n**c!source**\n*This command gives you the link to the github page of the bot.*" +
                 "\n**c!staff [name of track]**\n*This command displays the staff ghosts for the first found track depending on the input.*" +
                 "\n**c!getissues [name of track]**\n*This command displays the reported issues of the first found track depending on the input.*" +
-                "\n**c!besttime [rts/cts/rts200/cts200] [name of track]**\n*This command displays the best time for the track inputted.*" +
+                "\n**c!bkt [rts/cts/rts200/cts200] [name of track]**\n*This command displays the best time for the track inputted.*" +
                 "\n**c!wwpop [rts/cts] [range(1-32/218)]**\n*This command displays the leaderboard for worldwide popularity of tracks.*" +
                 "\n**c!ttpop [rts/cts] [range(1-32/218)]**\n*This command displays the leaderboard for time trial popularity of tracks.*" +
                 "\n**c!wwpopsearch [rts/cts] [name of track]**\n*This command displays the worldwide popularity of tracks containing the string inputted.*" +
