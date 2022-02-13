@@ -19,11 +19,16 @@ using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using System.Text;
 using System.Linq.Expressions;
+using System.Globalization;
+using IronPython.Compiler.Ast;
+using System.Threading;
 
 namespace CTTB.Commands
 {
     public class FunctionalCommands : BaseCommandModule
     {
+        static string[] Scopes = { SheetsService.Scope.Spreadsheets };
+
         [Command("update")]
         [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task Update(CommandContext ctx)
@@ -210,7 +215,7 @@ namespace CTTB.Commands
                 {
                     if (j < 1)
                     {
-                        if (trackList[i].Name.ToLowerInvariant().Contains(track.ToLowerInvariant()))
+                        if (Regex.Replace(trackList[i].Name.ToLowerInvariant(), "_", " ").Contains(track.ToLowerInvariant()))
                         {
                             foreach (var t in response.Values)
                             {
@@ -283,6 +288,443 @@ namespace CTTB.Commands
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
         }
+
+        [Command("reportissue")]
+        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        public async Task ReportIssue(CommandContext ctx, string issueType = "", string track = "", [RemainingText] string issue = "")
+        {
+            var embed = new DiscordEmbedBuilder { };
+            string json = string.Empty;
+            string maj = string.Empty;
+            string min = string.Empty;
+
+            using (var fs = File.OpenRead("config.json"))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+
+            var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+
+            var service = new SheetsService(new BaseClientService.Initializer
+            {
+                ApplicationName = "Custom Track Testing Bot",
+                ApiKey = configJson.ApiKey,
+            });
+
+            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G218");
+            var response = await request.ExecuteAsync();
+            foreach (var t in response.Values)
+            {
+                while (t.Count < 7)
+                {
+                    t.Add("");
+                }
+            }
+
+            int k = 0;
+
+            if (issueType.ToLowerInvariant() == "major")
+            {
+                k = 5;
+            }
+
+            else if (issueType.ToLowerInvariant() == "minor")
+            {
+                k = 6;
+            }
+
+            try
+            {
+                json = File.ReadAllText("cts.json");
+                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
+
+                int j = 0;
+
+                if (k != 0 && issue != "")
+                {
+                    for (int i = 0; i < trackList.Count; i++)
+                    {
+                        if (j < 1)
+                        {
+                            if (Regex.Replace(trackList[i].Name.ToLowerInvariant(), "_", " ") == track.ToLowerInvariant())
+                            {
+                                foreach (var t in response.Values)
+                                {
+                                    if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
+                                    {
+                                        if (t[k].ToString() != "")
+                                        {
+                                            t[k] = $"{t[k]}\n{issue}";
+                                        }
+                                        else
+                                        {
+                                            t[k] = issue;
+                                        }
+                                        if (t[5].ToString() == "")
+                                        {
+                                            maj = "-No reported bugs";
+                                        }
+                                        else
+                                        {
+                                            maj = t[5].ToString();
+                                        }
+                                        if (t[6].ToString() == "")
+                                        {
+                                            min = "-No reported bugs";
+                                        }
+                                        else
+                                        {
+                                            min = t[6].ToString();
+                                        }
+                                        j++;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+                else if (issue == "")
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*No issue was inputted.*" +
+                               "\n**c!reportissue [issue category] [name of track (in quotes)] [issue]**",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+                else
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{issueType} is not a valid issue category.*" +
+                               "\n**c!reportissue [issue category] [name of track (in quotes)] [issue]**",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+
+                if (k != 0 && issue != "")
+                {
+                    UserCredential credential;
+
+                    using (var stream =
+                    new FileStream("client_secret.json", FileMode.Open, FileAccess.Read))
+                    {
+                        string credPath = System.Environment.GetFolderPath(
+                            System.Environment.SpecialFolder.Personal);
+
+
+                        credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                            GoogleClientSecrets.Load(stream).Secrets,
+                            Scopes,
+                            "user",
+                            CancellationToken.None,
+                            new FileDataStore(credPath, true)).Result;
+                    }
+
+                    service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Custom Track Testing Bot",
+                    });
+
+                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G218");
+                    updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                    var update = await updateRequest.ExecuteAsync();
+
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Issues Updated:**__",
+                        Description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Error:**__",
+                    Description = $"*Unknown error.*" +
+                               "\n**c!reportissue [issue category] [name of track (in quotes)] [issue]**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+            }
+        }
+
+        [Command("clearissues")]
+        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        public async Task ClearTrackIssues(CommandContext ctx, [RemainingText] string track = "")
+        {
+            var embed = new DiscordEmbedBuilder { };
+            string json = string.Empty;
+            if (track == "")
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Error:**__",
+                    Description = $"*No track was inputted*" +
+                                  "\n**c!clearissues [track]**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+            }
+            else
+            {
+                using (var fs = File.OpenRead("config.json"))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
+
+                var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+
+                var service = new SheetsService(new BaseClientService.Initializer
+                {
+                    ApplicationName = "Custom Track Testing Bot",
+                    ApiKey = configJson.ApiKey,
+                });
+
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G218");
+                var response = await request.ExecuteAsync();
+                foreach (var t in response.Values)
+                {
+                    while (t.Count < 7)
+                    {
+                        t.Add("");
+                    }
+                }
+                try
+                {
+                    json = File.ReadAllText("cts.json");
+                    List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
+
+                    int j = 0;
+
+                    for (int i = 0; i < trackList.Count; i++)
+                    {
+                        if (j < 1)
+                        {
+                            if (Regex.Replace(trackList[i].Name.ToLowerInvariant(), "_", " ") == track.ToLowerInvariant())
+                            {
+                                foreach (var t in response.Values)
+                                {
+                                    if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
+                                    {
+                                        t[5] = "";
+                                        t[6] = "";
+                                        j++;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    UserCredential credential;
+
+                    using (var stream =
+                    new FileStream("client_secret.json", FileMode.Open, FileAccess.Read))
+                    {
+                        string credPath = System.Environment.GetFolderPath(
+                            System.Environment.SpecialFolder.Personal);
+
+
+                        credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                            GoogleClientSecrets.Load(stream).Secrets,
+                            Scopes,
+                            "user",
+                            CancellationToken.None,
+                            new FileDataStore(credPath, true)).Result;
+                    }
+
+                    service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Custom Track Testing Bot",
+                    });
+
+                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G218");
+                    updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                    var update = await updateRequest.ExecuteAsync();
+
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Success:**__",
+                        Description = $"*{track} issues have been cleared*",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+                catch
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*Unknown error.*" +
+                                  "\n**c!clearissues [track]**",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+            }
+        }
+
+        [Command("replaceissues")]
+        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        public async Task ReplaceTrackIssues(CommandContext ctx, string track = "", string newTrack = "", string author = "", string version = "", string slot = "", string laps = "")
+        {
+            var embed = new DiscordEmbedBuilder { };
+            string json = string.Empty;
+            string description = string.Empty;
+
+            if (track == "" || newTrack == "" || author == "" || version == "" || slot == "" || laps == "")
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Error:**__",
+                    Description = $"*One of your arguments is missing data.*" +
+                                  "\n**c!replaceissues [track] [new track] [author] [version] [slot] [laps]**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+            }
+            else
+            {
+                using (var fs = File.OpenRead("config.json"))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
+
+                var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+
+                var service = new SheetsService(new BaseClientService.Initializer
+                {
+                    ApplicationName = "Custom Track Testing Bot",
+                    ApiKey = configJson.ApiKey,
+                });
+
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G218");
+                var response = await request.ExecuteAsync();
+                foreach (var t in response.Values)
+                {
+                    while (t.Count < 7)
+                    {
+                        t.Add("");
+                    }
+                }
+                try
+                {
+                    json = File.ReadAllText("cts.json");
+                    List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
+
+                    int j = 0;
+
+                    for (int i = 0; i < trackList.Count; i++)
+                    {
+                        if (j < 1)
+                        {
+                            if (Regex.Replace(trackList[i].Name.ToLowerInvariant(), "_", " ") == track.ToLowerInvariant())
+                            {
+                                foreach (var t in response.Values)
+                                {
+                                    if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
+                                    {
+                                        t[0] = newTrack;
+                                        t[1] = author;
+                                        t[2] = version;
+                                        t[3] = slot;
+                                        t[4] = laps;
+                                        t[5] = "";
+                                        t[6] = "";
+                                        description = $"**{newTrack}:**\nAuthor: *{author}*\nVersion: *{version}*\nSlots: *{slot}*\nSpeed/Laps: *{laps}*";
+                                        j++;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    var orderedResponse = response.Values.OrderBy(x => x[0].ToString()).ToList();
+                    for (int i = 1; i < response.Values.Count; i++)
+                    {
+                        response.Values[i] = orderedResponse[i];
+                    }
+
+                    UserCredential credential;
+
+                    using (var stream =
+                    new FileStream("client_secret.json", FileMode.Open, FileAccess.Read))
+                    {
+                        string credPath = System.Environment.GetFolderPath(
+                            System.Environment.SpecialFolder.Personal);
+
+
+                        credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                            GoogleClientSecrets.Load(stream).Secrets,
+                            Scopes,
+                            "user",
+                            CancellationToken.None,
+                            new FileDataStore(credPath, true)).Result;
+                    }
+
+                    service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Custom Track Testing Bot",
+                    });
+
+                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G218");
+                    updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                    var update = await updateRequest.ExecuteAsync();
+
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**{newTrack} has now replaced {track}:**__",
+                        Description = description,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+                catch
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*Unknown error.*" +
+                                  "\n**c!replaceissues [track] [new track] [author] [version] [slot] [speed/laps]**",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+            }
+        }
+
         [Command("bkt")]
         //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task GetBestTimes(CommandContext ctx, string trackType = "rts", [RemainingText] string track = "")
