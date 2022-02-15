@@ -22,13 +22,12 @@ using System.Linq.Expressions;
 using System.Globalization;
 using IronPython.Compiler.Ast;
 using System.Threading;
+using System.Security.Cryptography.X509Certificates;
 
 namespace CTTB.Commands
 {
     public class FunctionalCommands : BaseCommandModule
     {
-        static string[] Scopes = { SheetsService.Scope.Spreadsheets };
-
         [Command("update")]
         [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task Update(CommandContext ctx)
@@ -157,7 +156,7 @@ namespace CTTB.Commands
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 embed = new DiscordEmbedBuilder
                 {
@@ -168,6 +167,8 @@ namespace CTTB.Commands
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
             }
         }
 
@@ -275,7 +276,7 @@ namespace CTTB.Commands
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 embed = new DiscordEmbedBuilder
                 {
@@ -286,6 +287,8 @@ namespace CTTB.Commands
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
             }
         }
 
@@ -309,6 +312,7 @@ namespace CTTB.Commands
                 ApplicationName = "Custom Track Testing Bot",
                 ApiKey = configJson.ApiKey,
             });
+            Console.WriteLine("test");
 
             var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G218");
             var response = await request.ExecuteAsync();
@@ -412,31 +416,33 @@ namespace CTTB.Commands
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
 
-                if (k != 0 && issue != "")
+                if (j < 1)
                 {
-                    UserCredential credential;
-
-                    using (var stream =
-                    new FileStream("client_secret.json", FileMode.Open, FileAccess.Read))
+                    embed = new DiscordEmbedBuilder
                     {
-                        string credPath = System.Environment.GetFolderPath(
-                            System.Environment.SpecialFolder.Personal);
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{track} could not be found.*" +
+                                  "\n**c!reportissue [issue category] [name of track (in quotes)] [issue]**",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
 
+                else if (k != 0 && issue != "")
+                {
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                        credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                            GoogleClientSecrets.Load(stream).Secrets,
-                            Scopes,
-                            "user",
-                            CancellationToken.None,
-                            new FileDataStore(credPath, true)).Result;
-                    }
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
                     service = new SheetsService(new BaseClientService.Initializer()
                     {
                         HttpClientInitializer = credential,
                         ApplicationName = "Custom Track Testing Bot",
                     });
-
                     var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G218");
                     updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                     var update = await updateRequest.ExecuteAsync();
@@ -451,7 +457,7 @@ namespace CTTB.Commands
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 embed = new DiscordEmbedBuilder
                 {
@@ -462,6 +468,8 @@ namespace CTTB.Commands
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
             }
         }
 
@@ -537,22 +545,12 @@ namespace CTTB.Commands
                         }
                     }
 
-                    UserCredential credential;
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                    using (var stream =
-                    new FileStream("client_secret.json", FileMode.Open, FileAccess.Read))
-                    {
-                        string credPath = System.Environment.GetFolderPath(
-                            System.Environment.SpecialFolder.Personal);
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-
-                        credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                            GoogleClientSecrets.Load(stream).Secrets,
-                            Scopes,
-                            "user",
-                            CancellationToken.None,
-                            new FileDataStore(credPath, true)).Result;
-                    }
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
                     service = new SheetsService(new BaseClientService.Initializer()
                     {
@@ -573,7 +571,7 @@ namespace CTTB.Commands
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
-                catch
+                catch (Exception ex)
                 {
                     embed = new DiscordEmbedBuilder
                     {
@@ -584,6 +582,8 @@ namespace CTTB.Commands
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                    Console.WriteLine(ex.ToString());
                 }
             }
         }
@@ -668,49 +668,55 @@ namespace CTTB.Commands
                         }
                     }
 
-                    var orderedResponse = response.Values.OrderBy(x => x[0].ToString()).ToList();
-                    for (int i = 1; i < response.Values.Count; i++)
+                    if (j < 1)
                     {
-                        response.Values[i] = orderedResponse[i];
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{track} could not be found.*" +
+                                      "\n**c!replaceissues [track] [new track] [author] [version] [slot] [speed/laps]**",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
-
-                    UserCredential credential;
-
-                    using (var stream =
-                    new FileStream("client_secret.json", FileMode.Open, FileAccess.Read))
+                    else
                     {
-                        string credPath = System.Environment.GetFolderPath(
-                            System.Environment.SpecialFolder.Personal);
+                        var orderedResponse = response.Values.OrderBy(x => x[0].ToString()).ToList();
+                        for (int i = 1; i < response.Values.Count; i++)
+                        {
+                            response.Values[i] = orderedResponse[i];
+                        }
 
 
-                        credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                            GoogleClientSecrets.Load(stream).Secrets,
-                            Scopes,
-                            "user",
-                            CancellationToken.None,
-                            new FileDataStore(credPath, true)).Result;
+                        string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                        var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                        ServiceAccountCredential credential = new ServiceAccountCredential(
+                           new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                        service = new SheetsService(new BaseClientService.Initializer()
+                        {
+                            HttpClientInitializer = credential,
+                            ApplicationName = "Custom Track Testing Bot",
+                        });
+
+                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G218");
+                        updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                        var update = await updateRequest.ExecuteAsync();
+
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**{newTrack} has now replaced {track}:**__",
+                            Description = description,
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
-
-                    service = new SheetsService(new BaseClientService.Initializer()
-                    {
-                        HttpClientInitializer = credential,
-                        ApplicationName = "Custom Track Testing Bot",
-                    });
-
-                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G218");
-                    updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
-                    var update = await updateRequest.ExecuteAsync();
-
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**{newTrack} has now replaced {track}:**__",
-                        Description = description,
-                        Timestamp = DateTime.UtcNow
-                    };
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
-                catch
+                catch (Exception ex)
                 {
                     embed = new DiscordEmbedBuilder
                     {
@@ -721,6 +727,8 @@ namespace CTTB.Commands
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                    Console.WriteLine(ex.ToString());
                 }
             }
         }
@@ -843,7 +851,7 @@ namespace CTTB.Commands
 
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 if (trackType != "rts" && trackType != "cts" && trackType != "rts200" && trackType != "cts200")
                 {
@@ -868,6 +876,8 @@ namespace CTTB.Commands
                     };
                 }
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
             }
         }
 
@@ -939,7 +949,7 @@ namespace CTTB.Commands
 
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
-            catch
+            catch (Exception ex)
             {
                 if (trackType != "rts" && trackType != "cts")
                 {
@@ -964,6 +974,8 @@ namespace CTTB.Commands
                     };
                 }
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
             }
         }
 
@@ -1035,7 +1047,7 @@ namespace CTTB.Commands
 
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
-            catch
+            catch (Exception ex)
             {
                 if (trackType != "rts" && trackType != "cts")
                 {
@@ -1060,6 +1072,8 @@ namespace CTTB.Commands
                     };
                 }
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
             }
         }
 
@@ -1139,7 +1153,7 @@ namespace CTTB.Commands
 
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
-            catch
+            catch (Exception ex)
             {
                 if (trackType != "rts" && trackType != "cts")
                 {
@@ -1175,6 +1189,8 @@ namespace CTTB.Commands
                     };
                 }
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
             }
         }
 
@@ -1254,7 +1270,7 @@ namespace CTTB.Commands
 
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
-            catch
+            catch (Exception ex)
             {
                 if (trackType != "rts" && trackType != "cts")
                 {
@@ -1290,6 +1306,8 @@ namespace CTTB.Commands
                     };
                 }
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
             }
         }
     }

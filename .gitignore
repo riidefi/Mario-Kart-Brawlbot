@@ -341,3 +341,4 @@ ASALocalRun/
 /CTTB/Properties/AssemblyInfo.cs
 /CTTB/CTTB.csproj
 /CTTB.sln
+*.p12
