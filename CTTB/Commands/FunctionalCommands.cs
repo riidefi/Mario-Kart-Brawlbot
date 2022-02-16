@@ -1,8 +1,6 @@
 ﻿using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
-using HtmlAgilityPack;
-using IronPython.Hosting;
 using Newtonsoft.Json;
 using OpenQA.Selenium;
 using System;
@@ -14,30 +12,36 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Sheets.v4;
-using Google.Apis.Sheets.v4.Data;
 using Google.Apis.Services;
-using Google.Apis.Util.Store;
 using System.Text;
-using System.Linq.Expressions;
-using System.Globalization;
-using IronPython.Compiler.Ast;
-using System.Threading;
 using System.Security.Cryptography.X509Certificates;
+using System.Timers;
 
 namespace CTTB.Commands
 {
     public class FunctionalCommands : BaseCommandModule
     {
+        /*public void UpdateTimer()
+        {
+            var timer = new Timer(604800000);
+            timer.AutoReset = true;
+            timer.Elapsed += async (s, e) => await Update(null);
+            timer.Start();
+        }*/
+
         [Command("update")]
         [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task Update(CommandContext ctx)
         {
+            if (ctx != null)
+                await ctx.TriggerTypingAsync();
+
             string rtttUrl = "http://tt.chadsoft.co.uk/original-track-leaderboards.json";
             string ctttUrl = "http://tt.chadsoft.co.uk/ctgp-leaderboards.json";
             string rttt200Url = "http://tt.chadsoft.co.uk/original-track-leaderboards-200cc.json";
             string cttt200Url = "http://tt.chadsoft.co.uk/ctgp-leaderboards-200cc.json";
-            string ctwwUrl = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0";
-            string wwUrl = "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0";
+            string ctwwUrl = "https://wiimmfi.de/stats/track/mv/ctgp?m=json&p=std,c1,0";
+            string wwUrl = "https://wiimmfi.de/stats/track/mv/ww?m=json&p=std,c1,0";
 
             // Leaderboards
 
@@ -69,13 +73,15 @@ namespace CTTB.Commands
                 Timestamp = DateTime.UtcNow
             };
 
-            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+            if (ctx != null)
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
 
         [Command("staff")]
-        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task GetStaffGhosts(CommandContext ctx, [RemainingText] string track = "")
         {
+            await ctx.TriggerTypingAsync();
+
             var json = string.Empty;
             var description = string.Empty;
             var embed = new DiscordEmbedBuilder { };
@@ -172,10 +178,114 @@ namespace CTTB.Commands
             }
         }
 
+        [Command("getinfo")]
+        public async Task GetTrackInfo(CommandContext ctx, [RemainingText] string track = "")
+        {
+            await ctx.TriggerTypingAsync();
+
+            var json = string.Empty;
+            var description = string.Empty;
+            var embed = new DiscordEmbedBuilder { };
+
+            using (var fs = File.OpenRead("config.json"))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+
+            var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+
+            var service = new SheetsService(new BaseClientService.Initializer
+            {
+                ApplicationName = "Custom Track Testing Bot",
+                ApiKey = configJson.ApiKey,
+            });
+
+            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G218");
+            var response = await request.ExecuteAsync();
+            foreach (var t in response.Values)
+            {
+                while (t.Count < 7)
+                {
+                    t.Add("");
+                }
+            }
+
+            try
+            {
+                json = File.ReadAllText("cts.json");
+                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
+
+                int j = 0;
+                Track trackDisplay = new Track();
+
+                for (int i = 0; i < trackList.Count; i++)
+                {
+                    if (j < 1)
+                    {
+                        if (Regex.Replace(trackList[i].Name.ToLowerInvariant(), "_", " ").Contains(track.ToLowerInvariant()))
+                        {
+                            foreach (var t in response.Values)
+                            {
+                                if (t[0].ToString().ToLowerInvariant().Contains(track.ToLowerInvariant()))
+                                {
+                                    description = $"**Author:**\n*{t[1]}*\n**Version:**\n*{t[2]}*\n**Track/Music Slots:**\n*{t[3]}*\n**Speed/Lap Count:**\n*{t[4]}*";
+                                    trackDisplay = trackList[i];
+                                    j++;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (j < 1)
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{track} could not be found.\nThe track does not exist, or is not in CTGP.*" +
+                        "\n**c!getinfo [name of track]**",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+                else if (j == 1)
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**{trackDisplay.Name} *(First result)*:**__",
+                        Description = description,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Error:**__",
+                    Description = $"*Unknown error.*" +
+                           "\n**c!getinfo [name of track]**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
         [Command("getissues")]
-        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task GetTrackIssues(CommandContext ctx, [RemainingText] string track = "")
         {
+            await ctx.TriggerTypingAsync();
+
             var json = string.Empty;
             var description = string.Empty;
             var embed = new DiscordEmbedBuilder { };
@@ -296,6 +406,8 @@ namespace CTTB.Commands
         [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task ReportIssue(CommandContext ctx, string issueType = "", string track = "", [RemainingText] string issue = "")
         {
+            await ctx.TriggerTypingAsync();
+
             var embed = new DiscordEmbedBuilder { };
             string json = string.Empty;
             string maj = string.Empty;
@@ -477,6 +589,8 @@ namespace CTTB.Commands
         [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task ClearTrackIssues(CommandContext ctx, [RemainingText] string track = "")
         {
+            await ctx.TriggerTypingAsync();
+
             var embed = new DiscordEmbedBuilder { };
             string json = string.Empty;
             if (track == "")
@@ -592,6 +706,8 @@ namespace CTTB.Commands
         [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task ReplaceTrackIssues(CommandContext ctx, string track = "", string newTrack = "", string author = "", string version = "", string slot = "", string laps = "")
         {
+            await ctx.TriggerTypingAsync();
+
             var embed = new DiscordEmbedBuilder { };
             string json = string.Empty;
             string description = string.Empty;
@@ -734,9 +850,11 @@ namespace CTTB.Commands
         }
 
         [Command("bkt")]
-        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+
         public async Task GetBestTimes(CommandContext ctx, string trackType = "rts", [RemainingText] string track = "")
         {
+            await ctx.TriggerTypingAsync();
+
             if (trackType == "rt")
                 trackType = "rts";
             if (trackType == "ct")
@@ -882,9 +1000,10 @@ namespace CTTB.Commands
         }
 
         [Command("wwpop")]
-        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task WWPopularityRequest(CommandContext ctx, string trackType = "rts", int display = 0)
         {
+            await ctx.TriggerTypingAsync();
+
             if (trackType == "rt")
                 trackType = "rts";
             if (trackType == "ct")
@@ -980,9 +1099,10 @@ namespace CTTB.Commands
         }
 
         [Command("ttpop")]
-        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task TTPopularityRequest(CommandContext ctx, string trackType = "rts", int display = 0)
         {
+            await ctx.TriggerTypingAsync();
+
             if (trackType == "rt")
                 trackType = "rts";
             if (trackType == "ct")
@@ -1078,9 +1198,10 @@ namespace CTTB.Commands
         }
 
         [Command("wwpopsearch")]
-        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task WWPopularitySearch(CommandContext ctx, string trackType = "rts", [RemainingText] string track = "")
         {
+            await ctx.TriggerTypingAsync();
+
             if (trackType == "rt")
                 trackType = "rts";
             if (trackType == "ct")
@@ -1195,9 +1316,10 @@ namespace CTTB.Commands
         }
 
         [Command("ttpopsearch")]
-        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task TTPopularitySearch(CommandContext ctx, string trackType = "rts", [RemainingText] string track = "")
         {
+            await ctx.TriggerTypingAsync();
+
             if (trackType == "rt")
                 trackType = "rts";
             if (trackType == "ct")
