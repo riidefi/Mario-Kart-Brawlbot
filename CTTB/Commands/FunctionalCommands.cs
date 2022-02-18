@@ -889,7 +889,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.*" +
-                        "\n**c!besttime [rts/cts/rts200/cts200] [name of track]**",
+                        "\n**c!bkt [rts/cts/rts200/cts200] [name of track]**",
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -951,7 +951,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = "*Please input a track name to filter with (min 3 chars).*" +
-                               "\n**c!besttime [rts/cts/rts200/cts200] [name of track]**",
+                               "\n**c!bkt [rts/cts/rts200/cts200] [name of track]**",
                             Timestamp = DateTime.UtcNow
                         };
                     }
@@ -978,7 +978,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = "*Track type is not valid.*" +
-                        "\n**c!besttime [rts/cts/rts200/cts200] [name of track]**",
+                        "\n**c!bkt [rts/cts/rts200/cts200] [name of track]**",
                         Timestamp = DateTime.UtcNow
                     };
                 }
@@ -989,7 +989,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
                         Description = "*Unknown Error.*" +
-                        "\n**c!besttime [rts/cts/rts200/cts200] [name of track]**",
+                        "\n**c!bkt [rts/cts/rts200/cts200] [name of track]**",
                         Timestamp = DateTime.UtcNow
                     };
                 }
