@@ -16,6 +16,8 @@ using Google.Apis.Services;
 using System.Text;
 using System.Security.Cryptography.X509Certificates;
 using System.Timers;
+using DSharpPlus;
+using DSharpPlus.EventArgs;
 
 namespace CTTB.Commands
 {
@@ -77,8 +79,95 @@ namespace CTTB.Commands
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
 
+        [Command("hw")]
+        [RequireRoles(RoleCheckMode.Any, "Track Council")]
+        public async Task GetHomework(CommandContext ctx)
+        {
+            var embed = new DiscordEmbedBuilder { };
+            try
+            {
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626)
+                {
+                    string description = string.Empty;
+                    await ctx.TriggerTypingAsync();
+
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                    var service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Custom Track Testing Bot",
+                    });
+
+                    var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                    var responseRaw = await request.ExecuteAsync();
+                    var today = int.Parse(responseRaw.Values[responseRaw.Values.Count - 1][responseRaw.Values[0].Count - 1].ToString());
+
+                    request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                    var response = await request.ExecuteAsync();
+                    foreach (var t in response.Values)
+                    {
+                        while (t.Count < 41)
+                        {
+                            t.Add("");
+                        }
+                    }
+
+                    int j = 0;
+
+                    for (int i = 1; i < response.Values.Count - 2; i++)
+                    {
+                        var t = response.Values[i];
+                        var tRaw = responseRaw.Values[i];
+                        string tally = "*Unreviewed*";
+                        if (today >= int.Parse(t[1].ToString()))
+                        {
+                            var emote = string.Empty;
+                            if ((double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString())) / (double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString()) + double.Parse(tRaw[11].ToString())) > 2.0 / 3.0)
+                            {
+                                emote = DiscordEmoji.FromName(ctx.Client, ":Yes:");
+                            }
+                            else
+                            {
+                                emote = DiscordEmoji.FromName(ctx.Client, ":No:");
+                            }
+                            tally = $"{tRaw[8]}/{tRaw[9]}/{tRaw[10]}/{tRaw[11]} {emote}";
+                        }
+                        description += $"{t[0]} | {tRaw[1]} | [Download]({t[4].ToString().Split('"')[1]}) | {tally}\n";
+                    }
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Council Homework:**__",
+                        Description = description,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Error:**__",
+                    Description = $"*Unknown error.*" +
+                           "\n**c!staff [name of track]**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
         [Command("staff")]
-        public async Task GetStaffGhosts(CommandContext ctx, [RemainingText] string track = "")
+        public async Task GetStaffGhosts(CommandContext ctx, [RemainingText] string track = "Luigi Circuit")
         {
             await ctx.TriggerTypingAsync();
 
@@ -86,19 +175,20 @@ namespace CTTB.Commands
             var description = string.Empty;
             var embed = new DiscordEmbedBuilder { };
 
-            using (var fs = File.OpenRead("config.json"))
-            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+            string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-            var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-            var service = new SheetsService(new BaseClientService.Initializer
+            ServiceAccountCredential credential = new ServiceAccountCredential(
+               new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+            var service = new SheetsService(new BaseClientService.Initializer()
             {
+                HttpClientInitializer = credential,
                 ApplicationName = "Custom Track Testing Bot",
-                ApiKey = configJson.ApiKey,
             });
 
-            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Staff Ghosts'!A1:C251");
+            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Staff Ghosts'");
             var response = await request.ExecuteAsync();
 
             try
@@ -187,19 +277,20 @@ namespace CTTB.Commands
             var description = string.Empty;
             var embed = new DiscordEmbedBuilder { };
 
-            using (var fs = File.OpenRead("config.json"))
-            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+            string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-            var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-            var service = new SheetsService(new BaseClientService.Initializer
+            ServiceAccountCredential credential = new ServiceAccountCredential(
+               new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+            var service = new SheetsService(new BaseClientService.Initializer()
             {
+                HttpClientInitializer = credential,
                 ApplicationName = "Custom Track Testing Bot",
-                ApiKey = configJson.ApiKey,
             });
 
-            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
             var response = await request.ExecuteAsync();
             foreach (var t in response.Values)
             {
@@ -290,19 +381,20 @@ namespace CTTB.Commands
             var description = string.Empty;
             var embed = new DiscordEmbedBuilder { };
 
-            using (var fs = File.OpenRead("config.json"))
-            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+            string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-            var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-            var service = new SheetsService(new BaseClientService.Initializer
+            ServiceAccountCredential credential = new ServiceAccountCredential(
+               new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+            var service = new SheetsService(new BaseClientService.Initializer()
             {
+                HttpClientInitializer = credential,
                 ApplicationName = "Custom Track Testing Bot",
-                ApiKey = configJson.ApiKey,
             });
 
-            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
             var response = await request.ExecuteAsync();
             foreach (var t in response.Values)
             {
@@ -413,20 +505,20 @@ namespace CTTB.Commands
             string maj = string.Empty;
             string min = string.Empty;
 
-            using (var fs = File.OpenRead("config.json"))
-            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+            string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-            var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-            var service = new SheetsService(new BaseClientService.Initializer
+            ServiceAccountCredential credential = new ServiceAccountCredential(
+               new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+            var service = new SheetsService(new BaseClientService.Initializer()
             {
+                HttpClientInitializer = credential,
                 ApplicationName = "Custom Track Testing Bot",
-                ApiKey = configJson.ApiKey,
             });
-            Console.WriteLine("test");
 
-            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
             var response = await request.ExecuteAsync();
             foreach (var t in response.Values)
             {
@@ -543,19 +635,7 @@ namespace CTTB.Commands
 
                 else if (k != 0 && issue != "")
                 {
-                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                    ServiceAccountCredential credential = new ServiceAccountCredential(
-                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                    service = new SheetsService(new BaseClientService.Initializer()
-                    {
-                        HttpClientInitializer = credential,
-                        ApplicationName = "Custom Track Testing Bot",
-                    });
-                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
                     updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                     var update = await updateRequest.ExecuteAsync();
 
@@ -607,19 +687,20 @@ namespace CTTB.Commands
             }
             else
             {
-                using (var fs = File.OpenRead("config.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                var service = new SheetsService(new BaseClientService.Initializer
+                ServiceAccountCredential credential = new ServiceAccountCredential(
+                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                var service = new SheetsService(new BaseClientService.Initializer()
                 {
+                    HttpClientInitializer = credential,
                     ApplicationName = "Custom Track Testing Bot",
-                    ApiKey = configJson.ApiKey,
                 });
 
-                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
                 var response = await request.ExecuteAsync();
                 foreach (var t in response.Values)
                 {
@@ -659,20 +740,7 @@ namespace CTTB.Commands
                         }
                     }
 
-                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                    ServiceAccountCredential credential = new ServiceAccountCredential(
-                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                    service = new SheetsService(new BaseClientService.Initializer()
-                    {
-                        HttpClientInitializer = credential,
-                        ApplicationName = "Custom Track Testing Bot",
-                    });
-
-                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
                     updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                     var update = await updateRequest.ExecuteAsync();
 
@@ -726,19 +794,20 @@ namespace CTTB.Commands
             }
             else
             {
-                using (var fs = File.OpenRead("config.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                var service = new SheetsService(new BaseClientService.Initializer
+                ServiceAccountCredential credential = new ServiceAccountCredential(
+                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                var service = new SheetsService(new BaseClientService.Initializer()
                 {
+                    HttpClientInitializer = credential,
                     ApplicationName = "Custom Track Testing Bot",
-                    ApiKey = configJson.ApiKey,
                 });
 
-                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
                 var response = await request.ExecuteAsync();
                 foreach (var t in response.Values)
                 {
@@ -804,21 +873,7 @@ namespace CTTB.Commands
                             response.Values[i] = orderedResponse[i];
                         }
 
-
-                        string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                        var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                        ServiceAccountCredential credential = new ServiceAccountCredential(
-                           new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                        service = new SheetsService(new BaseClientService.Initializer()
-                        {
-                            HttpClientInitializer = credential,
-                            ApplicationName = "Custom Track Testing Bot",
-                        });
-
-                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
                         updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                         var update = await updateRequest.ExecuteAsync();
 
