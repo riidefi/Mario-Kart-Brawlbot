@@ -4,6 +4,7 @@ using DSharpPlus.Entities;
 using Newtonsoft.Json;
 using OpenQA.Selenium;
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,6 +19,10 @@ using System.Security.Cryptography.X509Certificates;
 using System.Timers;
 using DSharpPlus;
 using DSharpPlus.EventArgs;
+using System.Linq.Expressions;
+using IronPython.Runtime;
+using Google.Apis.Sheets.v4.Data;
+using IronPython.Runtime.Operations;
 
 namespace CTTB.Commands
 {
@@ -79,6 +84,922 @@ namespace CTTB.Commands
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
 
+        [Command("nextupdate")]
+        public async Task GetNextUpdate(CommandContext ctx)
+        {
+            var embed = new DiscordEmbedBuilder { };
+
+            try
+            {
+                string description = string.Empty;
+
+                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                ServiceAccountCredential credential = new ServiceAccountCredential(
+                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                var service = new SheetsService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "Custom Track Testing Bot",
+                });
+
+                await ctx.TriggerTypingAsync();
+
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Update Queue'!B2:L14");
+                request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                var response = await request.ExecuteAsync();
+                foreach (var t in response.Values)
+                {
+                    while (t.Count < 11)
+                    {
+                        t.Add("");
+                    }
+                }
+                string line1 = string.Empty;
+                string line2 = string.Empty;
+                string line3 = string.Empty;
+                string line4 = string.Empty;
+                string line5 = string.Empty;
+                string line6 = string.Empty;
+                string line7 = string.Empty;
+                string line8 = string.Empty;
+                string line9 = string.Empty;
+
+                if (response.Values[2][1].ToString() == "")
+                {
+                    line1 = $"\n*TBD*";
+                }
+                else
+                {
+                    line1 = $"\n{response.Values[2][1]} {response.Values[2][3]} | {response.Values[2][2]} | [{response.Values[2][4].ToString().Split('"')[3]}]({response.Values[2][4].ToString().Split('"')[1]})";
+                }
+                if (response.Values[3][1].ToString() == "")
+                {
+                    line2 = $"\n*TBD*";
+                }
+                else
+                {
+                    line2 = $"\n{response.Values[3][1]} {response.Values[3][3]} | {response.Values[3][2]} | [{response.Values[3][4].ToString().Split('"')[3]}]({response.Values[3][4].ToString().Split('"')[1]})";
+                }
+                if (response.Values[5][1].ToString() == "")
+                {
+                    line3 = $"\n*TBD*";
+                }
+                else
+                {
+                    line3 = $"\n{response.Values[5][1]} {response.Values[5][3]} | {response.Values[5][2]} | [{response.Values[5][4].ToString().Split('"')[3]}]({response.Values[5][4].ToString().Split('"')[1]})";
+
+                }
+                if (response.Values[6][1].ToString() == "")
+                {
+                    line4 = $"\n*TBD*";
+                }
+                else
+                {
+                    line4 = $"\n{response.Values[6][1]} {response.Values[6][3]} | {response.Values[6][2]} | [{response.Values[6][4].ToString().Split('"')[3]}]({response.Values[6][4].ToString().Split('"')[1]})";
+                }
+                if (response.Values[7][1].ToString() == "")
+                {
+                    line5 = $"\n*TBD*";
+                }
+                else
+                {
+                    line5 = $"\n{response.Values[7][1]} {response.Values[7][3]} | {response.Values[7][2]} | [{response.Values[7][4].ToString().Split('"')[3]}]({response.Values[7][4].ToString().Split('"')[1]})";
+                }
+                if (response.Values[9][1].ToString() == "")
+                {
+                    line6 = $"\n*TBD*";
+                }
+                else
+                {
+                    line6 = $"\n{response.Values[9][1]} {response.Values[9][3]} | {response.Values[9][2]} | [{response.Values[9][4].ToString().Split('"')[3]}]({response.Values[9][4].ToString().Split('"')[1]})";
+                }
+                if (response.Values[10][1].ToString() == "")
+                {
+                    line7 = $"\n*TBD*";
+                }
+                else
+                {
+                    line7 = $"\n{response.Values[10][1]} {response.Values[10][3]} | {response.Values[10][2]} | [{response.Values[10][4].ToString().Split('"')[3]}]({response.Values[10][4].ToString().Split('"')[1]})";
+                }
+                if (response.Values[11][1].ToString() == "")
+                {
+                    line8 = $"\n*TBD*";
+                }
+                else
+                {
+                    line8 = $"\n{response.Values[11][1]} {response.Values[11][3]} | {response.Values[11][2]} | [{response.Values[11][4].ToString().Split('"')[3]}]({response.Values[11][4].ToString().Split('"')[1]})";
+                }
+                if (response.Values[12][1].ToString() == "")
+                {
+                    line9 = $"\n*TBD*";
+                }
+                else
+                {
+                    line9 = $"\n{response.Values[12][1]} {response.Values[12][3]} | {response.Values[12][2]} | [{response.Values[12][4].ToString().Split('"')[3]}]({response.Values[12][4].ToString().Split('"')[1]})";
+                }
+
+                description = $"**New:**{line1}{line2}" +
+                    $"\n**Major:**{line3}{line4}{line5}" +
+                    $"\n**Minor:**{line6}{line7}{line8}{line9}";
+
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**{response.Values[0][0]}:**__",
+                    Description = description,
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*An exception has occured.*" +
+                           "\n**c!nextupdate**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("getsummary")]
+        public async Task GetSummary(CommandContext ctx, [RemainingText] string track = "")
+        {
+            var embed = new DiscordEmbedBuilder { };
+
+            try
+            {
+                string description = string.Empty;
+
+                if (track == "")
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Error:**__",
+                        Description = $"*Track was not inputted.*" +
+                               "\n**c!getsummary [track]**",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+                else
+                {
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                    var service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Custom Track Testing Bot",
+                    });
+
+                    await ctx.TriggerTypingAsync();
+
+                    var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluation Log'");
+                    var response = await request.ExecuteAsync();
+                    foreach (var t in response.Values)
+                    {
+                        while (t.Count < 7)
+                        {
+                            t.Add("");
+                        }
+                    }
+
+                    int j = 0;
+
+                    string trackDisplay = string.Empty;
+
+                    for (int i = 0; i < response.Values.Count; i++)
+                    {
+                        if (j < 1)
+                        {
+                            if (response.Values[i][2].ToString().ToLowerInvariant().Contains(track.ToLowerInvariant()))
+                            {
+                                var tally = response.Values[i][1].ToString().split("\n");
+                                if (tally[0].ToString() == "✘")
+                                {
+                                    tally[0] = DiscordEmoji.FromName(ctx.Client, ":No:");
+                                }
+                                else if (tally[0].ToString() == "✔")
+                                {
+                                    tally[0] = DiscordEmoji.FromName(ctx.Client, ":Yes:");
+                                }
+                                description = $"**{response.Values[i][2]} {response.Values[i][4]} - {response.Values[i][3]}**\n{tally[1]} {tally[0]}\n\n{response.Values[i][6]}";
+                                j++;
+                                trackDisplay = response.Values[i][2].ToString();
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    if (j < 1)
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{track} could not be found.*" +
+                                   "\n**c!delhw [name of track]**",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Summary for {trackDisplay} (First result):**__",
+                            Description = description,
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*An exception has occured.*" +
+                           "\n**c!getsummary [track]**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("addhw")]
+        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        public async Task AddHomework(CommandContext ctx, string track = "", string author = "", string version = "", string download = "", string slot = "", string lapSpeed = "1/3", [RemainingText] string notes = "")
+        {
+            var embed = new DiscordEmbedBuilder { };
+
+            try
+            {
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626)
+                {
+                    string description = string.Empty;
+
+                    if (track == "")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = $"*Track was not inputted.*" +
+                                   "\n**c!addhw [name of track] [author] [version] [slot (e.g. Luigi Circuit\nbeginner_course)] [speed/lap modifiers] [notes]**",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else if (author == "")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = $"*Author was not inputted.*" +
+                                   "\n**c!addhw [name of track] [author] [version] [slot (e.g. Luigi Circuit\nbeginner_course)] [speed/lap modifiers] [notes]**",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else if (version == "")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = $"*Version was not inputted.*" +
+                                   "\n**c!addhw [name of track] [author] [version] [slot (e.g. Luigi Circuit\nbeginner_course)] [speed/lap modifiers] [notes]**",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else if (slot == "")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = $"*Slot was not inputted.*" +
+                                   "\n**c!addhw [name of track] [author] [version] [slot (e.g. Luigi Circuit\nbeginner_course)] [speed/lap modifiers] [notes]**",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                        var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                        ServiceAccountCredential credential = new ServiceAccountCredential(
+                           new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                        var service = new SheetsService(new BaseClientService.Initializer()
+                        {
+                            HttpClientInitializer = credential,
+                            ApplicationName = "Custom Track Testing Bot",
+                        });
+
+                        await ctx.TriggerTypingAsync();
+
+                        var countRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                        var countResponse = await countRequest.ExecuteAsync();
+
+                        var due = DateTime.Today;
+
+                        due = due.AddDays(10);
+                        while (due.Day % 10 != 0)
+                        {
+                            due = due.AddDays(1);
+                        }
+                        string dueMonth = string.Empty;
+                        switch (due.Month)
+                        {
+                            case 1:
+                                dueMonth = "January";
+                                break;
+                            case 2:
+                                dueMonth = "Feburary";
+                                break;
+                            case 3:
+                                dueMonth = "March";
+                                break;
+                            case 4:
+                                dueMonth = "April";
+                                break;
+                            case 5:
+                                dueMonth = "May";
+                                break;
+                            case 6:
+                                dueMonth = "June";
+                                break;
+                            case 7:
+                                dueMonth = "July";
+                                break;
+                            case 8:
+                                dueMonth = "August";
+                                break;
+                            case 9:
+                                dueMonth = "September";
+                                break;
+                            case 10:
+                                dueMonth = "October";
+                                break;
+                            case 11:
+                                dueMonth = "November";
+                                break;
+                            case 12:
+                                dueMonth = "December";
+                                break;
+                        }
+
+                        string dl = string.Empty;
+                        if (download.ToLowerInvariant().Contains("discord"))
+                        {
+                            dl = $"=HYPERLINK(\"{download}\", \"Discord\")";
+                        }
+                        else if (download.ToLowerInvariant().Contains("google"))
+                        {
+                            dl = $"=HYPERLINK(\"{download}\", \"Google Drive\")";
+                        }
+                        else if (download.ToLowerInvariant().Contains("mega"))
+                        {
+                            dl = $"=HYPERLINK(\"{download}\", \"Mega\")";
+                        }
+                        else if (download.ToLowerInvariant().Contains("mediafire"))
+                        {
+                            dl = $"=HYPERLINK(\"{download}\", \"MediaFire\")";
+                        }
+                        else if (download.ToLowerInvariant().Contains("icedrive"))
+                        {
+                            dl = $"=HYPERLINK(\"{download}\", \"Icedrive\")";
+                        }
+                        else if (download.ToLowerInvariant().Contains("sync"))
+                        {
+                            dl = $"=HYPERLINK(\"{download}\", \"Sync\")";
+                        }
+                        else if (download.ToLowerInvariant().Contains("pcloud"))
+                        {
+                            dl = $"=HYPERLINK(\"{download}\", \"pCloud\")";
+                        }
+                        else
+                        {
+                            dl = $"=HYPERLINK(\"{download}\", \"Unregistered\")";
+                        }
+
+                        IList<object> obj = new List<Object>();
+                        obj.Add(track);
+                        obj.Add($"{dueMonth} {due.Day}, {due.Year}");
+                        obj.Add(author);
+                        obj.Add(version);
+                        obj.Add(dl);
+                        obj.Add(slot);
+                        obj.Add(lapSpeed);
+                        obj.Add(notes);
+                        obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:$AO{countResponse.Values.Count + 1}, \"yes*\")");
+                        obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:$AO{countResponse.Values.Count + 1}, \"fixes*\")");
+                        obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:$AO{countResponse.Values.Count + 1}, \"neutral*\")");
+                        obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:$AO{countResponse.Values.Count + 1}, \"no*\")");
+                        IList<IList<Object>> values = new List<IList<Object>>();
+                        values.Add(obj);
+
+                        var request = service.Spreadsheets.Values.Append(new Google.Apis.Sheets.v4.Data.ValueRange() { Values = values }, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'!A1:A1");
+                        request.InsertDataOption = SpreadsheetsResource.ValuesResource.AppendRequest.InsertDataOptionEnum.INSERTROWS;
+                        request.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+                        var response = await request.ExecuteAsync();
+
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Success:**__",
+                            Description = $"*{track} has been added as homework.*",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*An exception has occured.*" +
+                           "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit (beginner_course)] [[speed/lap modifiers] [notes]**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+
+            }
+        }
+
+        [Command("delhw")]
+        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        public async Task DeleteHomework(CommandContext ctx, [RemainingText] string track = "")
+        {
+            var embed = new DiscordEmbedBuilder { };
+            try
+            {
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626)
+                {
+                    string description = string.Empty;
+                    string json = string.Empty;
+                    string member = string.Empty;
+
+                    using (var fs = File.OpenRead("council.json"))
+                    using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                        json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                    List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                    foreach (var m in councilJson)
+                    {
+                        if (m.DiscordId == ctx.Member.Id)
+                        {
+                            member = m.SheetName;
+                        }
+                    }
+
+                    await ctx.TriggerTypingAsync();
+
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                    var service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Custom Track Testing Bot",
+                    });
+
+                    var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                    var response = await request.ExecuteAsync();
+
+                    int ix = -1;
+
+                    string trackDisplay = string.Empty;
+
+                    for (int i = 0; i < response.Values.Count; i++)
+                    {
+                        if (response.Values[i][0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
+                        {
+                            ix = i;
+                            trackDisplay = response.Values[i][0].ToString();
+                        }
+                    }
+                    if (ix < 0)
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{track} could not be found.*" +
+                                   "\n**c!delhw [name of track]**",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        var req = new Request
+                        {
+                            DeleteDimension = new DeleteDimensionRequest
+                            {
+                                Range = new DimensionRange
+                                {
+                                    SheetId = 906385082,
+                                    Dimension = "ROWS",
+                                    StartIndex = ix,
+                                    EndIndex = ix + 1
+                                }
+                            }
+                        };
+
+                        var deleteRequest = new BatchUpdateSpreadsheetRequest { Requests = new List<Request> { req } };
+                        var deleteResponse = service.Spreadsheets.BatchUpdate(deleteRequest, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss").Execute();
+
+
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Success:**__",
+                            Description = $"*{trackDisplay} has been deleted from homework.*",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Error:**__",
+                    Description = $"*An exception has occured.*" +
+                           "\n**c!delhw [name of track]**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("submithw")]
+        [RequireRoles(RoleCheckMode.Any, "Track Council")]
+        public async Task SubmitHomework(CommandContext ctx, string vote = "", string track = "", [RemainingText] string feedback = "")
+        {
+            var embed = new DiscordEmbedBuilder { };
+            try
+            {
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626)
+                {
+                    string description = string.Empty;
+                    string json = string.Empty;
+                    string member = string.Empty;
+
+                    if (vote == "")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = $"*Track was not inputted.*" +
+                                   "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else if (track == "")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = $"*Author was not inputted.*" +
+                                   "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else if (vote.ToLowerInvariant() != "no" && vote.ToLowerInvariant() != "yes" && vote.ToLowerInvariant() != "neutral" && vote.ToLowerInvariant() != "fixes")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = $"*{vote} is not a valid vote.*" +
+                                      "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        TextInfo textInfo = new CultureInfo("en-UK", false).TextInfo;
+
+                        vote = textInfo.ToTitleCase(vote);
+
+                        using (var fs = File.OpenRead("council.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        foreach (var m in councilJson)
+                        {
+                            if (m.DiscordId == ctx.Member.Id)
+                            {
+                                member = m.SheetName;
+                            }
+                        }
+
+                        await ctx.TriggerTypingAsync();
+
+                        string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                        var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                        ServiceAccountCredential credential = new ServiceAccountCredential(
+                           new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                        var service = new SheetsService(new BaseClientService.Initializer()
+                        {
+                            HttpClientInitializer = credential,
+                            ApplicationName = "Custom Track Testing Bot",
+                        });
+
+                        var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                        request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                        var response = await request.ExecuteAsync();
+
+                        int ix = 12;
+
+                        for (int i = 0; i < response.Values[0].Count; i++)
+                        {
+                            if (response.Values[0][i].ToString() == member)
+                            {
+                                ix = i;
+                            }
+                        }
+
+                        int j = 0;
+
+                        foreach (var t in response.Values)
+                        {
+                            if (j > 0)
+                            {
+                                break;
+                            }
+                            else if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
+                            {
+                                t[ix] = vote + "\n" + feedback;
+                                j++;
+                            }
+                        }
+
+                        var updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:AO10");
+                        updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+                        var update = await updateRequest.ExecuteAsync();
+
+                        if (j == 0)
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Error:**__",
+                                Description = $"*{track} could not be found.*" +
+                           "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                                Timestamp = DateTime.UtcNow
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Success:**__",
+                                Description = $"*Homework for {track} has been submitted successfully.*",
+                                Timestamp = DateTime.UtcNow
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Error:**__",
+                    Description = $"*An exception has occured.*" +
+                           "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("gethw")]
+        [RequireRoles(RoleCheckMode.Any, "Track Council")]
+        public async Task GetHomework(CommandContext ctx, string track = "", string mention = "")
+        {
+            var embed = new DiscordEmbedBuilder { };
+            try
+            {
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626)
+                {
+                    string description = string.Empty;
+                    string json = string.Empty;
+                    string member = string.Empty;
+
+                    int j = 0;
+                    foreach (var role in ctx.Member.Roles)
+                    {
+                        if (role.Name == "Admin" || role.Name == "Pack & Bot Dev")
+                        {
+                            j++;
+                            break;
+                        }
+                    }
+                    if (j == 0)
+                    {
+                        mention = $"<@{ctx.Member.Id}>";
+                    }
+
+                    if (track == "")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = $"*Track was not inputted.*" +
+                                   "\n**c!gethw [name of track] [mention/name]**",
+                            Timestamp = DateTime.UtcNow
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        using (var fs = File.OpenRead("council.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        Console.WriteLine(json);
+                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        if (mention == "")
+                        {
+                            mention = $"<@{ctx.Member.Id}>";
+                        }
+                        else if (!mention.Contains("<") || !mention.Contains(">") || !mention.Contains("@"))
+                        {
+                            foreach (var m in councilJson)
+                            {
+                                if (m.SheetName.ToLowerInvariant() == mention.ToLowerInvariant())
+                                {
+                                    mention = $"<@{m.DiscordId}>";
+                                }
+                            }
+                        }
+
+                        ulong parsedMention = ulong.Parse(mention.Replace("<", "").Replace(">", "").Replace("@", "").Replace("!", "").Replace("&", ""));
+
+                        foreach (var m in councilJson)
+                        {
+                            if (m.DiscordId == parsedMention)
+                            {
+                                member = m.SheetName;
+                            }
+                        }
+
+                        await ctx.TriggerTypingAsync();
+
+                        string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                        var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                        ServiceAccountCredential credential = new ServiceAccountCredential(
+                           new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                        var service = new SheetsService(new BaseClientService.Initializer()
+                        {
+                            HttpClientInitializer = credential,
+                            ApplicationName = "Custom Track Testing Bot",
+                        });
+
+                        var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                        request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                        var response = await request.ExecuteAsync();
+
+                        int ix = 12;
+
+                        for (int i = 0; i < response.Values[0].Count; i++)
+                        {
+                            if (response.Values[0][i].ToString() == member)
+                            {
+                                ix = i;
+                            }
+                        }
+
+                        j = 0;
+                        string trackDisplay = string.Empty;
+
+                        foreach (var t in response.Values)
+                        {
+                            if (j > 0)
+                            {
+                                break;
+                            }
+                            else if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
+                            {
+                                if (t[ix].ToString() == "")
+                                {
+                                    description = $"*{mention} has not done their homework yet.*";
+                                }
+                                else
+                                {
+                                    description = $"**Homework of {mention}:**\n{t[ix]}";
+                                }
+                                trackDisplay = t[0].ToString();
+                                j++;
+                            }
+                        }
+
+                        if (j == 0)
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Error:**__",
+                                Description = $"*{track} could not be found.*" +
+                                   "\n**c!gethw [name of track] [mention/name]**",
+                                Timestamp = DateTime.UtcNow
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**{trackDisplay}**__",
+                                Description = description,
+                                Timestamp = DateTime.UtcNow
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Error:**__",
+                    Description = $"*An exception has occured.*" +
+                           "\n**c!gethw [name of track] [mention/name]**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
         [Command("hw")]
         [RequireRoles(RoleCheckMode.Any, "Track Council")]
         public async Task GetHomework(CommandContext ctx)
@@ -104,9 +1025,12 @@ namespace CTTB.Commands
                         ApplicationName = "Custom Track Testing Bot",
                     });
 
+                    var temp = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluation Log'");
+                    var tempResponse = await temp.ExecuteAsync();
+                    var today = int.Parse(tempResponse.Values[tempResponse.Values.Count - 1][tempResponse.Values[tempResponse.Values.Count - 1].Count - 1].ToString());
+
                     var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
                     var responseRaw = await request.ExecuteAsync();
-                    var today = int.Parse(responseRaw.Values[responseRaw.Values.Count - 1][responseRaw.Values[0].Count - 1].ToString());
 
                     request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
                     var response = await request.ExecuteAsync();
@@ -120,7 +1044,7 @@ namespace CTTB.Commands
 
                     int j = 0;
 
-                    for (int i = 1; i < response.Values.Count - 2; i++)
+                    for (int i = 1; i < response.Values.Count; i++)
                     {
                         var t = response.Values[i];
                         var tRaw = responseRaw.Values[i];
@@ -156,8 +1080,8 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
-                    Description = $"*Unknown error.*" +
-                           "\n**c!staff [name of track]**",
+                    Description = $"*An exception has occured.*" +
+                           "\n**c!hw [name of track]**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -258,7 +1182,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
-                    Description = $"*Unknown error.*" +
+                    Description = $"*An exception has occured.*" +
                            "\n**c!staff [name of track]**",
                     Timestamp = DateTime.UtcNow
                 };
@@ -362,7 +1286,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
-                    Description = $"*Unknown error.*" +
+                    Description = $"*An exception has occured.*" +
                            "\n**c!getinfo [name of track]**",
                     Timestamp = DateTime.UtcNow
                 };
@@ -484,7 +1408,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
-                    Description = $"*Unknown error.*" +
+                    Description = $"*An exception has occured.*" +
                            "\n**c!getissues [name of track]**",
                     Timestamp = DateTime.UtcNow
                 };
@@ -518,7 +1442,7 @@ namespace CTTB.Commands
                 ApplicationName = "Custom Track Testing Bot",
             });
 
-            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
+            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
             var response = await request.ExecuteAsync();
             foreach (var t in response.Values)
             {
@@ -635,7 +1559,7 @@ namespace CTTB.Commands
 
                 else if (k != 0 && issue != "")
                 {
-                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
+                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
                     updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                     var update = await updateRequest.ExecuteAsync();
 
@@ -655,7 +1579,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
-                    Description = $"*Unknown error.*" +
+                    Description = $"*An exception has occured.*" +
                                "\n**c!reportissue [issue category] [name of track (in quotes)] [issue]**",
                     Timestamp = DateTime.UtcNow
                 };
@@ -700,7 +1624,7 @@ namespace CTTB.Commands
                     ApplicationName = "Custom Track Testing Bot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
                 var response = await request.ExecuteAsync();
                 foreach (var t in response.Values)
                 {
@@ -740,7 +1664,7 @@ namespace CTTB.Commands
                         }
                     }
 
-                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
+                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
                     updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                     var update = await updateRequest.ExecuteAsync();
 
@@ -759,7 +1683,7 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
-                        Description = $"*Unknown error.*" +
+                        Description = $"*An exception has occured.*" +
                                   "\n**c!clearissues [track]**",
                         Timestamp = DateTime.UtcNow
                     };
@@ -807,7 +1731,7 @@ namespace CTTB.Commands
                     ApplicationName = "Custom Track Testing Bot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
                 var response = await request.ExecuteAsync();
                 foreach (var t in response.Values)
                 {
@@ -873,7 +1797,7 @@ namespace CTTB.Commands
                             response.Values[i] = orderedResponse[i];
                         }
 
-                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
+                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
                         updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                         var update = await updateRequest.ExecuteAsync();
 
@@ -893,7 +1817,7 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
-                        Description = $"*Unknown error.*" +
+                        Description = $"*An exception has occured.*" +
                                   "\n**c!replaceissues [track] [new track] [author] [version] [slot] [speed/laps]**",
                         Timestamp = DateTime.UtcNow
                     };
@@ -905,7 +1829,6 @@ namespace CTTB.Commands
         }
 
         [Command("bkt")]
-
         public async Task GetBestTimes(CommandContext ctx, string trackType = "rts", [RemainingText] string track = "")
         {
             await ctx.TriggerTypingAsync();
@@ -1043,7 +1966,7 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
-                        Description = "*Unknown Error.*" +
+                        Description = "*An exception has occured.*" +
                         "\n**c!bkt [rts/cts/rts200/cts200] [name of track]**",
                         Timestamp = DateTime.UtcNow
                     };
@@ -1142,7 +2065,7 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
-                        Description = "*Unknown Error.*" +
+                        Description = "*An exception has occured.*" +
                         "\n**c!wwpop [rts/cts] [range(1-32/218)]**",
                         Timestamp = DateTime.UtcNow
                     };
@@ -1241,7 +2164,7 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
-                        Description = "*Unknown Error.*" +
+                        Description = "*An exception has occured.*" +
                         "\n**c!wwpop [rts/cts] [range(1-32/218)]**",
                         Timestamp = DateTime.UtcNow
                     };
@@ -1359,7 +2282,7 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
-                        Description = "*Unknown Error.*" +
+                        Description = "*An exception has occured.*" +
                         "\n**c!wwpopsearch [rts/cts] [name of track]**",
                         Timestamp = DateTime.UtcNow
                     };
@@ -1477,7 +2400,7 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
-                        Description = "*Unknown Error.*" +
+                        Description = "*An exception has occured.*" +
                         "\n**c!ttpopsearch [rts/cts] [name of track]**",
                         Timestamp = DateTime.UtcNow
                     };
