@@ -732,7 +732,7 @@ namespace CTTB.Commands
                         request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
                         var response = await request.ExecuteAsync();
 
-                        int ix = 12;
+                        int ix = -1;
 
                         for (int i = 0; i < response.Values[0].Count; i++)
                         {
@@ -742,47 +742,64 @@ namespace CTTB.Commands
                             }
                         }
 
-                        int j = 0;
-
-                        foreach (var t in response.Values)
-                        {
-                            if (j > 0)
-                            {
-                                break;
-                            }
-                            else if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
-                            {
-                                t[ix] = vote + "\n" + feedback;
-                                j++;
-                            }
-                        }
-
-                        var updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:AO10");
-                        updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-                        var update = await updateRequest.ExecuteAsync();
-
-                        if (j == 0)
+                        if (ix < 0)
                         {
                             embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
-                                Description = $"*{track} could not be found.*" +
+                                Description = $"*<@{ctx.Member.Id}> is not able to submit feedback.*" +
                            "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
                                 Timestamp = DateTime.UtcNow
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         }
+
                         else
                         {
-                            embed = new DiscordEmbedBuilder
+
+                            int j = 0;
+
+                            foreach (var t in response.Values)
                             {
-                                Color = new DiscordColor("#FF0000"),
-                                Title = "__**Success:**__",
-                                Description = $"*Homework for {track} has been submitted successfully.*",
-                                Timestamp = DateTime.UtcNow
-                            };
-                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                                if (j > 0)
+                                {
+                                    break;
+                                }
+                                else if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
+                                {
+                                    t[ix] = vote + "\n" + feedback;
+                                    j++;
+                                }
+                            }
+
+                            var updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:AO10");
+                            updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+                            var update = await updateRequest.ExecuteAsync();
+
+                            if (j == 0)
+                            {
+                                embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Error:**__",
+                                    Description = $"*{track} could not be found.*" +
+                               "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                                    Timestamp = DateTime.UtcNow
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Success:**__",
+                                    Description = $"*Homework for {track} has been submitted successfully.*",
+                                    Timestamp = DateTime.UtcNow
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
                         }
                     }
                 }
