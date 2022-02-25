@@ -1753,7 +1753,7 @@ namespace CTTB.Commands
                     ApplicationName = "Custom Track Testing Bot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A2:G219");
                 var response = await request.ExecuteAsync();
                 foreach (var t in response.Values)
                 {
@@ -1814,12 +1814,12 @@ namespace CTTB.Commands
                     else
                     {
                         var orderedResponse = response.Values.OrderBy(x => x[0].ToString()).ToList();
-                        for (int i = 1; i < response.Values.Count; i++)
+                        for (int i = 0; i < response.Values.Count; i++)
                         {
                             response.Values[i] = orderedResponse[i];
                         }
 
-                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A2:G219");
                         updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                         var update = await updateRequest.ExecuteAsync();
 
