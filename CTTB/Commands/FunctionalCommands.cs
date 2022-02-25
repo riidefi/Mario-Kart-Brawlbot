@@ -91,8 +91,6 @@ namespace CTTB.Commands
 
             try
             {
-                string description = string.Empty;
-
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
                 var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
@@ -108,7 +106,7 @@ namespace CTTB.Commands
 
                 await ctx.TriggerTypingAsync();
 
-                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Update Queue'!B2:L14");
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Update Queue'");
                 request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
                 var response = await request.ExecuteAsync();
                 foreach (var t in response.Values)
@@ -118,98 +116,55 @@ namespace CTTB.Commands
                         t.Add("");
                     }
                 }
-                string line1 = string.Empty;
-                string line2 = string.Empty;
-                string line3 = string.Empty;
-                string line4 = string.Empty;
-                string line5 = string.Empty;
-                string line6 = string.Empty;
-                string line7 = string.Empty;
-                string line8 = string.Empty;
-                string line9 = string.Empty;
 
-                if (response.Values[2][1].ToString() == "")
-                {
-                    line1 = $"\n*TBD*";
-                }
-                else
-                {
-                    line1 = $"\n{response.Values[2][1]} {response.Values[2][3]} | {response.Values[2][2]} | [{response.Values[2][4].ToString().Split('"')[3]}]({response.Values[2][4].ToString().Split('"')[1]})";
-                }
-                if (response.Values[3][1].ToString() == "")
-                {
-                    line2 = $"\n*TBD*";
-                }
-                else
-                {
-                    line2 = $"\n{response.Values[3][1]} {response.Values[3][3]} | {response.Values[3][2]} | [{response.Values[3][4].ToString().Split('"')[3]}]({response.Values[3][4].ToString().Split('"')[1]})";
-                }
-                if (response.Values[5][1].ToString() == "")
-                {
-                    line3 = $"\n*TBD*";
-                }
-                else
-                {
-                    line3 = $"\n{response.Values[5][1]} {response.Values[5][3]} | {response.Values[5][2]} | [{response.Values[5][4].ToString().Split('"')[3]}]({response.Values[5][4].ToString().Split('"')[1]})";
+                string description = "**New:**";
 
-                }
-                if (response.Values[6][1].ToString() == "")
+                int k = 3;
+                while (response.Values[k][2].ToString() != "delimiter")
                 {
-                    line4 = $"\n*TBD*";
+                    if (response.Values[k][2].ToString() == "")
+                    {
+                        description += "\n*TBD*";
+                    }
+                    else
+                    {
+                        description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | [{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})";
+                    }
+                    k++;
                 }
-                else
+                k++;
+                description += $"\n**Major:**";
+                while (response.Values[k][2].ToString() != "delimiter")
                 {
-                    line4 = $"\n{response.Values[6][1]} {response.Values[6][3]} | {response.Values[6][2]} | [{response.Values[6][4].ToString().Split('"')[3]}]({response.Values[6][4].ToString().Split('"')[1]})";
+                    if (response.Values[k][2].ToString() == "")
+                    {
+                        description += "\n*TBD*";
+                    }
+                    else
+                    {
+                        description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | [{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})";
+                    }
+                    k++;
                 }
-                if (response.Values[7][1].ToString() == "")
+                k++;
+                description += $"\n**Minor:**";
+                while (response.Values[k][2].ToString() != "delimiter")
                 {
-                    line5 = $"\n*TBD*";
+                    if (response.Values[k][2].ToString() == "")
+                    {
+                        description += "\n*TBD*";
+                    }
+                    else
+                    {
+                        description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | [{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})";
+                    }
+                    k++;
                 }
-                else
-                {
-                    line5 = $"\n{response.Values[7][1]} {response.Values[7][3]} | {response.Values[7][2]} | [{response.Values[7][4].ToString().Split('"')[3]}]({response.Values[7][4].ToString().Split('"')[1]})";
-                }
-                if (response.Values[9][1].ToString() == "")
-                {
-                    line6 = $"\n*TBD*";
-                }
-                else
-                {
-                    line6 = $"\n{response.Values[9][1]} {response.Values[9][3]} | {response.Values[9][2]} | [{response.Values[9][4].ToString().Split('"')[3]}]({response.Values[9][4].ToString().Split('"')[1]})";
-                }
-                if (response.Values[10][1].ToString() == "")
-                {
-                    line7 = $"\n*TBD*";
-                }
-                else
-                {
-                    line7 = $"\n{response.Values[10][1]} {response.Values[10][3]} | {response.Values[10][2]} | [{response.Values[10][4].ToString().Split('"')[3]}]({response.Values[10][4].ToString().Split('"')[1]})";
-                }
-                if (response.Values[11][1].ToString() == "")
-                {
-                    line8 = $"\n*TBD*";
-                }
-                else
-                {
-                    line8 = $"\n{response.Values[11][1]} {response.Values[11][3]} | {response.Values[11][2]} | [{response.Values[11][4].ToString().Split('"')[3]}]({response.Values[11][4].ToString().Split('"')[1]})";
-                }
-                if (response.Values[12][1].ToString() == "")
-                {
-                    line9 = $"\n*TBD*";
-                }
-                else
-                {
-                    line9 = $"\n{response.Values[12][1]} {response.Values[12][3]} | {response.Values[12][2]} | [{response.Values[12][4].ToString().Split('"')[3]}]({response.Values[12][4].ToString().Split('"')[1]})";
-                }
-
-                description = $"**New:**{line1}{line2}" +
-                    $"\n**Major:**{line3}{line4}{line5}" +
-                    $"\n**Minor:**{line6}{line7}{line8}{line9}";
 
                 embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
-                    Title = $"__**{response.Values[0][0]}:**__",
+                    Title = $"__**{response.Values[1][1]}:**__",
                     Description = description,
                     Timestamp = DateTime.UtcNow
                 };
@@ -247,7 +202,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
                         Description = $"*Track was not inputted.*" +
-                               "\n**c!getsummary [track]**",
+                               "\n**c!getsummary [name of track]**",
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -315,7 +270,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
                             Description = $"*{track} could not be found.*" +
-                                   "\n**c!delhw [name of track]**",
+                                   "\n**c!getsummary [name of track]**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -357,7 +312,7 @@ namespace CTTB.Commands
 
             try
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626)
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320)
                 {
                     string description = string.Empty;
 
@@ -567,95 +522,110 @@ namespace CTTB.Commands
             var embed = new DiscordEmbedBuilder { };
             try
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626)
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320)
                 {
-                    string description = string.Empty;
-                    string json = string.Empty;
-                    string member = string.Empty;
-
-                    using (var fs = File.OpenRead("council.json"))
-                    using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                        json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                    List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-
-                    foreach (var m in councilJson)
-                    {
-                        if (m.DiscordId == ctx.Member.Id)
-                        {
-                            member = m.SheetName;
-                        }
-                    }
-
-                    await ctx.TriggerTypingAsync();
-
-                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                    ServiceAccountCredential credential = new ServiceAccountCredential(
-                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                    var service = new SheetsService(new BaseClientService.Initializer()
-                    {
-                        HttpClientInitializer = credential,
-                        ApplicationName = "Custom Track Testing Bot",
-                    });
-
-                    var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
-                    var response = await request.ExecuteAsync();
-
-                    int ix = -1;
-
-                    string trackDisplay = string.Empty;
-
-                    for (int i = 0; i < response.Values.Count; i++)
-                    {
-                        if (response.Values[i][0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
-                        {
-                            ix = i;
-                            trackDisplay = response.Values[i][0].ToString();
-                        }
-                    }
-                    if (ix < 0)
+                    if (track == "")
                     {
                         embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = "__**Error:**__",
-                            Description = $"*{track} could not be found.*" +
-                                   "\n**c!delhw [name of track]**",
+                            Title = $"__**Error:**__",
+                            Description = $"*Track was not inputted.*" +
+                                   "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
                     else
                     {
-                        var req = new Request
+                        string description = string.Empty;
+                        string json = string.Empty;
+                        string member = string.Empty;
+
+                        using (var fs = File.OpenRead("council.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        foreach (var m in councilJson)
                         {
-                            DeleteDimension = new DeleteDimensionRequest
+                            if (m.DiscordId == ctx.Member.Id)
                             {
-                                Range = new DimensionRange
-                                {
-                                    SheetId = 906385082,
-                                    Dimension = "ROWS",
-                                    StartIndex = ix,
-                                    EndIndex = ix + 1
-                                }
+                                member = m.SheetName;
                             }
-                        };
+                        }
 
-                        var deleteRequest = new BatchUpdateSpreadsheetRequest { Requests = new List<Request> { req } };
-                        var deleteResponse = service.Spreadsheets.BatchUpdate(deleteRequest, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss").Execute();
+                        await ctx.TriggerTypingAsync();
 
+                        string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                        embed = new DiscordEmbedBuilder
+                        var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                        ServiceAccountCredential credential = new ServiceAccountCredential(
+                           new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                        var service = new SheetsService(new BaseClientService.Initializer()
                         {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = "__**Success:**__",
-                            Description = $"*{trackDisplay} has been deleted from homework.*",
-                            Timestamp = DateTime.UtcNow
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            HttpClientInitializer = credential,
+                            ApplicationName = "Custom Track Testing Bot",
+                        });
+
+                        var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                        var response = await request.ExecuteAsync();
+
+                        int ix = -1;
+
+                        string trackDisplay = string.Empty;
+
+                        for (int i = 0; i < response.Values.Count; i++)
+                        {
+                            if (response.Values[i][0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
+                            {
+                                ix = i;
+                                trackDisplay = response.Values[i][0].ToString();
+                            }
+                        }
+                        if (ix < 0)
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Error:**__",
+                                Description = $"*{track} could not be found.*" +
+                                       "\n**c!delhw [name of track]**",
+                                Timestamp = DateTime.UtcNow
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            var req = new Request
+                            {
+                                DeleteDimension = new DeleteDimensionRequest
+                                {
+                                    Range = new DimensionRange
+                                    {
+                                        SheetId = 906385082,
+                                        Dimension = "ROWS",
+                                        StartIndex = ix,
+                                        EndIndex = ix + 1
+                                    }
+                                }
+                            };
+
+                            var deleteRequest = new BatchUpdateSpreadsheetRequest { Requests = new List<Request> { req } };
+                            var deleteResponse = service.Spreadsheets.BatchUpdate(deleteRequest, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss").Execute();
+
+
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Success:**__",
+                                Description = $"*{trackDisplay} has been deleted from homework.*",
+                                Timestamp = DateTime.UtcNow
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
                     }
                 }
             }
@@ -682,7 +652,7 @@ namespace CTTB.Commands
             var embed = new DiscordEmbedBuilder { };
             try
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626)
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320)
                 {
                     string description = string.Empty;
                     string json = string.Empty;
@@ -840,7 +810,7 @@ namespace CTTB.Commands
             var embed = new DiscordEmbedBuilder { };
             try
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626)
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320)
                 {
                     string description = string.Empty;
                     string json = string.Empty;
@@ -877,7 +847,6 @@ namespace CTTB.Commands
                         using (var fs = File.OpenRead("council.json"))
                         using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                             json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                        Console.WriteLine(json);
                         List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
 
                         if (mention == "")
@@ -934,14 +903,31 @@ namespace CTTB.Commands
                             }
                         }
 
+                        foreach (var m in response.Values[0])
+                        {
+                            if (m.ToString() == member)
+                            {
+
+                            }
+                        }
+
                         j = 0;
+                        int k = 0;
                         string trackDisplay = string.Empty;
+
+                        foreach (var m in response.Values[0])
+                        {
+                            if (m.ToString() == member)
+                            {
+                                k++;
+                            }
+                        }
 
                         foreach (var t in response.Values)
                         {
-                            if (j > 0)
+                            if (j < 1)
                             {
-                                break;
+                                j++;
                             }
                             else if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
                             {
@@ -951,14 +937,33 @@ namespace CTTB.Commands
                                 }
                                 else
                                 {
-                                    description = $"**Homework of {mention}:**\n{t[ix]}";
+                                    if (t[ix].ToString().ToCharArray().Length > 3500)
+                                    {
+                                        description = $"**Homework of {mention}:**\n{t[ix].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
+                                    }
+                                    else
+                                    {
+                                        description = $"**Homework of {mention}:**\n{t[ix]}";
+                                    }
                                 }
                                 trackDisplay = t[0].ToString();
-                                j++;
                             }
                         }
 
-                        if (j == 0)
+                        if (k == 0)
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Error:**__",
+                                Description = $"*{mention} could not be found on council.*" +
+                                   "\n**c!gethw [name of track] [mention/name]**",
+                                Timestamp = DateTime.UtcNow
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+
+                        else if (j == 0)
                         {
                             embed = new DiscordEmbedBuilder
                             {
@@ -1007,7 +1012,7 @@ namespace CTTB.Commands
             var embed = new DiscordEmbedBuilder { };
             try
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626)
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320)
                 {
                     string description = string.Empty;
                     await ctx.TriggerTypingAsync();
