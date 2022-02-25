@@ -696,7 +696,7 @@ namespace CTTB.Commands
                     }
                     else
                     {
-                        TextInfo textInfo = new CultureInfo("en-UK", false).TextInfo;
+                        TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
 
                         vote = textInfo.ToTitleCase(vote);
 
