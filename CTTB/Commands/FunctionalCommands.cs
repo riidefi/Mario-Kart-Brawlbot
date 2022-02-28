@@ -866,9 +866,12 @@ namespace CTTB.Commands
                             json = await sr.ReadToEndAsync().ConfigureAwait(false);
                         List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
 
+                        int l = 0;
+
                         if (mention == "")
                         {
                             mention = $"<@{ctx.Member.Id}>";
+                            l++;
                         }
                         else if (!mention.Contains("<") || !mention.Contains(">") || !mention.Contains("@"))
                         {
@@ -877,17 +880,29 @@ namespace CTTB.Commands
                                 if (m.SheetName.ToLowerInvariant() == mention.ToLowerInvariant())
                                 {
                                     mention = $"<@{m.DiscordId}>";
+                                    l++;
                                 }
                             }
                         }
-
-                        ulong parsedMention = ulong.Parse(mention.Replace("<", "").Replace(">", "").Replace("@", "").Replace("!", "").Replace("&", ""));
-
                         foreach (var m in councilJson)
                         {
-                            if (m.DiscordId == parsedMention)
+                            if ($"<@!{m.DiscordId}>" == mention)
                             {
-                                member = m.SheetName;
+                                l++;
+                            }
+                        }
+
+                        ulong parsedMention = 0;
+
+                        if (l > 0)
+                        {
+                            parsedMention = ulong.Parse(mention.Replace("<", "").Replace(">", "").Replace("@", "").Replace("!", "").Replace("&", ""));
+                            foreach (var m in councilJson)
+                            {
+                                if (m.DiscordId == parsedMention)
+                                {
+                                    member = m.SheetName;
+                                }
                             }
                         }
 
@@ -917,14 +932,6 @@ namespace CTTB.Commands
                             if (response.Values[0][i].ToString() == member)
                             {
                                 ix = i;
-                            }
-                        }
-
-                        foreach (var m in response.Values[0])
-                        {
-                            if (m.ToString() == member)
-                            {
-
                             }
                         }
 
@@ -967,7 +974,7 @@ namespace CTTB.Commands
                             }
                         }
 
-                        if (k == 0)
+                        if (k == 0 || l == 0)
                         {
                             embed = new DiscordEmbedBuilder
                             {
@@ -1074,7 +1081,7 @@ namespace CTTB.Commands
                         if (today >= int.Parse(t[1].ToString()))
                         {
                             var emote = string.Empty;
-                            if ((double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString())) / (double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString()) + double.Parse(tRaw[11].ToString())) > 2.0 / 3.0)
+                            if ((double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString())) / (double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString()) + double.Parse(tRaw[11].ToString())) >= 2.0 / 3.0)
                             {
                                 emote = DiscordEmoji.FromName(ctx.Client, ":Yes:");
                             }
