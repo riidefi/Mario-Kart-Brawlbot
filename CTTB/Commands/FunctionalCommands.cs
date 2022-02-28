@@ -925,7 +925,7 @@ namespace CTTB.Commands
                         request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
                         var response = await request.ExecuteAsync();
 
-                        int ix = 12;
+                        int ix = -1;
 
                         for (int i = 0; i < response.Values[0].Count; i++)
                         {
@@ -937,6 +937,7 @@ namespace CTTB.Commands
 
                         j = 0;
                         int k = 0;
+                        l = 0;
                         string trackDisplay = string.Empty;
 
                         foreach (var m in response.Values[0])
@@ -947,34 +948,38 @@ namespace CTTB.Commands
                             }
                         }
 
-                        foreach (var t in response.Values)
+                        if (ix > 11)
                         {
-                            if (j < 1)
+                            foreach (var t in response.Values)
                             {
-                                j++;
-                            }
-                            else if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
-                            {
-                                if (t[ix].ToString() == "")
+                                if (j < 1)
                                 {
-                                    description = $"*{mention} has not done their homework yet.*";
+                                    j++;
                                 }
-                                else
+                                else if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
                                 {
-                                    if (t[ix].ToString().ToCharArray().Length > 3500)
+                                    if (t[ix].ToString() == "")
                                     {
-                                        description = $"**Homework of {mention}:**\n{t[ix].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
+                                        description = $"*{mention} has not done their homework yet.*";
                                     }
                                     else
                                     {
-                                        description = $"**Homework of {mention}:**\n{t[ix]}";
+                                        if (t[ix].ToString().ToCharArray().Length > 3500)
+                                        {
+                                            description = $"**Homework of {mention}:**\n{t[ix].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
+                                        }
+                                        else
+                                        {
+                                            description = $"**Homework of {mention}:**\n{t[ix]}";
+                                        }
                                     }
+                                    trackDisplay = t[0].ToString();
+                                    l++;
                                 }
-                                trackDisplay = t[0].ToString();
                             }
                         }
 
-                        if (k == 0 || l == 0)
+                        if (ix < 0)
                         {
                             embed = new DiscordEmbedBuilder
                             {
@@ -987,7 +992,7 @@ namespace CTTB.Commands
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         }
 
-                        else if (j == 0)
+                        else if (l == 0)
                         {
                             embed = new DiscordEmbedBuilder
                             {
