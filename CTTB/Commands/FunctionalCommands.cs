@@ -323,7 +323,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Track was not inputted.*" +
-                                   "\n**c!addhw [name of track] [author] [version] [slot (e.g. Luigi Circuit\nbeginner_course)] [speed/lap modifiers] [notes]**",
+                                   "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -335,7 +335,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Author was not inputted.*" +
-                                   "\n**c!addhw [name of track] [author] [version] [slot (e.g. Luigi Circuit\nbeginner_course)] [speed/lap modifiers] [notes]**",
+                                   "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -347,7 +347,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Version was not inputted.*" +
-                                   "\n**c!addhw [name of track] [author] [version] [slot (e.g. Luigi Circuit\nbeginner_course)] [speed/lap modifiers] [notes]**",
+                                   "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -359,7 +359,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Slot was not inputted.*" +
-                                   "\n**c!addhw [name of track] [author] [version] [slot (e.g. Luigi Circuit\nbeginner_course)] [speed/lap modifiers] [notes]**",
+                                   "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -505,7 +505,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit (beginner_course)] [[speed/lap modifiers] [notes]**",
+                           "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -654,6 +654,13 @@ namespace CTTB.Commands
             {
                 if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320)
                 {
+                    string strAlpha = "";
+
+                    for (int i = 65; i <= 90; i++)
+                    {
+                        strAlpha += ((char)i).ToString() + "";
+                    }
+
                     string description = string.Empty;
                     string json = string.Empty;
                     string member = string.Empty;
@@ -773,7 +780,16 @@ namespace CTTB.Commands
                                 }
                             }
 
-                            var updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:AO10");
+                            SpreadsheetsResource.ValuesResource.UpdateRequest updateRequest;
+
+                            if (response.Values[0].Count < 27)
+                            {
+                                updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:{strAlpha[response.Values[0].Count-1]}{response.Values.Count}");
+                            }
+                            else
+                            {
+                                updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:A{strAlpha[response.Values[0].Count%26-1]}{response.Values.Count}");
+                            }
                             updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                             var update = await updateRequest.ExecuteAsync();
 

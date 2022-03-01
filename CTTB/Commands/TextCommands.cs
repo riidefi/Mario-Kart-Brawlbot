@@ -47,7 +47,7 @@ namespace CTTB.Commands
                         "\nc!clearissues [name of track]" +
                         "\nc!replaceissues [track] [new track] [author] [version] [slot] [laps]" +
                         "\nc!gethw [name of track] [mention/name]" +
-                        "\nc!addhw [name of track] [author] [version] [slot (e.g. Luigi Circuit\nbeginner_course)] [speed/ lap modifiers] [notes]";
+                        "\nc!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]";
                 }
             }
 
