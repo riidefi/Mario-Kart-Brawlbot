@@ -23,10 +23,8 @@ namespace CTTB.Commands
                 "\nc!getissues [name of track]" +
                 "\nc!getinfo [name of track]" +
                 "\nc!bkt [rts/cts/rts200/cts200] [name of track]" +
-                "\nc!wwpop [rts/cts] [range(1-32/218)]" +
-                "\nc!ttpop [rts/cts] [range(1-32/218)]" +
-                "\nc!wwpopsearch [rts/cts] [name of track]" +
-                "\nc!ttpopsearch [rts/cts] [name of track]" +
+                "\nc!pop [category (rts/cts) + range(1-32/218)/name of track]" +
+                "\nc!ttpop [category (rts/cts) + range(1-32/218)/name of track]" +
                 "\nc!getsummary [name of track]" +
                 "\nc!nextupdate";
 
