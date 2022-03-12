@@ -19,13 +19,14 @@ namespace CTTB.Commands
                 "\nc!help" +
                 "\nc!cttp" +
                 "\nc!source" +
-                "\nc!staff [name of track]" +
-                "\nc!getissues [name of track]" +
-                "\nc!getinfo [name of track]" +
-                "\nc!bkt [rts/cts/rts200/cts200] [name of track]" +
-                "\nc!pop [category (rts/cts) + range(1-32/218)/name of track]" +
-                "\nc!ttpop [category (rts/cts) + range(1-32/218)/name of track]" +
-                "\nc!getsummary [name of track]" +
+                "\nc!staff track" +
+                "\nc!issues" +
+                "\nc!getissues track" +
+                "\nc!getinfo track" +
+                "\nc!bkt track" +
+                "\nc!pop rts/cts/track" +
+                "\nc!ttpop rts/cts/track" +
+                "\nc!getsummary track" +
                 "\nc!nextupdate";
 
             foreach (var role in ctx.Member.Roles)
@@ -34,18 +35,20 @@ namespace CTTB.Commands
                 {
                     description += "\n\n__**Council Commands:**__" +
                         "\nc!hw" +
-                        "\nc!gethw [name of track]" +
-                        "\nc!submithw [yes/fixes/neutral/no] [name of track] [feedback]";
+                        "\nc!gethw track" +
+                        "\nc!submithw yes/fixes/neutral/no \"track\" feedback";
                 }
                 if (role.Name == "Pack & Bot Dev" || role.Name == "Admin")
                 {
                     description += "\n\n__**Admin Commands:**__" +
                         "\nc!update" +
-                        "\nc!reportissue [issue category] [name of track] [issue]" +
-                        "\nc!clearissues [name of track]" +
-                        "\nc!replaceissues [track] [new track] [author] [version] [slot] [laps]" +
-                        "\nc!gethw [name of track] [mention/name]" +
-                        "\nc!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]";
+                        "\nc!lastupdated" +
+                        "\nc!reportissue major/minor \"track\" -Issue" +
+                        "\nc!clearissues track" +
+                        "\nc!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps" +
+                        "\nc!gethw \"track\" mention/name" +
+                        "\nc!addhw \"track\" \"author\" \"version\" \"download link\" \"slot-filename\" \"speed/lap modifiers\" notes" +
+                        "\nc!delhw track";
                 }
             }
 

@@ -26,6 +26,12 @@ using IronPython.Runtime.Operations;
 using HtmlAgilityPack;
 using OpenQA.Selenium.DevTools.V94.Emulation;
 using Emzi0767;
+using DSharpPlus.Interactivity.EventHandling;
+using DSharpPlus.Interactivity.Extensions;
+using DSharpPlus.Interactivity;
+using OpenQA.Selenium.DevTools.V96.Emulation;
+using Microsoft.Scripting.Utils;
+using System.Collections.Immutable;
 
 namespace CTTB.Commands
 {
@@ -33,7 +39,7 @@ namespace CTTB.Commands
     {
         [Command("update")]
         [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
-        public async Task UpdateTimer(CommandContext ctx)
+        public async Task UpdateTimer(CommandContext ctx, [RemainingText] string placeholder)
         {
             await ctx.TriggerTypingAsync();
             await Update(ctx);
@@ -374,17 +380,64 @@ namespace CTTB.Commands
                 File.WriteAllText("cts.json", ctJson);
                 File.WriteAllText("rts200.json", rt200Json);
                 File.WriteAllText("cts200.json", ct200Json);
-                Console.WriteLine("\nDatabase Updated!\n");
+
+                var today = DateTime.Now;
+                File.WriteAllText("lastUpdated.txt", today.ToString());
             }
 
             catch (Exception ex)
             {
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*An exception has occured.*" +
+                              "\n**c!update**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("lastupdated")]
+        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        public async Task GetLastDatabaseUpdate(CommandContext ctx, [RemainingText] string placeholder)
+        {
+            var embed = new DiscordEmbedBuilder { };
+
+            try
+            {
+                string description = File.ReadAllText("lastUpdated.txt");
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Database Last Updated:**__",
+                    Description = $"*{description}*",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+            }
+
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*An exception has occured.*" +
+                           "\n**c!lastupdated**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
                 Console.WriteLine(ex.ToString());
             }
         }
 
         [Command("nextupdate")]
-        public async Task GetNextUpdate(CommandContext ctx)
+        public async Task GetNextUpdate(CommandContext ctx, [RemainingText] string placeholder)
         {
             var embed = new DiscordEmbedBuilder { };
 
@@ -501,7 +554,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
                         Description = $"*Track was not inputted.*" +
-                               "\n**c!getsummary [name of track]**",
+                               "\n**c!getsummary track**",
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -569,7 +622,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
                             Description = $"*{track} could not be found.*" +
-                                   "\n**c!getsummary [name of track]**",
+                                   "\n**c!getsummary track**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -594,7 +647,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!getsummary [track]**",
+                           "\n**c!getsummary track**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -622,7 +675,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Track was not inputted.*" +
-                                   "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]**",
+                                   "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -634,7 +687,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Author was not inputted.*" +
-                                   "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]**",
+                                   "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -646,7 +699,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Version was not inputted.*" +
-                                   "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]**",
+                                   "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -658,7 +711,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Slot was not inputted.*" +
-                                   "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]**",
+                                   "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -804,7 +857,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!addhw [name of track] [author] [version] [download link] [slot (e.g. Luigi Circuit - beginner_course)] [speed/ lap modifiers] [notes]**",
+                           "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -830,7 +883,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Track was not inputted.*" +
-                                   "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                                   "\n**c!delhw track**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -891,7 +944,7 @@ namespace CTTB.Commands
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
                                 Description = $"*{track} could not be found.*" +
-                                       "\n**c!delhw [name of track]**",
+                                       "\n**c!delhw track**",
                                 Timestamp = DateTime.UtcNow
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -935,7 +988,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!delhw [name of track]**",
+                           "\n**c!delhw track**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -971,7 +1024,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Track was not inputted.*" +
-                                   "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                                   "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -983,7 +1036,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Author was not inputted.*" +
-                                   "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                                   "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -995,7 +1048,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*{vote} is not a valid vote.*" +
-                                      "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                                      "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1042,7 +1095,7 @@ namespace CTTB.Commands
 
                         for (int i = 0; i < response.Values[0].Count; i++)
                         {
-                            if (response.Values[0][i].ToString() == member)
+                            if (response.Values[0][i].ToString().ToLowerInvariant() == member.ToLowerInvariant())
                             {
                                 ix = i;
                             }
@@ -1055,7 +1108,7 @@ namespace CTTB.Commands
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
                                 Description = $"*<@{ctx.Member.Id}> is not able to submit feedback.*" +
-                           "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                                   "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
                                 Timestamp = DateTime.UtcNow
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1099,7 +1152,7 @@ namespace CTTB.Commands
                                     Color = new DiscordColor("#FF0000"),
                                     Title = "__**Error:**__",
                                     Description = $"*{track} could not be found.*" +
-                               "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                                       "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
                                     Timestamp = DateTime.UtcNow
                                 };
                                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1126,7 +1179,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!submithw [yes/fixes/neutral/no] [name of track] [feedback]**",
+                           "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1170,7 +1223,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Track was not inputted.*" +
-                                   "\n**c!gethw [name of track] [mention/name]**",
+                                   "\n**c!gethw track mention/name**",
                             Timestamp = DateTime.UtcNow
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1245,7 +1298,7 @@ namespace CTTB.Commands
 
                         for (int i = 0; i < response.Values[0].Count; i++)
                         {
-                            if (response.Values[0][i].ToString() == member)
+                            if (response.Values[0][i].ToString().ToLowerInvariant() == member.ToLowerInvariant())
                             {
                                 ix = i;
                             }
@@ -1302,7 +1355,7 @@ namespace CTTB.Commands
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
                                 Description = $"*{mention} could not be found on council.*" +
-                                   "\n**c!gethw [name of track] [mention/name]**",
+                                   "\n**c!gethw track mention/name**",
                                 Timestamp = DateTime.UtcNow
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1315,7 +1368,7 @@ namespace CTTB.Commands
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
                                 Description = $"*{track} could not be found.*" +
-                                   "\n**c!gethw [name of track] [mention/name]**",
+                                   "\n**c!gethw track mention/name**",
                                 Timestamp = DateTime.UtcNow
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1341,7 +1394,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!gethw [name of track] [mention/name]**",
+                           "\n**c!gethw track mention/name**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1352,7 +1405,7 @@ namespace CTTB.Commands
 
         [Command("hw")]
         [RequireRoles(RoleCheckMode.Any, "Track Council")]
-        public async Task GetHomework(CommandContext ctx)
+        public async Task GetHomework(CommandContext ctx, [RemainingText] string placeholder)
         {
             var embed = new DiscordEmbedBuilder { };
             try
@@ -1509,7 +1562,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.*" +
-                        "\n**c!staff [name of track]**",
+                        "\n**c!staff track**",
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1533,7 +1586,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!staff [name of track]**",
+                           "\n**c!staff track**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1613,7 +1666,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.\nThe track does not exist, or is not in CTGP.*" +
-                        "\n**c!getinfo [name of track]**",
+                        "\n**c!getinfo track**",
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1637,7 +1690,127 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!getinfo [name of track]**",
+                           "\n**c!getinfo track**",
+                    Timestamp = DateTime.UtcNow
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("issues")]
+        public async Task GetAllIssues(CommandContext ctx, [RemainingText] string placeholder)
+        {
+            await ctx.TriggerTypingAsync();
+
+            var json = string.Empty;
+            var description = string.Empty;
+            var embed = new DiscordEmbedBuilder { };
+
+            try
+            {
+                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                ServiceAccountCredential credential = new ServiceAccountCredential(
+                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                var service = new SheetsService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "Custom Track Testing Bot",
+                });
+
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
+                var response = await request.ExecuteAsync();
+                foreach (var t in response.Values)
+                {
+                    while (t.Count < 7)
+                    {
+                        t.Add("");
+                    }
+                }
+
+                Dictionary<string, int> issueCount = new Dictionary<string, int>();
+
+                foreach (var v in response.Values)
+                {
+                    if (v[0].ToString() != "Track")
+                    {
+                        int count = v[5].ToString().Count(c => c == '\n') + v[6].ToString().Count(c => c == '\n');
+                        if (v[5].ToString().ToCharArray().Length != 0 && v[5].ToString().ToCharArray()[0] == '-')
+                        {
+                            count++;
+                        }
+                        if (v[6].ToString().ToCharArray().Length != 0 && v[6].ToString().ToCharArray()[0] == '-')
+                        {
+                            count++;
+                        }
+                        issueCount.Add(v[0].ToString(), count);
+                    }
+                }
+                issueCount = issueCount.OrderByDescending(a => a.Value).ToDictionary(a => a.Key, a => a.Value);
+
+                int j = 0;
+                string maj = string.Empty;
+                string min = string.Empty;
+                List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+
+                foreach (var t in issueCount.Keys.ToList())
+                {
+                    for (int i = 0; i < response.Values.Count; i++)
+                    {
+                        if (t.ToLowerInvariant().Contains(response.Values[i][0].ToString().ToLowerInvariant()))
+                        {
+                            if (response.Values[i][5].ToString() == "")
+                            {
+                                maj = "-No reported bugs";
+                            }
+                            else
+                            {
+                                maj = response.Values[i][5].ToString();
+                            }
+                            if (response.Values[i][6].ToString() == "")
+                            {
+                                min = "-No reported bugs";
+                            }
+                            else
+                            {
+                                min = response.Values[i][6].ToString();
+                            }
+                            description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*";
+                            j++;
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Known issues on {response.Values[i][0]}:**__",
+                                Description = description,
+                                Timestamp = DateTime.UtcNow
+                            };
+                            embeds.Add(embed);
+                        }
+                    }
+                }
+
+                List<Page> pages = new List<Page>();
+
+                foreach (var e in embeds)
+                {
+                    pages.Add(new Page("", e));
+                }
+
+                await ctx.Channel.SendPaginatedMessageAsync(ctx.User, pages);
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Error:**__",
+                    Description = $"*An exception has occured.*" +
+                           "\n**c!issues**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1735,7 +1908,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.\nThe track does not exist, or is not in CTGP.*" +
-                        "\n**c!getissues [name of track]**",
+                        "\n**c!getissues track**",
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1759,7 +1932,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!getissues [name of track]**",
+                           "\n**c!getissues track**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1876,32 +2049,20 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*No issue was inputted.*" +
-                               "\n**c!reportissue [issue category] [name of track (in quotes)] [issue]**",
-                        Timestamp = DateTime.UtcNow
-                    };
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                }
-                else
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = $"*{issueType} is not a valid issue category.*" +
-                               "\n**c!reportissue [issue category] [name of track (in quotes)] [issue]**",
+                               "\n**c!reportissue major/minor \"track\" -Issue**",
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
 
-                if (j < 1)
+                else if (j < 1)
                 {
                     embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.*" +
-                                  "\n**c!reportissue [issue category] [name of track (in quotes)] [issue]**",
+                                  "\n**c!reportissue major/minor \"track\" -Issue**",
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1922,6 +2083,19 @@ namespace CTTB.Commands
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
+
+                else
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{issueType} is not a valid issue category.*" +
+                               "\n**c!reportissue major/minor \"track\" -Issue**",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {
@@ -1930,7 +2104,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                               "\n**c!reportissue [issue category] [name of track (in quotes)] [issue]**",
+                               "\n**c!reportissue major/minor \"track\" -Issue**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -1954,7 +2128,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*No track was inputted*" +
-                                  "\n**c!clearissues [track]**",
+                                  "\n**c!clearissues track**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -2034,7 +2208,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*An exception has occured.*" +
-                                  "\n**c!clearissues [track]**",
+                                  "\n**c!clearissues track**",
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -2061,7 +2235,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*One of your arguments is missing data.*" +
-                                  "\n**c!replaceissues [track] [new track] [author] [version] [slot] [laps]**",
+                                  "\n**c!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -2235,7 +2409,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.*" +
-                        "\n**c!bkt [name of track]**",
+                        "\n**c!bkt track**",
                         Timestamp = DateTime.UtcNow
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -2253,73 +2427,71 @@ namespace CTTB.Commands
                 }
                 else
                 {
-                    if (trackDisplay[0].Category == 16)
+                    description += "__**150cc:**__\n";
+                    foreach (var t in trackDisplay)
                     {
-                        description += "__**150cc:**__\n";
-                        for (int i = 0; i < trackDisplay.Count; i++)
+                        if (t.Category == 16)
                         {
-                            if (trackDisplay[i].Category == 16)
+                            if (t.Category == 16)
                             {
-                                description += $"{trackDisplay[i].Name} (Shortcut) - *{trackDisplay[i].BestTime}*\n";
+                                description += $"{t.Name} (Shortcut) - *{t.BestTime}*\n";
                             }
-                            if (trackDisplay[i].Category == 1 || trackDisplay[i].Category == 5)
+                            if (t.Category == 1 || t.Category == 5)
                             {
-                                description += $"{trackDisplay[i].Name} (Glitch) - *{trackDisplay[i].BestTime}*\n";
+                                description += $"{t.Name} (Glitch) - *{t.BestTime}*\n";
                             }
-                            if (trackDisplay[i].Category == 2 || trackDisplay[i].Category == 6)
+                            if (t.Category == 2 || t.Category == 6)
                             {
-                                description += $"{trackDisplay[i].Name} (No Shortcut) - *{trackDisplay[i].BestTime}*\n";
+                                description += $"{t.Name} (No Shortcut) - *{t.BestTime}*\n";
                             }
                         }
-                        description += "__**200cc:**__\n";
-                        for (int i = 0; i < trackDisplay.Count; i++)
+                        else
                         {
-                            if (trackDisplay[i].Category == 16)
+                            if (t.Category == 0 || t.Category == 4)
                             {
-                                description += $"{trackDisplay200[i].Name} (Shortcut) - *{trackDisplay200[i].BestTime}*\n";
+                                description += $"{t.Name} (No Shortcut) - *{t.BestTime}*\n";
                             }
-                            if (trackDisplay[i].Category == 1 || trackDisplay[i].Category == 5)
+                            if (t.Category == 1 || t.Category == 5)
                             {
-                                description += $"{trackDisplay200[i].Name} (Glitch) - *{trackDisplay200[i].BestTime}*\n";
+                                description += $"{t.Name} (Glitch) - *{t.BestTime}*\n";
                             }
-                            if (trackDisplay[i].Category == 2 || trackDisplay[i].Category == 6)
+                            if (t.Category == 2 || t.Category == 6)
                             {
-                                description += $"{trackDisplay200[i].Name} (No Shortcut) - *{trackDisplay200[i].BestTime}*\n";
+                                description += $"{t.Name} (Shortcut) - *{t.BestTime}*\n";
                             }
                         }
                     }
-                    else
+                    description += "__**200cc:**__\n";
+                    foreach (var t in trackDisplay200)
                     {
-                        description += "__**150cc:**__\n";
-                        for (int i = 0; i < trackDisplay.Count; i++)
+                        if (t.Category == 16)
                         {
-                            if (trackDisplay[i].Category == 0 || trackDisplay[i].Category == 4)
+                            if (t.Category == 16)
                             {
-                                description += $"{trackDisplay[i].Name} (No Shortcut) - *{trackDisplay[i].BestTime}*\n";
+                                description += $"{t.Name} (Shortcut) - *{t.BestTime}*\n";
                             }
-                            if (trackDisplay[i].Category == 1 || trackDisplay[i].Category == 5)
+                            if (t.Category == 1 || t.Category == 5)
                             {
-                                description += $"{trackDisplay[i].Name} (Glitch) - *{trackDisplay[i].BestTime}*\n";
+                                description += $"{t.Name} (Glitch) - *{t.BestTime}*\n";
                             }
-                            if (trackDisplay[i].Category == 2 || trackDisplay[i].Category == 6)
+                            if (t.Category == 2 || t.Category == 6)
                             {
-                                description += $"{trackDisplay[i].Name} (Shortcut) - *{trackDisplay[i].BestTime}*\n";
+                                description += $"{t.Name} (No Shortcut) - *{t.BestTime}*\n";
                             }
                         }
-                        description += "__**200cc:**__\n";
-                        for (int i = 0; i < trackDisplay200.Count; i++)
+                        else
                         {
-                            if (trackDisplay200[i].Category == 0 || trackDisplay200[i].Category == 4)
+                            if (t.Category == 0 || t.Category == 4)
                             {
-                                description += $"{trackDisplay200[i].Name} (No Shortcut) - *{trackDisplay200[i].BestTime}*\n";
+                                description += $"{t.Name} (No Shortcut) - *{t.BestTime}*\n";
                             }
-                            if (trackDisplay200[i].Category == 1 || trackDisplay200[i].Category == 5)
+                            if (t.Category == 1 || t.Category == 5)
                             {
-                                description += $"{trackDisplay200[i].Name} (Glitch) - *{trackDisplay200[i].BestTime}*\n";
+                                description += $"{t.Name} (Glitch) - *{t.BestTime}*\n";
                             }
-                            if (trackDisplay200[i].Category == 2 || trackDisplay200[i].Category == 6)
+                            if (t.Category == 2 || t.Category == 6)
                             {
-                                description += $"{trackDisplay200[i].Name} (Shortcut) - *{trackDisplay200[i].BestTime}*\n";
+                                description += $"{t.Name} (Shortcut) - *{t.BestTime}*\n";
                             }
                         }
                     }
@@ -2331,7 +2503,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = "*Please input a track name to filter with (min 5 chars).*" +
-                               "\n**c!bkt [name of track]**",
+                               "\n**c!bkt track**",
                             Timestamp = DateTime.UtcNow
                         };
                     }
@@ -2356,7 +2528,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
                     Description = "*An exception has occured.*" +
-                       "\n**c!bkt [name of track]**",
+                       "\n**c!bkt track**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -2372,24 +2544,20 @@ namespace CTTB.Commands
 
             var embed = new DiscordEmbedBuilder { };
             string json = string.Empty;
-            int j = 0;
-            ulong display = 1;
-            string description = string.Empty;
+            string description1 = string.Empty;
+            string description2 = string.Empty;
+            string description3 = string.Empty;
+            string description4 = string.Empty;
+            string description5 = string.Empty;
+            string description6 = string.Empty;
+            string description7 = string.Empty;
+            string description8 = string.Empty;
+            string description9 = string.Empty;
+            string description10 = string.Empty;
+            string description11 = string.Empty;
 
             try
             {
-                json = File.ReadAllText($"rts.json");
-                List<Track> trackListRts = JsonConvert.DeserializeObject<List<Track>>(json);
-                for (int i = 0; i < trackListRts.Count; i++)
-                {
-                    if (trackListRts[i].Category % 16 != 0)
-                    {
-                        trackListRts.RemoveAt(i);
-                        i--;
-                    }
-                }
-                trackListRts = trackListRts.OrderBy(a => a.WiimmfiScore).ToList();
-                trackListRts.Reverse();
 
                 json = File.ReadAllText($"cts.json");
                 List<Track> trackListCts = JsonConvert.DeserializeObject<List<Track>>(json);
@@ -2401,68 +2569,231 @@ namespace CTTB.Commands
                         i--;
                     }
                 }
-                trackListCts = trackListCts.OrderBy(a => a.WiimmfiScore).ToList();
-                trackListCts.Reverse();
+                trackListCts = trackListCts.OrderByDescending(a => a.WiimmfiScore).ToList();
 
-                description = "";
-
-                if (arg.Any(c => char.IsDigit(c)))
+                json = File.ReadAllText($"rts.json");
+                List<Track> trackListRts = JsonConvert.DeserializeObject<List<Track>>(json);
+                for (int i = 0; i < trackListRts.Count; i++)
                 {
-                    display = ulong.Parse(Regex.Match(arg, @"\d+").Value);
-                }
-
-                if (arg.Contains("rts"))
-                {
-                    while (display > 13)
-                        display = 12;
-
-                    for (int i = (int)(display - 1); i < (int)(display + 20); i++)
+                    if (trackListRts[i].Category % 16 != 0)
                     {
-                        description = description + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].WiimmfiScore})*\n";
+                        trackListRts.RemoveAt(i);
+                        i--;
                     }
                 }
-                else if (arg.Contains("cts"))
-                {
-                    while (display > 199)
-                        display = 198;
+                trackListRts = trackListRts.OrderByDescending(a => a.WiimmfiScore).ToList();
 
-                    for (int i = (int)(display - 1); i < (int)(display + 20); i++)
+                List<Page> pages = new List<Page>();
+
+                if (arg.ToLowerInvariant() == "rts" || arg.ToLowerInvariant() == "rt")
+                {
+                    for (int i = 0; i < 21; i++)
                     {
-                        description = description + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                        description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].WiimmfiScore})*\n";
                     }
+                    for (int i = 21; i < 32; i++)
+                    {
+                        description2 = description2 + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].WiimmfiScore})*\n";
+                    }
+                    var embed1 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 1-21:**__",
+                        Description = description1,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed2 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 22-32:**__",
+                        Description = description2,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    Page page1 = new Page("", embed1);
+                    Page page2 = new Page("", embed2);
+                    pages.Add(page1);
+                    pages.Add(page2);
                 }
+
+                else if (arg.ToLowerInvariant() == "cts" || arg.ToLowerInvariant() == "ct")
+                {
+                    for (int i = 0; i < 21; i++)
+                    {
+                        description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                    }
+                    for (int i = 21; i < 42; i++)
+                    {
+                        description2 = description2 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                    }
+                    for (int i = 42; i < 63; i++)
+                    {
+                        description3 = description3 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                    }
+                    for (int i = 63; i < 84; i++)
+                    {
+                        description4 = description4 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                    }
+                    for (int i = 84; i < 105; i++)
+                    {
+                        description5 = description5 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                    }
+                    for (int i = 105; i < 126; i++)
+                    {
+                        description6 = description6 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                    }
+                    for (int i = 126; i < 147; i++)
+                    {
+                        description7 = description7 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                    }
+                    for (int i = 147; i < 168; i++)
+                    {
+                        description8 = description8 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                    }
+                    for (int i = 168; i < 189; i++)
+                    {
+                        description9 = description9 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                    }
+                    for (int i = 189; i < 210; i++)
+                    {
+                        description10 = description10 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                    }
+                    for (int i = 210; i < 218; i++)
+                    {
+                        description11 = description11 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                    }
+                    var embed1 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 1-21:**__",
+                        Description = description1,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed2 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 22-42:**__",
+                        Description = description2,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed3 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 43-63:**__",
+                        Description = description3,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed4 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 64-84:**__",
+                        Description = description4,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed5 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 85-105:**__",
+                        Description = description5,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed6 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 106-126:**__",
+                        Description = description6,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed7 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 127-147:**__",
+                        Description = description7,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed8 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 148-168:**__",
+                        Description = description8,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed9 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 169-189:**__",
+                        Description = description9,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed10 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 190-210:**__",
+                        Description = description10,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed11 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 211-218:**__",
+                        Description = description11,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    Page page1 = new Page("", embed1);
+                    Page page2 = new Page("", embed2);
+                    Page page3 = new Page("", embed3);
+                    Page page4 = new Page("", embed4);
+                    Page page5 = new Page("", embed5);
+                    Page page6 = new Page("", embed6);
+                    Page page7 = new Page("", embed7);
+                    Page page8 = new Page("", embed8);
+                    Page page9 = new Page("", embed9);
+                    Page page10 = new Page("", embed10);
+                    Page page11 = new Page("", embed11);
+                    pages.Add(page1);
+                    pages.Add(page2);
+                    pages.Add(page3);
+                    pages.Add(page4);
+                    pages.Add(page5);
+                    pages.Add(page6);
+                    pages.Add(page7);
+                    pages.Add(page8);
+                    pages.Add(page9);
+                    pages.Add(page10);
+                    pages.Add(page11);
+                }
+
                 else
                 {
                     int c = 0;
                     int d = 0;
-                    description = $"__**Nintendo Tracks**__:\n";
+                    description1 = $"__**Nintendo Tracks**__:\n";
                     for (int i = 0; i < trackListRts.Count; i++)
                     {
                         if (trackListRts[i].Name.ToLowerInvariant().Contains(arg.ToLowerInvariant()))
                         {
-                            description = description + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].WiimmfiScore})*\n";
+                            description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].WiimmfiScore})*\n";
                         }
                     }
-                    d = description.ToCharArray().Length;
-                    if (description == $"__**Nintendo Tracks**__:\n")
+                    d = description1.ToCharArray().Length;
+                    if (description1 == $"__**Nintendo Tracks**__:\n")
                     {
-                        description = $"__**Custom Tracks**__:\n";
+                        description1 = $"__**Custom Tracks**__:\n";
                     }
                     else
                     {
-                        description += $"__**Custom Tracks**__:\n";
+                        description1 += $"__**Custom Tracks**__:\n";
                     }
                     for (int i = 0; i < trackListCts.Count; i++)
                     {
                         if (trackListCts[i].Name.ToLowerInvariant().Contains(arg.ToLowerInvariant()))
                         {
-                            description = description + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
+                            description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
                             c++;
                         }
                     }
                     if (c == 0)
                     {
-                        description = description.Remove(d);
+                        description1 = description1.Remove(d);
                     }
                 }
 
@@ -2473,21 +2804,23 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
                         Description = "*Please provide a category (and range) or a track name.*" +
-                           "\n**c!pop [category (rts/cts) + range(1-32/218)/name of track]**",
+                           "\n**c!pop rts/cts/track**",
                         Timestamp = DateTime.UtcNow
                     };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
 
-                else if (description == "")
+                else if (description1 == "")
                 {
                     embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{arg} could not be found.*" +
-                           "\n**c!pop [category (rts/cts) + range(1-32/218)/name of track]**",
+                           "\n**c!pop rts/cts/track**",
                         Timestamp = DateTime.UtcNow
                     };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
 
                 else if (arg.Length < 5 && !arg.Contains("rts") && !arg.Contains("cts"))
@@ -2498,20 +2831,15 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
                         Description = "*Please input a track name to filter with (min 5 chars).*" +
-                           "\n**c!pop [category (rts/cts) + range(1-32/218)/name of track]**",
+                           "\n**c!pop rts/cts/track**",
                         Timestamp = DateTime.UtcNow
                     };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
 
                 else if (arg.Contains("rts") || arg.Contains("cts"))
                 {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Displaying {display} - {display + 20}:**__",
-                        Description = description,
-                        Timestamp = DateTime.UtcNow
-                    };
+                    await ctx.Channel.SendPaginatedMessageAsync(ctx.User, pages);
                 }
 
                 else
@@ -2520,12 +2848,11 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying tracks containing *{arg}*:**__",
-                        Description = description,
+                        Description = description1,
                         Timestamp = DateTime.UtcNow
                     };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
-
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -2534,7 +2861,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
                     Description = "*An exception has occured.*" +
-                        "\n**c!pop [category (rts/cts) + range(1-32/218)/name of track]**",
+                        "\n**c!pop rts/cts/track**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -2546,29 +2873,24 @@ namespace CTTB.Commands
         [Command("ttpop")]
         public async Task TTPopularityRequest(CommandContext ctx, [RemainingText] string arg = "")
         {
-
             await ctx.TriggerTypingAsync();
 
             var embed = new DiscordEmbedBuilder { };
             string json = string.Empty;
-            int j = 0;
-            ulong display = 1;
-            string description = string.Empty;
+            string description1 = string.Empty;
+            string description2 = string.Empty;
+            string description3 = string.Empty;
+            string description4 = string.Empty;
+            string description5 = string.Empty;
+            string description6 = string.Empty;
+            string description7 = string.Empty;
+            string description8 = string.Empty;
+            string description9 = string.Empty;
+            string description10 = string.Empty;
+            string description11 = string.Empty;
 
             try
             {
-                json = File.ReadAllText($"rts.json");
-                List<Track> trackListRts = JsonConvert.DeserializeObject<List<Track>>(json);
-                for (int i = 0; i < trackListRts.Count; i++)
-                {
-                    if (trackListRts[i].Category % 16 != 0)
-                    {
-                        trackListRts.RemoveAt(i);
-                        i--;
-                    }
-                }
-                trackListRts = trackListRts.OrderBy(a => a.TimeTrialScore).ToList();
-                trackListRts.Reverse();
 
                 json = File.ReadAllText($"cts.json");
                 List<Track> trackListCts = JsonConvert.DeserializeObject<List<Track>>(json);
@@ -2580,84 +2902,261 @@ namespace CTTB.Commands
                         i--;
                     }
                 }
-                trackListCts = trackListCts.OrderBy(a => a.TimeTrialScore).ToList();
-                trackListCts.Reverse();
+                trackListCts = trackListCts.OrderByDescending(a => a.TimeTrialScore).ToList();
 
-                description = "";
-
-                if (arg.Any(c => char.IsDigit(c)))
+                json = File.ReadAllText($"rts.json");
+                List<Track> trackListRts = JsonConvert.DeserializeObject<List<Track>>(json);
+                for (int i = 0; i < trackListRts.Count; i++)
                 {
-                    display = ulong.Parse(Regex.Match(arg, @"\d+").Value);
-                }
-
-                if (arg.Contains("rts"))
-                {
-                    while (display > 13)
-                        display = 12;
-
-                    for (int i = (int)(display - 1); i < (int)(display + 20); i++)
+                    if (trackListRts[i].Category % 16 != 0)
                     {
-                        description = description + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].TimeTrialScore})*\n";
+                        trackListRts.RemoveAt(i);
+                        i--;
                     }
                 }
-                else if (arg.Contains("cts"))
-                {
-                    while (display > 199)
-                        display = 198;
+                trackListRts = trackListRts.OrderByDescending(a => a.TimeTrialScore).ToList();
 
-                    for (int i = (int)(display - 1); i < (int)(display + 20); i++)
+                List<Page> pages = new List<Page>();
+
+                if (arg.ToLowerInvariant() == "rts" || arg.ToLowerInvariant() == "rt")
+                {
+                    for (int i = 0; i < 21; i++)
                     {
-                        description = description + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                        description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].TimeTrialScore})*\n";
                     }
+                    for (int i = 21; i < 32; i++)
+                    {
+                        description2 = description2 + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].TimeTrialScore})*\n";
+                    }
+                    var embed1 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 1-21:**__",
+                        Description = description1,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed2 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 22-32:**__",
+                        Description = description2,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    Page page1 = new Page("", embed1);
+                    Page page2 = new Page("", embed2);
+                    pages.Add(page1);
+                    pages.Add(page2);
                 }
+
+                else if (arg.ToLowerInvariant() == "cts" || arg.ToLowerInvariant() == "ct")
+                {
+                    for (int i = 0; i < 21; i++)
+                    {
+                        description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                    }
+                    for (int i = 21; i < 42; i++)
+                    {
+                        description2 = description2 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                    }
+                    for (int i = 42; i < 63; i++)
+                    {
+                        description3 = description3 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                    }
+                    for (int i = 63; i < 84; i++)
+                    {
+                        description4 = description4 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                    }
+                    for (int i = 84; i < 105; i++)
+                    {
+                        description5 = description5 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                    }
+                    for (int i = 105; i < 126; i++)
+                    {
+                        description6 = description6 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                    }
+                    for (int i = 126; i < 147; i++)
+                    {
+                        description7 = description7 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                    }
+                    for (int i = 147; i < 168; i++)
+                    {
+                        description8 = description8 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                    }
+                    for (int i = 168; i < 189; i++)
+                    {
+                        description9 = description9 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                    }
+                    for (int i = 189; i < 210; i++)
+                    {
+                        description10 = description10 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                    }
+                    for (int i = 210; i < 218; i++)
+                    {
+                        description11 = description11 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                    }
+                    var embed1 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 1-21:**__",
+                        Description = description1,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed2 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 22-42:**__",
+                        Description = description2,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed3 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 43-63:**__",
+                        Description = description3,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed4 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 64-84:**__",
+                        Description = description4,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed5 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 85-105:**__",
+                        Description = description5,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed6 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 106-126:**__",
+                        Description = description6,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed7 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 127-147:**__",
+                        Description = description7,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed8 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 148-168:**__",
+                        Description = description8,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed9 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 169-189:**__",
+                        Description = description9,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed10 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 190-210:**__",
+                        Description = description10,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    var embed11 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 211-218:**__",
+                        Description = description11,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    Page page1 = new Page("", embed1);
+                    Page page2 = new Page("", embed2);
+                    Page page3 = new Page("", embed3);
+                    Page page4 = new Page("", embed4);
+                    Page page5 = new Page("", embed5);
+                    Page page6 = new Page("", embed6);
+                    Page page7 = new Page("", embed7);
+                    Page page8 = new Page("", embed8);
+                    Page page9 = new Page("", embed9);
+                    Page page10 = new Page("", embed10);
+                    Page page11 = new Page("", embed11);
+                    pages.Add(page1);
+                    pages.Add(page2);
+                    pages.Add(page3);
+                    pages.Add(page4);
+                    pages.Add(page5);
+                    pages.Add(page6);
+                    pages.Add(page7);
+                    pages.Add(page8);
+                    pages.Add(page9);
+                    pages.Add(page10);
+                    pages.Add(page11);
+                }
+
                 else
                 {
                     int c = 0;
                     int d = 0;
-                    description = $"__**Nintendo Tracks**__:\n";
+                    description1 = $"__**Nintendo Tracks**__:\n";
                     for (int i = 0; i < trackListRts.Count; i++)
                     {
                         if (trackListRts[i].Name.ToLowerInvariant().Contains(arg.ToLowerInvariant()))
                         {
-                            description = description + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].TimeTrialScore})*\n";
+                            description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].TimeTrialScore})*\n";
                         }
                     }
-                    d = description.ToCharArray().Length;
-                    if (description == $"__**Nintendo Tracks**__:\n")
+                    d = description1.ToCharArray().Length;
+                    if (description1 == $"__**Nintendo Tracks**__:\n")
                     {
-                        description = $"__**Custom Tracks**__:\n";
+                        description1 = $"__**Custom Tracks**__:\n";
                     }
                     else
                     {
-                        description += $"__**Custom Tracks**__:\n";
+                        description1 += $"__**Custom Tracks**__:\n";
                     }
                     for (int i = 0; i < trackListCts.Count; i++)
                     {
                         if (trackListCts[i].Name.ToLowerInvariant().Contains(arg.ToLowerInvariant()))
                         {
-                            description = description + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
+                            description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
                             c++;
                         }
                     }
                     if (c == 0)
                     {
-                        description = description.Remove(d);
+                        description1 = description1.Remove(d);
                     }
                 }
 
-                if (description == "")
+                if (arg == "")
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Error:**__",
+                        Description = "*Please provide a category (and range) or a track name.*" +
+                           "\n**c!ttpop rts/cts/track**",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+
+                else if (description1 == "")
                 {
                     embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{arg} could not be found.*" +
-                        "\n**c!ttpop [category (rts/cts) + range(1-32/218)/name of track]**",
+                           "\n**c!ttpop rts/cts/track**",
                         Timestamp = DateTime.UtcNow
                     };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
 
-                else if (arg.Length < 5)
+                else if (arg.Length < 5 && !arg.Contains("rts") && !arg.Contains("cts"))
                 {
 
                     embed = new DiscordEmbedBuilder
@@ -2665,20 +3164,15 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
                         Description = "*Please input a track name to filter with (min 5 chars).*" +
-                           "\n**c!ttpop [category (rts/cts) + range(1-32/218)/name of track]**",
+                           "\n**c!ttpop rts/cts/track**",
                         Timestamp = DateTime.UtcNow
                     };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
 
                 else if (arg.Contains("rts") || arg.Contains("cts"))
                 {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Displaying {display} - {display + 20}:**__",
-                        Description = description,
-                        Timestamp = DateTime.UtcNow
-                    };
+                    await ctx.Channel.SendPaginatedMessageAsync(ctx.User, pages);
                 }
 
                 else
@@ -2687,12 +3181,11 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying tracks containing *{arg}*:**__",
-                        Description = description,
+                        Description = description1,
                         Timestamp = DateTime.UtcNow
                     };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
-
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -2701,7 +3194,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
                     Description = "*An exception has occured.*" +
-                        "\n**c!ttpop [category (rts/cts) + range(1-32/218)/name of track]**",
+                        "\n**c!ttpop rts/cts/track**",
                     Timestamp = DateTime.UtcNow
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -2709,241 +3202,5 @@ namespace CTTB.Commands
                 Console.WriteLine(ex.ToString());
             }
         }
-
-        /*[Command("wwpopsearch")]
-        public async Task WWPopularitySearch(CommandContext ctx, string trackType = "rts", [RemainingText] string track = "")
-        {
-            await ctx.TriggerTypingAsync();
-
-            if (trackType == "rt")
-                trackType = "rts";
-            if (trackType == "ct")
-                trackType = "cts";
-
-            var embed = new DiscordEmbedBuilder { };
-
-            string json = "";
-
-            try
-            {
-                json = File.ReadAllText($"{trackType}.json");
-                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
-                for (int i = 0; i < trackList.Count; i++)
-                {
-                    if (trackList[i].Category % 16 != 0)
-                    {
-                        trackList.RemoveAt(i);
-                        i--;
-                    }
-                }
-                trackList = trackList.OrderBy(a => a.WiimmfiScore).ToList();
-                trackList.Reverse();
-
-                string description = "";
-
-                for (int i = 0; i < trackList.Count; i++)
-                {
-                    if (trackList[i].Name.ToLowerInvariant().Contains(track.ToLowerInvariant()))
-                    {
-                        description = description + $"**{i + 1})** {trackList[i].Name} *({trackList[i].WiimmfiScore})*\n";
-                    }
-                }
-
-                if (description == "")
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = $"*{track} could not be found.*" +
-                        "\n**c!wwpopsearch [rts/cts] [name of track]**",
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-
-                else if (track.Length < 3)
-                {
-
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Error:**__",
-                        Description = "*Please input a track name to filter with (min 3 chars).*" +
-                           "\n**c!wwpopsearch [rts/cts] [name of track]**",
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-
-                else
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Displaying tracks containing *{track}*:**__",
-                        Description = description,
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                if (trackType != "rts" && trackType != "cts")
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = "*Track type is not valid.*" +
-                        "\n**c!wwpopsearch [rts/cts] [name of track]**",
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-                else if (track == "")
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = "*Track argument is missing.*" +
-                        "\n**c!wwpopsearch [rts/cts] [name of track]**",
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-                else
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Error:**__",
-                        Description = "*An exception has occured.*" +
-                        "\n**c!wwpopsearch [rts/cts] [name of track]**",
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-
-                Console.WriteLine(ex.ToString());
-            }
-        }
-
-        [Command("ttpopsearch")]
-        public async Task TTPopularitySearch(CommandContext ctx, string trackType = "rts", [RemainingText] string track = "")
-        {
-            await ctx.TriggerTypingAsync();
-
-            if (trackType == "rt")
-                trackType = "rts";
-            if (trackType == "ct")
-                trackType = "cts";
-
-            var embed = new DiscordEmbedBuilder { };
-
-            string json = "";
-
-            try
-            {
-                json = File.ReadAllText($"{trackType}.json");
-                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
-                for (int i = 0; i < trackList.Count; i++)
-                {
-                    if (trackList[i].Category % 16 != 0)
-                    {
-                        trackList.RemoveAt(i);
-                        i--;
-                    }
-                }
-                trackList = trackList.OrderBy(a => a.TimeTrialScore).ToList();
-                trackList.Reverse();
-
-                string description = "";
-
-                for (int i = 0; i < trackList.Count; i++)
-                {
-                    if (trackList[i].Name.ToLowerInvariant().Contains(track.ToLowerInvariant()))
-                    {
-                        description = description + $"**{i + 1})** {trackList[i].Name} *({trackList[i].TimeTrialScore})*\n";
-                    }
-                }
-
-                if (description == "")
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = $"*{track} could not be found.*" +
-                        "\n**c!ttpopsearch [rts/cts] [name of track]**",
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-
-                else if (track.Length < 3)
-                {
-
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Error:**__",
-                        Description = "*Please input a track name to filter with (min 3 chars).*" +
-                           "\n**c!ttpopsearch [rts/cts] [name of track]**",
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-
-                else
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Displaying tracks containing *{track}*:**__",
-                        Description = description,
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                if (trackType != "rts" && trackType != "cts")
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = "*Track type is not valid.*" +
-                        "\n**c!ttpopsearch [rts/cts] [name of track]**",
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-                else if (track == "")
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = "*Track argument is missing.*" +
-                        "\n**c!ttpopsearch [rts/cts] [name of track]**",
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-                else
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Error:**__",
-                        Description = "*An exception has occured.*" +
-                        "\n**c!ttpopsearch [rts/cts] [name of track]**",
-                        Timestamp = DateTime.UtcNow
-                    };
-                }
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-
-                Console.WriteLine(ex.ToString());
-            }
-        }*/
     }
 }
