@@ -2042,7 +2042,7 @@ namespace CTTB.Commands
                         }
                     }
                 }
-                else if (issue == "")
+                if (issue == "")
                 {
                     embed = new DiscordEmbedBuilder
                     {
