@@ -66,20 +66,20 @@ namespace CTTB.Commands
 
                 var webClient = new WebClient();
 
-                var rtRawJson = JsonConvert.DeserializeObject<LeaderboardInfo>(webClient.DownloadString(rtttUrl));
-                var ctRawJson = JsonConvert.DeserializeObject<LeaderboardInfo>(webClient.DownloadString(ctttUrl));
-                var rtRaw200Json = JsonConvert.DeserializeObject<LeaderboardInfo>(webClient.DownloadString(rttt200Url));
-                var ctRaw200Json = JsonConvert.DeserializeObject<LeaderboardInfo>(webClient.DownloadString(cttt200Url));
+                var rtRawJson = JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(rtttUrl));
+                var ctRawJson = JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(ctttUrl));
+                var rtRaw200Json = JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(rttt200Url));
+                var ctRaw200Json = JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(cttt200Url));
 
                 var rtJson = JsonConvert.SerializeObject(rtRawJson.Leaderboard);
                 var ctJson = JsonConvert.SerializeObject(ctRawJson.Leaderboard);
                 var rt200Json = JsonConvert.SerializeObject(rtRaw200Json.Leaderboard);
                 var ct200Json = JsonConvert.SerializeObject(ctRaw200Json.Leaderboard);
 
-                var ctwwDl1 = webClient.DownloadString(ctwwUrl1);
-                var ctwwDl2 = webClient.DownloadString(ctwwUrl2);
-                var ctwwDl3 = webClient.DownloadString(ctwwUrl3);
-                var wwDl = webClient.DownloadString(wwUrl);
+                string ctwwDl1 = await webClient.DownloadStringTaskAsync(ctwwUrl1);
+                string ctwwDl2 = await webClient.DownloadStringTaskAsync(ctwwUrl2);
+                string ctwwDl3 = await webClient.DownloadStringTaskAsync(ctwwUrl3);
+                string wwDl = await webClient.DownloadStringTaskAsync(wwUrl);
 
                 List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(ctJson);
                 List<Track> trackList200 = JsonConvert.DeserializeObject<List<Track>>(ct200Json);
@@ -172,7 +172,7 @@ namespace CTTB.Commands
                         }
                         if (check)
                         {
-                            var dl = webClient.DownloadString($"{t.InnerHtml.Split('"')[1]}?m=json");
+                            var dl = await webClient.DownloadStringTaskAsync($"{t.InnerHtml.Split('"')[1]}?m=json");
                             temp = new HtmlDocument();
                             temp.LoadHtml(dl);
                             var tts = temp.DocumentNode.SelectNodes("//tr/td/tt");
@@ -225,7 +225,7 @@ namespace CTTB.Commands
                         }
                         if (check)
                         {
-                            var dl = webClient.DownloadString($"{t.InnerHtml.Split('"')[1]}?m=json");
+                            string dl = await webClient.DownloadStringTaskAsync($"{t.InnerHtml.Split('"')[1]}?m=json");
                             temp = new HtmlDocument();
                             temp.LoadHtml(dl);
                             var tts = temp.DocumentNode.SelectNodes("//tr/td/tt");
@@ -278,7 +278,7 @@ namespace CTTB.Commands
                         }
                         if (check)
                         {
-                            var dl = webClient.DownloadString($"{t.InnerHtml.Split('"')[1]}?m=json");
+                            string dl = await webClient.DownloadStringTaskAsync($"{t.InnerHtml.Split('"')[1]}?m=json");
                             temp = new HtmlDocument();
                             temp.LoadHtml(dl);
                             var tts = temp.DocumentNode.SelectNodes("//tr/td/tt");
