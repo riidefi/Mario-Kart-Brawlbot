@@ -2,9 +2,6 @@
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CTTB.Commands
@@ -20,14 +17,14 @@ namespace CTTB.Commands
                 "\nc!cttp" +
                 "\nc!source" +
                 "\nc!staff track" +
-                "\nc!issues" +
-                "\nc!getissues track" +
+                "\nc!issues track" +
                 "\nc!getinfo track" +
                 "\nc!bkt track" +
                 "\nc!pop rts/cts/track" +
                 "\nc!ttpop rts/cts/track" +
                 "\nc!getsummary track" +
-                "\nc!nextupdate";
+                "\nc!nextupdate" +
+                "\nc!rating track";
 
             foreach (var role in ctx.Member.Roles)
             {
@@ -38,9 +35,16 @@ namespace CTTB.Commands
                         "\nc!gethw track" +
                         "\nc!submithw yes/fixes/neutral/no \"track\" feedback";
                 }
-                if (role.Name == "Pack & Bot Dev" || role.Name == "Admin")
+            }
+
+            bool paa = false;
+            foreach (var role in ctx.Member.Roles)
+            {
+                if (role.Name == "Pack & Bot Dev")
                 {
-                    description += "\n\n__**Admin Commands:**__" +
+                    if (!paa)
+                    {
+                        description += "\n\n__**Admin Commands:**__" +
                         "\nc!update" +
                         "\nc!lastupdated" +
                         "\nc!reportissue major/minor \"track\" -Issue" +
@@ -49,6 +53,24 @@ namespace CTTB.Commands
                         "\nc!gethw \"track\" mention/name" +
                         "\nc!addhw \"track\" \"author\" \"version\" \"download link\" \"slot-filename\" \"speed/lap modifiers\" notes" +
                         "\nc!delhw track";
+                    }
+                    paa = true;
+                }
+                if (role.Name == "Admin")
+                {
+                    if (!paa)
+                    {
+                        description += "\n\n__**Admin Commands:**__" +
+                            "\nc!update" +
+                            "\nc!lastupdated" +
+                            "\nc!reportissue major/minor \"track\" -Issue" +
+                            "\nc!clearissues track" +
+                            "\nc!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps" +
+                            "\nc!gethw \"track\" mention/name" +
+                            "\nc!addhw \"track\" \"author\" \"version\" \"download link\" \"slot-filename\" \"speed/lap modifiers\" notes" +
+                            "\nc!delhw track";
+                    }
+                    paa = true;
                 }
             }
 

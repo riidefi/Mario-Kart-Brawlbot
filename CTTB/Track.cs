@@ -20,6 +20,7 @@ namespace CTTB.Commands
         public string BestTime { get; set; }
         [JsonProperty("lastChanged")]
         public DateTime TrackAdded { get; set; }
+        public string WiimmfiName { get; set; }
         [JsonProperty("popularity")]
         public int TimeTrialScore { get; set; }
         public int WiimmfiScore { get; set; }
