@@ -27,6 +27,7 @@ namespace CTTB.Commands
 {
     public class FunctionalCommands : BaseCommandModule
     {
+
         [Command("update")]
         [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task UpdateTimer(CommandContext ctx, [RemainingText] string placeholder)
@@ -44,7 +45,10 @@ namespace CTTB.Commands
                 Color = new DiscordColor("#FF0000"),
                 Title = $"__**Notice:**__",
                 Description = "Database has been updated.",
-                Timestamp = DateTime.UtcNow
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    Text = $"Server Time: {DateTime.UtcNow}"
+                }
             };
             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
@@ -450,42 +454,10 @@ namespace CTTB.Commands
                     Title = $"__**Error:**__",
                     Description = $"*An exception has occured.*" +
                               "\n**c!update**",
-                    Timestamp = DateTime.UtcNow
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-
-                Console.WriteLine(ex.ToString());
-            }
-        }
-
-        [Command("lastupdated")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
-        public async Task GetLastDatabaseUpdate(CommandContext ctx, [RemainingText] string placeholder)
-        {
-            var embed = new DiscordEmbedBuilder { };
-
-            try
-            {
-                string description = File.ReadAllText("lastUpdated.txt");
-                embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Database Last Updated:**__",
-                    Description = $"*{description}*",
-                    Timestamp = DateTime.UtcNow
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-            }
-
-            catch (Exception ex)
-            {
-                embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Error:**__",
-                    Description = $"*An exception has occured.*" +
-                           "\n**c!lastupdated**",
-                    Timestamp = DateTime.UtcNow
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -544,7 +516,7 @@ namespace CTTB.Commands
 
                     var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Early 2022 Track Rating Graphs'");
                     var response = await request.ExecuteAsync();
-                    
+
                     description += $"__**Average**__:\n{Math.Round((double.Parse(response.Values[4][12].ToString()) / (double.Parse(response.Values[4][12].ToString()) + double.Parse(response.Values[4][13].ToString()) + double.Parse(response.Values[4][14].ToString()))) * 100)}/{Math.Round((double.Parse(response.Values[4][13].ToString()) / (double.Parse(response.Values[4][12].ToString()) + double.Parse(response.Values[4][13].ToString()) + double.Parse(response.Values[4][14].ToString()))) * 100)}/{Math.Round((double.Parse(response.Values[4][14].ToString()) / (double.Parse(response.Values[4][12].ToString()) + double.Parse(response.Values[4][13].ToString()) + double.Parse(response.Values[4][14].ToString()))) * 100)}%\n";
 
                     embed = new DiscordEmbedBuilder
@@ -552,9 +524,12 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**2022 Track Rating Average (Remove/Indifferent/Keep):**__",
                         Description = description,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
                 else if (j < 1)
                 {
@@ -564,7 +539,11 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.*" +
                         "\n**c!rating track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -607,7 +586,11 @@ namespace CTTB.Commands
                             Title = $"__**Error:**__",
                             Description = "*Embed too large. Please refine your search.*" +
                                    "\n**c!rating track**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                     }
                     else
@@ -617,7 +600,11 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**2022 Track Ratings for {track} (Remove/Indifferent/Keep):**__",
                             Description = description,
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                     }
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -632,7 +619,11 @@ namespace CTTB.Commands
                     Title = $"__**Error:**__",
                     Description = "*An exception has occured.*" +
                        "\n**c!rating track**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -722,7 +713,11 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**{response.Values[1][1]}:**__",
                     Description = description,
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1751905284",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
@@ -734,7 +729,11 @@ namespace CTTB.Commands
                     Title = $"__**Error:**__",
                     Description = $"*An exception has occured.*" +
                            "\n**c!nextupdate**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1751905284",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -759,7 +758,11 @@ namespace CTTB.Commands
                         Title = $"__**Error:**__",
                         Description = $"*Track was not inputted.*" +
                                "\n**c!getsummary track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=798417105",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -837,7 +840,11 @@ namespace CTTB.Commands
                             Title = "__**Error:**__",
                             Description = $"*{track} could not be found.*" +
                                    "\n**c!getsummary track**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=798417105",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -848,7 +855,11 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Summary for {trackDisplay} (First result):**__",
                             Description = description,
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=798417105",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -862,7 +873,11 @@ namespace CTTB.Commands
                     Title = $"__**Error:**__",
                     Description = $"*An exception has occured.*" +
                            "\n**c!getsummary track**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=798417105",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -890,7 +905,11 @@ namespace CTTB.Commands
                             Title = $"__**Error:**__",
                             Description = $"*Track was not inputted.*" +
                                    "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -902,7 +921,11 @@ namespace CTTB.Commands
                             Title = $"__**Error:**__",
                             Description = $"*Author was not inputted.*" +
                                    "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -914,7 +937,11 @@ namespace CTTB.Commands
                             Title = $"__**Error:**__",
                             Description = $"*Version was not inputted.*" +
                                    "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -926,7 +953,11 @@ namespace CTTB.Commands
                             Title = $"__**Error:**__",
                             Description = $"*Slot was not inputted.*" +
                                    "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -1058,7 +1089,11 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Success:**__",
                             Description = $"*{track} has been added as homework.*",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -1072,7 +1107,11 @@ namespace CTTB.Commands
                     Title = $"__**Error:**__",
                     Description = $"*An exception has occured.*" +
                            "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -1098,7 +1137,11 @@ namespace CTTB.Commands
                             Title = $"__**Error:**__",
                             Description = $"*Track was not inputted.*" +
                                    "\n**c!delhw track**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -1159,7 +1202,11 @@ namespace CTTB.Commands
                                 Title = "__**Error:**__",
                                 Description = $"*{track} could not be found.*" +
                                        "\n**c!delhw track**",
-                                Timestamp = DateTime.UtcNow
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         }
@@ -1188,7 +1235,11 @@ namespace CTTB.Commands
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Success:**__",
                                 Description = $"*{trackDisplay} has been deleted from homework.*",
-                                Timestamp = DateTime.UtcNow
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         }
@@ -1203,7 +1254,11 @@ namespace CTTB.Commands
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
                            "\n**c!delhw track**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -1239,7 +1294,11 @@ namespace CTTB.Commands
                             Title = $"__**Error:**__",
                             Description = $"*Track was not inputted.*" +
                                    "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -1251,7 +1310,11 @@ namespace CTTB.Commands
                             Title = $"__**Error:**__",
                             Description = $"*Author was not inputted.*" +
                                    "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -1263,7 +1326,11 @@ namespace CTTB.Commands
                             Title = $"__**Error:**__",
                             Description = $"*{vote} is not a valid vote.*" +
                                       "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -1323,7 +1390,11 @@ namespace CTTB.Commands
                                 Title = "__**Error:**__",
                                 Description = $"*<@{ctx.Member.Id}> is not able to submit feedback.*" +
                                    "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                                Timestamp = DateTime.UtcNow
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         }
@@ -1367,7 +1438,11 @@ namespace CTTB.Commands
                                     Title = "__**Error:**__",
                                     Description = $"*{track} could not be found.*" +
                                        "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                                    Timestamp = DateTime.UtcNow
+                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
                                 };
                                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                             }
@@ -1378,7 +1453,11 @@ namespace CTTB.Commands
                                     Color = new DiscordColor("#FF0000"),
                                     Title = "__**Success:**__",
                                     Description = $"*Homework for {track} has been submitted successfully.*",
-                                    Timestamp = DateTime.UtcNow
+                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
                                 };
                                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                             }
@@ -1394,7 +1473,11 @@ namespace CTTB.Commands
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
                            "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -1438,7 +1521,11 @@ namespace CTTB.Commands
                             Title = $"__**Error:**__",
                             Description = $"*Track was not inputted.*" +
                                    "\n**c!gethw track mention/name**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -1570,7 +1657,11 @@ namespace CTTB.Commands
                                 Title = $"__**Error:**__",
                                 Description = $"*{mention} could not be found on council.*" +
                                    "\n**c!gethw track mention/name**",
-                                Timestamp = DateTime.UtcNow
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         }
@@ -1583,7 +1674,11 @@ namespace CTTB.Commands
                                 Title = $"__**Error:**__",
                                 Description = $"*{track} could not be found.*" +
                                    "\n**c!gethw track mention/name**",
-                                Timestamp = DateTime.UtcNow
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         }
@@ -1594,7 +1689,11 @@ namespace CTTB.Commands
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**{trackDisplay}**__",
                                 Description = description,
-                                Timestamp = DateTime.UtcNow
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         }
@@ -1609,7 +1708,11 @@ namespace CTTB.Commands
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
                            "\n**c!gethw track mention/name**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -1686,7 +1789,11 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Council Homework:**__",
                         Description = description,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -1699,7 +1806,11 @@ namespace CTTB.Commands
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
                            "\n**c!hw [name of track]**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -1777,7 +1888,11 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.*" +
                         "\n**c!staff track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1188255728",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -1788,7 +1903,11 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Staff ghosts for {trackDisplay.Name} *(First result)*:**__",
                         Description = description,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1188255728",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -1801,7 +1920,11 @@ namespace CTTB.Commands
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
                            "\n**c!staff track**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1188255728",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -1873,7 +1996,24 @@ namespace CTTB.Commands
                     }
                 }
 
-                if (j < 1)
+                if (track == "")
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*No track inputted.*" +
+                           "\n**c!getinfo track**",
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+
+                else if (j < 1)
                 {
                     embed = new DiscordEmbedBuilder
                     {
@@ -1881,7 +2021,11 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.\nThe track does not exist, or is not in CTGP.*" +
                         "\n**c!getinfo track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -1892,7 +2036,11 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**{trackDisplay.Name} *(First result)*:**__",
                         Description = description,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -1905,7 +2053,11 @@ namespace CTTB.Commands
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
                            "\n**c!getinfo track**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -2008,7 +2160,11 @@ namespace CTTB.Commands
                                     Color = new DiscordColor("#FF0000"),
                                     Title = $"__**Known issues on {response.Values[i][0]}:**__",
                                     Description = description,
-                                    Timestamp = DateTime.UtcNow
+                                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
                                 };
                                 embeds.Add(embed);
                             }
@@ -2075,7 +2231,11 @@ namespace CTTB.Commands
                             Title = "__**Error:**__",
                             Description = $"*{track} could not be found.\nThe track does not exist, or is not in CTGP.*" +
                             "\n**c!getissues track**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -2086,7 +2246,11 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Known issues on {trackDisplay.Name} *(First result)*:**__",
                             Description = description,
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -2100,7 +2264,11 @@ namespace CTTB.Commands
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
                            "\n**c!getissues track**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -2217,7 +2385,11 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*No issue was inputted.*" +
                                "\n**c!reportissue major/minor \"track\" -Issue**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -2230,7 +2402,11 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.*" +
                                   "\n**c!reportissue major/minor \"track\" -Issue**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -2246,7 +2422,11 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Issues Updated:**__",
                         Description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -2259,7 +2439,11 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{issueType} is not a valid issue category.*" +
                                "\n**c!reportissue major/minor \"track\" -Issue**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -2272,7 +2456,11 @@ namespace CTTB.Commands
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
                                "\n**c!reportissue major/minor \"track\" -Issue**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -2296,7 +2484,11 @@ namespace CTTB.Commands
                     Title = "__**Error:**__",
                     Description = $"*No track was inputted*" +
                                   "\n**c!clearissues track**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
@@ -2364,7 +2556,11 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Success:**__",
                         Description = $"*{track} issues have been cleared*",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -2376,7 +2572,11 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*An exception has occured.*" +
                                   "\n**c!clearissues track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -2403,7 +2603,11 @@ namespace CTTB.Commands
                     Title = "__**Error:**__",
                     Description = $"*One of your arguments is missing data.*" +
                                   "\n**c!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
@@ -2476,7 +2680,11 @@ namespace CTTB.Commands
                             Title = "__**Error:**__",
                             Description = $"*{track} could not be found.*" +
                                       "\n**c!replaceissues [track] [new track] [author] [version] [slot] [speed/laps]**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -2497,7 +2705,11 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**{newTrack} has now replaced {track}:**__",
                             Description = description,
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
@@ -2510,7 +2722,11 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*An exception has occured.*" +
                                   "\n**c!replaceissues [track] [new track] [author] [version] [slot] [speed/laps]**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -2577,7 +2793,11 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.*" +
                         "\n**c!bkt track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -2588,7 +2808,11 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Best Time on {track}:**__",
                         Description = $"{trackDisplay[0].Name} - *{trackDisplay[0].BestTime}*",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -2666,7 +2890,11 @@ namespace CTTB.Commands
                             Title = $"__**Error:**__",
                             Description = "*Embed too large. Please refine your search.*" +
                                    "\n**c!bkt track**",
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://chadsoft.co.uk/time-trials/",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                     }
                     else
@@ -2676,7 +2904,11 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Best Times on {track}:**__",
                             Description = description,
-                            Timestamp = DateTime.UtcNow
+                            Url = "https://chadsoft.co.uk/time-trials/",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
                         };
                     }
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -2691,7 +2923,11 @@ namespace CTTB.Commands
                     Title = $"__**Error:**__",
                     Description = "*An exception has occured.*" +
                        "\n**c!bkt track**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://chadsoft.co.uk/time-trials/",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -2761,14 +2997,22 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 1-21:**__",
                         Description = description1,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed2 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 22-32:**__",
                         Description = description2,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     Page page1 = new Page("", embed1);
                     Page page2 = new Page("", embed2);
@@ -2827,77 +3071,121 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 1-21:**__",
                         Description = description1,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed2 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 22-42:**__",
                         Description = description2,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed3 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 43-63:**__",
                         Description = description3,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed4 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 64-84:**__",
                         Description = description4,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed5 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 85-105:**__",
                         Description = description5,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed6 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 106-126:**__",
                         Description = description6,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed7 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 127-147:**__",
                         Description = description7,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed8 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 148-168:**__",
                         Description = description8,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed9 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 169-189:**__",
                         Description = description9,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed10 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 190-210:**__",
                         Description = description10,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed11 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 211-218:**__",
                         Description = description11,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     Page page1 = new Page("", embed1);
                     Page page2 = new Page("", embed2);
@@ -2935,6 +3223,7 @@ namespace CTTB.Commands
                             description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].WiimmfiScore})*\n";
                         }
                     }
+                    d = description1.ToCharArray().Length;
                     if (description1 == $"__**Nintendo Tracks**__:\n")
                     {
                         description1 = $"__**Custom Tracks**__:\n";
@@ -2943,7 +3232,6 @@ namespace CTTB.Commands
                     {
                         description1 += $"__**Custom Tracks**__:\n";
                     }
-                    d = description1.ToCharArray().Length;
                     for (int i = 0; i < trackListCts.Count; i++)
                     {
                         if (trackListCts[i].Name.ToLowerInvariant().Contains(arg.ToLowerInvariant()))
@@ -2954,7 +3242,7 @@ namespace CTTB.Commands
                     }
                     if (c == 0)
                     {
-                        description1 = description1.Remove(0, d);
+                        description1 = description1.Remove(d - 1, 23);
                     }
                 }
 
@@ -2966,7 +3254,11 @@ namespace CTTB.Commands
                         Title = $"__**Error:**__",
                         Description = "*Please provide a category (and range) or a track name.*" +
                            "\n**c!pop rts/cts/track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -2979,7 +3271,11 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{arg} could not be found.*" +
                            "\n**c!pop rts/cts/track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -2992,7 +3288,11 @@ namespace CTTB.Commands
                         Title = $"__**Error:**__",
                         Description = "*Embed too large. Please refine your search.*" +
                            "\n**c!pop rts/cts/track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -3009,7 +3309,11 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying tracks containing *{arg}*:**__",
                         Description = description1,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -3022,7 +3326,11 @@ namespace CTTB.Commands
                     Title = $"__**Error:**__",
                     Description = "*An exception has occured.*" +
                         "\n**c!pop rts/cts/track**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
@@ -3123,14 +3431,22 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 1-21:**__",
                         Description = description1,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed2 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 22-32:**__",
                         Description = description2,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     Page page1 = new Page("", embed1);
                     Page page2 = new Page("", embed2);
@@ -3189,77 +3505,121 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 1-21:**__",
                         Description = description1,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed2 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 22-42:**__",
                         Description = description2,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed3 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 43-63:**__",
                         Description = description3,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed4 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 64-84:**__",
                         Description = description4,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed5 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 85-105:**__",
                         Description = description5,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed6 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 106-126:**__",
                         Description = description6,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed7 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 127-147:**__",
                         Description = description7,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed8 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 148-168:**__",
                         Description = description8,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed9 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 169-189:**__",
                         Description = description9,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed10 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 190-210:**__",
                         Description = description10,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     var embed11 = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying 211-218:**__",
                         Description = description11,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     Page page1 = new Page("", embed1);
                     Page page2 = new Page("", embed2);
@@ -3328,7 +3688,11 @@ namespace CTTB.Commands
                         Title = $"__**Error:**__",
                         Description = "*Please provide a category (and range) or a track name.*" +
                            "\n**c!pop rts/cts/track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -3341,7 +3705,11 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{arg} could not be found.*" +
                            "\n**c!pop rts/cts/track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -3355,7 +3723,11 @@ namespace CTTB.Commands
                         Title = $"__**Error:**__",
                         Description = "*Embed too large. Please refine your search.*" +
                            "\n**c!pop rts/cts/track**",
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -3372,7 +3744,11 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying tracks containing *{arg}*:**__",
                         Description = description1,
-                        Timestamp = DateTime.UtcNow
+                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
@@ -3385,7 +3761,11 @@ namespace CTTB.Commands
                     Title = $"__**Error:**__",
                     Description = "*An exception has occured.*" +
                         "\n**c!pop rts/cts/track**",
-                    Timestamp = DateTime.UtcNow
+                    Url = "https://chadsoft.co.uk/time-trials/",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 

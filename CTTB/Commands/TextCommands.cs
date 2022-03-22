@@ -2,12 +2,14 @@
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace CTTB.Commands
 {
     public class TextCommands : BaseCommandModule
     {
+
         [Command("help")]
         //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task Help(CommandContext ctx)
@@ -46,7 +48,6 @@ namespace CTTB.Commands
                     {
                         description += "\n\n__**Admin Commands:**__" +
                         "\nc!update" +
-                        "\nc!lastupdated" +
                         "\nc!reportissue major/minor \"track\" -Issue" +
                         "\nc!clearissues track" +
                         "\nc!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps" +
@@ -79,7 +80,10 @@ namespace CTTB.Commands
                 Color = new DiscordColor("#FF0000"),
                 Title = "__**Help**__",
                 Description = description,
-                Timestamp = DateTime.UtcNow
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                }
             };
 
             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -96,7 +100,10 @@ namespace CTTB.Commands
                 Description = "**Base Pack:** *https://drive.google.com/file/d/1tzhaBxycHEvY5G2k5jTzpONBhmq6g08g/view?usp=sharing*" +
                 "\n**Installation Tutorial:** *https://youtu.be/Vh3GXTbxHLU*" +
                 "\n**Test Pack Creation Tutorial:** *https://youtu.be/igtfmZAyG3g*",
-                Timestamp = DateTime.UtcNow
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                }
             };
 
             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
@@ -111,7 +118,10 @@ namespace CTTB.Commands
                 Color = new DiscordColor("#FF0000"),
                 Title = "__**Source Code:**__",
                 Description = "**Github:** *https://github.com/Brawlboxgaming/Custom-Track-Testing-Bot*",
-                Timestamp = DateTime.UtcNow
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                }
             };
 
             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
