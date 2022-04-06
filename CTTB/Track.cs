@@ -10,6 +10,8 @@ namespace CTTB.Commands
 {
     public class Track
     {
+        [JsonProperty("_links")]
+        public Link Link { get; set; }
         [JsonProperty("categoryId")]
         public int Category { get; set; }
         [JsonProperty("name")]
@@ -24,11 +26,37 @@ namespace CTTB.Commands
         [JsonProperty("popularity")]
         public int TimeTrialScore { get; set; }
         public int WiimmfiScore { get; set; }
+        public string LeaderboardLink { get; set; }
+        public string BKTLink { get; set; }
+    }
+
+    public class Link
+    {
+        [JsonProperty("item")]
+        public Href Href { get; set; }
+    }
+
+    public class Href
+    {
+        [JsonProperty("href")]
+        public string LeaderboardLink { get; set; }
     }
 
     public class LeaderboardInfo
     {
         [JsonProperty("leaderboards")]
         public List<Track> Leaderboard { get; set; }
+    }
+
+    public class GhostList
+    {
+        [JsonProperty("ghosts")]
+        public List<Ghost> List { get; set; }
+    }
+
+    public class Ghost
+    {
+        [JsonProperty("_links")]
+        public Link Link { get; set; }
     }
 }

@@ -20,13 +20,14 @@ namespace CTTB.Commands
                 "\nc!source" +
                 "\nc!staff track" +
                 "\nc!issues track" +
-                "\nc!getinfo track" +
+                "\nc!info track" +
                 "\nc!bkt track" +
                 "\nc!pop rts/cts/track" +
                 "\nc!ttpop rts/cts/track" +
-                "\nc!getsummary track" +
+                "\nc!summary track" +
                 "\nc!nextupdate" +
-                "\nc!rating track";
+                "\nc!rating track" +
+                "\nc!dlbkt track/all";
 
             foreach (var role in ctx.Member.Roles)
             {
