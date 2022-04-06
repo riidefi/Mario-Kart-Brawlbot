@@ -32,6 +32,7 @@ namespace CTTB.Commands
 {
     public class FunctionalCommands : BaseCommandModule
     {
+        Scrape Scraper = new Scrape();
 
         [Command("update")]
         [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
@@ -132,6 +133,8 @@ namespace CTTB.Commands
                 string ctwwDl3 = await webClient.DownloadStringTaskAsync(ctwwUrl3);
                 string wwDl = await webClient.DownloadStringTaskAsync(wwUrl);
 
+                List<Track> trackListRt = JsonConvert.DeserializeObject<List<Track>>(rtJson);
+                List<Track> trackListRt200 = JsonConvert.DeserializeObject<List<Track>>(rt200Json);
                 List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(ctJson);
                 List<Track> trackList200 = JsonConvert.DeserializeObject<List<Track>>(ct200Json);
                 List<Track> trackListNc = JsonConvert.DeserializeObject<List<Track>>(ctJson);
@@ -153,256 +156,22 @@ namespace CTTB.Commands
                     }
                 }
 
-                List<Track> oldJson = JsonConvert.DeserializeObject<List<Track>>(File.ReadAllText($"cts.json"));
-                for (int i = 0; i < oldJson.Count; i++)
-                {
-                    if (oldJson[i].Category % 16 != 0 || oldJson[i].Category != 4)
-                    {
-                        oldJson.RemoveAt(i);
-                        i--;
-                    }
-                }
-                HtmlDocument ctwwHtml1 = new HtmlDocument();
-                HtmlDocument ctwwHtml2 = new HtmlDocument();
-                HtmlDocument ctwwHtml3 = new HtmlDocument();
-                HtmlDocument temp = new HtmlDocument();
-                ctwwHtml1.LoadHtml(ctwwDl1);
-                var bodyNode1 = ctwwHtml1.DocumentNode.SelectNodes("//td[contains(@class, 'LL')]");
-                var innerText1 = ctwwHtml1.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
-                var m3s = new List<string>();
-                for (int i = 0; i < innerText1.Count; i++)
-                {
-                    if (i % 10 - 4 == 0)
-                    {
-                        m3s.Add(innerText1[i].InnerHtml);
-                    }
-                }
-                ctwwHtml2.LoadHtml(ctwwDl2);
-                var bodyNode2 = ctwwHtml2.DocumentNode.SelectNodes("//td[contains(@class, 'LL')]");
-                var innerText2 = ctwwHtml2.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
-                for (int i = 0; i < innerText2.Count; i++)
-                {
-                    if (i % 10 - 4 == 0)
-                    {
-                        m3s.Add(innerText2[i].InnerHtml);
-                    }
-                }
-                ctwwHtml3.LoadHtml(ctwwDl3);
-                var bodyNode3 = ctwwHtml3.DocumentNode.SelectNodes("//td[contains(@class, 'LL')]");
-                var innerText3 = ctwwHtml3.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
-                for (int i = 0; i < innerText3.Count; i++)
-                {
-                    if (i % 10 - 4 == 0)
-                    {
-                        m3s.Add(innerText3[i].InnerHtml);
-                    }
-                }
+                var scrapeTask = Scraper.WiimmfiScrape(rtJson,
+                    rt200Json,
+                    ctwwDl1,
+                    ctwwDl2,
+                    ctwwDl3,
+                    wwDl,
+                    trackListRt,
+                    trackListRt200,
+                    trackList,
+                    trackList200,
+                    trackListNc,
+                    trackList200Nc);
 
-                int j = 0;
-                int g = 0;
-                bool check;
-                foreach (var t in bodyNode1)
-                {
-                    check = true;
-                    if (t.InnerHtml.Contains("a href="))
-                    {
-                        foreach (var track in oldJson)
-                        {
-                            if (track.Name == "ASDF_Course")
-                            {
-                                track.Name = "ASDF Course";
-                            }
-                            if (t.InnerText.Contains(track.Name))
-                            {
-                                g = trackListNc.FindIndex(ix => ix.Name.Contains(track.Name));
-                                trackListNc[g].WiimmfiScore = int.Parse(m3s[j]);
-                                trackListNc[g].WiimmfiName = t.InnerText;
-                                j++;
-                                check = false;
-                            }
-                        }
-                        if (check)
-                        {
-                            var dl = await webClient.DownloadStringTaskAsync($"{t.InnerHtml.Split('"')[1]}?m=json");
-                            temp = new HtmlDocument();
-                            temp.LoadHtml(dl);
-                            var tts = temp.DocumentNode.SelectNodes("//tr/td/tt");
-                            foreach (var tt in tts)
-                            {
-                                for (int i = 0; i < trackListNc.Count; i++)
-                                {
-                                    if (tt.InnerText.ToLowerInvariant().Contains(trackListNc[i].SHA1.ToLowerInvariant()))
-                                    {
-                                        trackListNc[i].WiimmfiScore = int.Parse(m3s[j]);
-                                        trackListNc[i].WiimmfiName = t.InnerText;
-                                        j++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if (t.InnerHtml.Contains("SHA1"))
-                    {
-                        for (int i = 0; i < trackListNc.Count; i++)
-                        {
-                            if (t.InnerText.Split(':')[1].Split(' ')[1].ToLowerInvariant().Contains(trackListNc[i].SHA1.ToLowerInvariant()))
-                            {
-                                trackListNc[i].WiimmfiScore = int.Parse(m3s[j]);
-                                j++;
-                            }
-                        }
-                    }
-                }
+                var bktTask = Scraper.GetBKTLeaderboards(trackListRt, trackListRt200, trackList, trackList200);
 
-                foreach (var t in bodyNode2)
-                {
-                    check = true;
-                    if (t.InnerHtml.Contains("a href="))
-                    {
-                        foreach (var track in oldJson)
-                        {
-                            if (track.Name == "ASDF_Course")
-                            {
-                                track.Name = "ASDF Course";
-                            }
-                            if (t.InnerText.Contains(track.Name))
-                            {
-                                g = trackListNc.FindIndex(ix => ix.Name.Contains(track.Name));
-                                trackListNc[g].WiimmfiScore = int.Parse(m3s[j]);
-                                trackListNc[g].WiimmfiName = t.InnerText;
-                                j++;
-                                check = false;
-                            }
-                        }
-                        if (check)
-                        {
-                            string dl = await webClient.DownloadStringTaskAsync($"{t.InnerHtml.Split('"')[1]}?m=json");
-                            temp = new HtmlDocument();
-                            temp.LoadHtml(dl);
-                            var tts = temp.DocumentNode.SelectNodes("//tr/td/tt");
-                            foreach (var tt in tts)
-                            {
-                                for (int i = 0; i < trackListNc.Count; i++)
-                                {
-                                    if (tt.InnerText.ToLowerInvariant().Contains(trackListNc[i].SHA1.ToLowerInvariant()))
-                                    {
-                                        trackListNc[i].WiimmfiScore = int.Parse(m3s[j]);
-                                        trackListNc[i].WiimmfiName = t.InnerText;
-                                        j++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if (t.InnerHtml.Contains("SHA1"))
-                    {
-                        for (int i = 0; i < trackListNc.Count; i++)
-                        {
-                            if (t.InnerText.Split(':')[1].Split(' ')[1].ToLowerInvariant().Contains(trackListNc[i].SHA1.ToLowerInvariant()))
-                            {
-                                trackListNc[i].WiimmfiScore = int.Parse(m3s[j]);
-                                j++;
-                            }
-                        }
-                    }
-                }
-
-                foreach (var t in bodyNode3)
-                {
-                    check = true;
-                    if (t.InnerHtml.Contains("a href="))
-                    {
-                        foreach (var track in oldJson)
-                        {
-                            if (track.Name == "ASDF_Course")
-                            {
-                                track.Name = "ASDF Course";
-                            }
-                            if (t.InnerText.Contains(track.Name))
-                            {
-                                g = trackListNc.FindIndex(ix => ix.Name.Contains(track.Name));
-                                trackListNc[g].WiimmfiScore = int.Parse(m3s[j]);
-                                trackListNc[g].WiimmfiName = t.InnerText;
-                                j++;
-                                check = false;
-                            }
-                        }
-                        if (check)
-                        {
-                            string dl = await webClient.DownloadStringTaskAsync($"{t.InnerHtml.Split('"')[1]}?m=json");
-                            temp = new HtmlDocument();
-                            temp.LoadHtml(dl);
-                            var tts = temp.DocumentNode.SelectNodes("//tr/td/tt");
-                            foreach (var tt in tts)
-                            {
-                                for (int i = 0; i < trackListNc.Count; i++)
-                                {
-                                    if (tt.InnerText.ToLowerInvariant().Contains(trackListNc[i].SHA1.ToLowerInvariant()))
-                                    {
-                                        trackListNc[i].WiimmfiScore = int.Parse(m3s[j]);
-                                        trackListNc[i].WiimmfiName = t.InnerText;
-                                        j++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if (t.InnerHtml.Contains("SHA1"))
-                    {
-                        for (int i = 0; i < trackListNc.Count; i++)
-                        {
-                            if (t.InnerText.Split(':')[1].Split(' ')[1].ToLowerInvariant().Contains(trackListNc[i].SHA1.ToLowerInvariant()))
-                            {
-                                trackListNc[i].WiimmfiScore = int.Parse(m3s[j]);
-                                j++;
-                            }
-                        }
-                    }
-                }
-
-                for (int i = 0; i < trackList.Count; i++)
-                {
-                    foreach (var t in trackListNc)
-                    {
-                        if (t.Name == trackList[i].Name)
-                        {
-                            trackList[i].WiimmfiScore = t.WiimmfiScore;
-                            trackList[i].WiimmfiName = t.WiimmfiName;
-                        }
-                    }
-                }
-                for (int i = 0; i < trackList200.Count; i++)
-                {
-                    foreach (var t in trackList200Nc)
-                    {
-                        if (t.Name == trackList200[i].Name)
-                        {
-                            trackList200[i].WiimmfiScore = t.WiimmfiScore;
-                            trackList200[i].WiimmfiName = t.WiimmfiName;
-                        }
-                    }
-                }
-
-                foreach (var t in trackList)
-                {
-                    if (t.Name == "ASDF_Course")
-                    {
-                        t.Name = "ASDF Course";
-                    }
-                    var ghostJson = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"http://tt.chadsoft.co.uk{t.LeaderboardLink}"));
-                    var ghostList = ghostJson.List;
-                    t.BKTLink = ghostList[0].Link.Href.LeaderboardLink;
-                }
-                foreach (var t in trackList200)
-                {
-                    if (t.Name == "ASDF_Course")
-                    {
-                        t.Name = "ASDF Course";
-                    }
-                    var ghostJson = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"http://tt.chadsoft.co.uk{t.LeaderboardLink}"));
-                    var ghostList = ghostJson.List;
-                    t.BKTLink = ghostList[0].Link.Href.LeaderboardLink;
-                }
+                await Task.WhenAll(scrapeTask, bktTask);
 
                 JsonSerializerSettings settings = new JsonSerializerSettings()
                 {
@@ -412,101 +181,8 @@ namespace CTTB.Commands
                 ctJson = JsonConvert.SerializeObject(trackList, settings);
                 ct200Json = JsonConvert.SerializeObject(trackList200, settings);
 
-                trackList = JsonConvert.DeserializeObject<List<Track>>(rtJson);
-                trackList200 = JsonConvert.DeserializeObject<List<Track>>(rt200Json);
-                List<Track> trackListRTNc = JsonConvert.DeserializeObject<List<Track>>(rtJson);
-                List<Track> trackListRT200Nc = JsonConvert.DeserializeObject<List<Track>>(rt200Json);
-                for (int i = 0; i < trackListRTNc.Count; i++)
-                {
-                    if (trackListRTNc[i].Category % 16 != 0)
-                    {
-                        trackListRTNc.RemoveAt(i);
-                        i--;
-                    }
-                }
-                for (int i = 0; i < trackListRT200Nc.Count; i++)
-                {
-                    if (trackListRT200Nc[i].Category % 16 != 0 && trackListRT200Nc[i].Category != 4)
-                    {
-                        trackListRT200Nc.RemoveAt(i);
-                        i--;
-                    }
-                }
-                HtmlDocument wwHtml = new HtmlDocument();
-                wwHtml.LoadHtml(wwDl);
-                bodyNode1 = wwHtml.DocumentNode.SelectNodes("//td[contains(@class, 'LL')]");
-                innerText1 = wwHtml.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
-                m3s = new List<string>();
-                var m3Names = new List<string>();
-                for (int i = 0; i < 320; i++)
-                {
-                    if (i % 10 - 2 == 0)
-                    {
-                        m3Names.Add(innerText1[i].InnerHtml);
-                    }
-                    if (i % 10 - 4 == 0)
-                    {
-                        m3s.Add(innerText1[i].InnerHtml);
-                    }
-                }
-                for (int i = 0; i < m3Names.Count; i++)
-                {
-                    foreach (var t in trackListRTNc)
-                    {
-                        if (m3Names[i].Contains(t.Name))
-                        {
-                            t.WiimmfiScore = int.Parse(m3s[i]);
-                            t.WiimmfiName = m3Names[i];
-                        }
-                    }
-                    foreach (var t in trackListRT200Nc)
-                    {
-                        if (m3Names[i].Contains(t.Name))
-                        {
-                            t.WiimmfiScore = int.Parse(m3s[i]);
-                            t.WiimmfiName = m3Names[i];
-                        }
-                    }
-                }
-
-                for (int i = 0; i < trackList.Count; i++)
-                {
-                    foreach (var t in trackListRTNc)
-                    {
-                        if (t.Name == trackList[i].Name)
-                        {
-                            trackList[i].WiimmfiScore = t.WiimmfiScore;
-                            trackList[i].WiimmfiName = t.WiimmfiName;
-                        }
-                    }
-                }
-                for (int i = 0; i < trackList200.Count; i++)
-                {
-                    foreach (var t in trackListRT200Nc)
-                    {
-                        if (t.Name == trackList200[i].Name)
-                        {
-                            trackList200[i].WiimmfiScore = t.WiimmfiScore;
-                            trackList200[i].WiimmfiName = t.WiimmfiName;
-                        }
-                    }
-                }
-
-                foreach (var t in trackList)
-                {
-                    var ghostJson = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"http://tt.chadsoft.co.uk{t.LeaderboardLink}"));
-                    var ghostList = ghostJson.List;
-                    t.BKTLink = ghostList[0].Link.Href.LeaderboardLink;
-                }
-                foreach (var t in trackList200)
-                {
-                    var ghostJson = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"http://tt.chadsoft.co.uk{t.LeaderboardLink}"));
-                    var ghostList = ghostJson.List;
-                    t.BKTLink = ghostList[0].Link.Href.LeaderboardLink;
-                }
-
-                rtJson = JsonConvert.SerializeObject(trackList, settings);
-                rt200Json = JsonConvert.SerializeObject(trackList200, settings);
+                rtJson = JsonConvert.SerializeObject(trackListRt, settings);
+                rt200Json = JsonConvert.SerializeObject(trackListRt200, settings);
 
                 File.WriteAllText("rts.json", rtJson);
                 File.WriteAllText("cts.json", ctJson);
@@ -649,7 +325,9 @@ namespace CTTB.Commands
                         }
                         webClient.DownloadFile(new Uri($"http://tt.chadsoft.co.uk{track.BKTLink.Split('.')[0]}.rkg"), $"rkgs/200/{String.Join("", track.Name.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))} - {categoryName} (200cc).rkg");
                     }
-                    ZipFile.CreateFromDirectory(@"rkgs", $"All BKT RKGs - {String.Join("", DateTime.Now.ToString().Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip");
+
+                    ZipFile.CreateFromDirectory(@"rkgs",
+                        $"All BKT RKGs - {String.Join("", DateTime.Now.ToString().Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip");
                     using (var fs = new FileStream($"All BKT RKGs - {String.Join("", DateTime.Now.ToString().Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip", FileMode.Open, FileAccess.Read))
                     {
                         var msg = await new DiscordMessageBuilder()
@@ -1141,7 +819,7 @@ namespace CTTB.Commands
                             if (response.Values[i][2].ToString().ToLowerInvariant().Contains(track.ToLowerInvariant()))
                             {
                                 k = i;
-                                
+
                                 while (response.Values[k][0].ToString() != "delimiter")
                                 {
                                     k--;
