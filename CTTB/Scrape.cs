@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,11 +34,8 @@ namespace CTTB
 
     public class Scrape
     {
-
         public async Task WiimmfiScrape(string rtJson, string rt200Json, string ctwwDl1, string ctwwDl2, string ctwwDl3, string wwDl, List<Track> trackListRt, List<Track> trackListRt200, List<Track> trackList, List<Track> trackList200, List<Track> trackListNc, List<Track> trackList200Nc)
         {
-            WebClient webClient = new WebClient();
-
             List<Track> oldJson = JsonConvert.DeserializeObject<List<Track>>(File.ReadAllText($"cts.json"));
             for (int i = 0; i < oldJson.Count; i++)
             {
@@ -50,7 +48,6 @@ namespace CTTB
             HtmlDocument ctwwHtml1 = new HtmlDocument();
             HtmlDocument ctwwHtml2 = new HtmlDocument();
             HtmlDocument ctwwHtml3 = new HtmlDocument();
-            HtmlDocument temp = new HtmlDocument();
             ctwwHtml1.LoadHtml(ctwwDl1);
             var bodyNode1 = ctwwHtml1.DocumentNode.SelectNodes("//td[contains(@class, 'LL')]");
             var innerText1 = ctwwHtml1.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
@@ -135,7 +132,6 @@ namespace CTTB
             }
             HtmlDocument wwHtml = new HtmlDocument();
             wwHtml.LoadHtml(wwDl);
-            bodyNode1 = wwHtml.DocumentNode.SelectNodes("//td[contains(@class, 'LL')]");
             innerText1 = wwHtml.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
             m3s = new List<string>();
             var m3Names = new List<string>();
@@ -143,7 +139,7 @@ namespace CTTB
             {
                 if (i % 10 - 2 == 0)
                 {
-                    m3Names.Add(innerText1[i].InnerHtml);
+                    m3Names.Add(innerText1[i].InnerText);
                 }
                 if (i % 10 - 4 == 0)
                 {
@@ -207,8 +203,6 @@ namespace CTTB
                 {
                     foreach (var track in oldJson)
                     {
-                        track.Name = t.Name.Replace('_', ' ');
-
                         if (t.InnerText.Contains(track.Name))
                         {
                             g = trackListNc.FindIndex(ix => ix.Name.Contains(track.Name));
@@ -257,34 +251,221 @@ namespace CTTB
                 DownloadLeaderboard(trackListRt),
                 DownloadLeaderboard(trackListRt200),
                 DownloadLeaderboard(trackList200));
+            
+            Task.WaitAll(DownloadBKTInfo(trackList),
+                 DownloadBKTInfo(trackListRt),
+                 DownloadBKTInfo(trackListRt200),
+                 DownloadBKTInfo(trackList200));
+            await Task.CompletedTask;
         }
 
         private async Task DownloadLeaderboard(List<Track> trackList)
+        {
+            Parallel.ForEach(trackList, track =>
+            {
+                Task.WaitAll(DownloadLeaderboardTask(track));
+            });
+            await Task.CompletedTask;
+        }
+
+        private async Task DownloadLeaderboardTask(Track t)
+        {
+            int l = 0;
+        retry:
+            l++;
+            WebClient webClient = new WebClient();
+            try
+            {
+                var ghostJson = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"http://tt.chadsoft.co.uk{t.LeaderboardLink}?limit=1"));
+                var ghostList = ghostJson.List;
+                if (ghostList.Count > 0)
+                {
+                    t.BKTLink = ghostList[0].Link.Href.LeaderboardLink;
+                }
+                Console.WriteLine($"{t.Name} has been downloaded.");
+                webClient.Dispose();
+            }
+            catch
+            {
+                if (l >= 10)
+                {
+                    Console.WriteLine($"{t.Name} download failed after 10 retries. Skipping...");
+                    webClient.Dispose();
+                }
+                else
+                {
+                    Console.WriteLine($"{t.Name} download failed after {l} retries. Retrying...");
+                    webClient.Dispose();
+                    Thread.Sleep(10000);
+                    goto retry;
+                }
+            }
+        }
+
+        private async Task DownloadBKTInfo(List<Track> trackList)
         {
             foreach (var trackBatch in trackList.Batch(5))
             {
                 List<Task> tasks = new List<Task>();
                 foreach (var track in trackBatch)
                 {
-                    tasks.Add(DownloadLeaderboardTask(track));
+                    tasks.Add(DownloadBKTInfoTask(track));
                 }
 
                 Task.WaitAll(tasks.ToArray());
             }
+            await Task.CompletedTask;
+
         }
 
-        private async Task DownloadLeaderboardTask(Track t)
+        private async Task DownloadBKTInfoTask(Track t)
         {
+            int l = 0;
+        retry:
+            l++;
             WebClient webClient = new WebClient();
-            t.Name = t.Name.Replace('_', ' ');
-
-            var ghostJson = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"http://tt.chadsoft.co.uk{t.LeaderboardLink}?start=16&limit=1&times=pb"));
-            var ghostList = ghostJson.List;
-            if (ghostList.Count > 0)
+            try
             {
-                t.BKTLink = ghostList[0].Link.Href.LeaderboardLink;
+                var document = new HtmlDocument();
+                var html = await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{t.BKTLink.Split('.')[0]}.html");
+                document.LoadHtml(html);
+                var strongs = document.DocumentNode.SelectNodes("//div//p//strong");
+                t.BKTHolder = strongs[0].InnerText;
+                t.BKTUploadTime = strongs[3].InnerText;
+                if (strongs[1].InnerText.Contains("Normal"))
+                {
+                    t.CategoryName = "Normal";
+                }
+
+                else if (strongs[1].InnerText.Contains("No-shortcut"))
+                {
+                    t.CategoryName = "No-shortcut";
+                }
+
+                else if (strongs[1].InnerText.Contains("Shortcut"))
+                {
+                    t.CategoryName = "Shortcut";
+                }
+
+                else if (strongs[1].InnerText.Contains("Glitch"))
+                {
+                    t.CategoryName = "Glitch";
+                }
+
+                else
+                {
+                    t.CategoryName = "Normal";
+                }
+
+                Console.WriteLine($"Downloaded BKT info for {t.Name}");
+                webClient.Dispose();
             }
-            Console.WriteLine($"Downloaded {t.Name} leaderboard...");
+            catch
+            {
+                if (l >= 10)
+                {
+                    Console.WriteLine($"{t.Name} download failed after 10 retries. Skipping...");
+                    webClient.Dispose();
+                }
+                else
+                {
+                    Console.WriteLine($"{t.Name} download failed after {l} retries. Retrying...");
+                    webClient.Dispose();
+                    Thread.Sleep(10000);
+                    goto retry;
+                }
+            }
+        }
+
+        public async Task Dl200ccBKT(Track t)
+        {
+            string categoryName = string.Empty;
+            if (t.Category == 4)
+            {
+                categoryName = "Shortcut";
+            }
+            if (t.Category == 5)
+            {
+                categoryName = "Glitch";
+            }
+            if (t.Category == 6 || t.Category == 0)
+            {
+                categoryName = "No Shortcut";
+            }
+            try
+            {
+                var webClient = new WebClient();
+
+                webClient.DownloadFile(new Uri($"http://tt.chadsoft.co.uk{t.BKTLink.Split('.')[0]}.rkg"),
+                    $"rkgs/200/{String.Join("", t.Name.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))} - {categoryName} (200cc).rkg");
+                Console.WriteLine($"{t.Name} 200cc {categoryName} has been downloaded");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"No ghosts found for {t.Name} 200cc {categoryName}");
+                Console.WriteLine(ex.ToString());
+            }
+
+            await Task.CompletedTask;
+        }
+
+        public async Task Dl150ccBKT(Track t)
+        {
+            string categoryName = string.Empty;
+            if (t.Name == "Mushroom Gorge" ||
+                t.Name == "Toad's Factory" ||
+                t.Name == "Coconut Mall" ||
+                t.Name == "Grumble Volcano" ||
+                t.Name == "Bowser's Castle" ||
+                t.Name == "DS Desert Hills" ||
+                t.Name == "GBA Bowser Castle 3" ||
+                t.Name == "N64 DK's Jungle Parkway" ||
+                t.Name == "GCN DK Mountain" ||
+                t.Name == "N64 Bowser's Castle")
+            {
+                if (t.Category == 16)
+                {
+                    categoryName = "Shortcut";
+                }
+                if (t.Category == 1)
+                {
+                    categoryName = "Glitch";
+                }
+                if (t.Category == 2)
+                {
+                    categoryName = "No Shortcut";
+                }
+            }
+            else
+            {
+                if (t.Category == 0)
+                {
+                    categoryName = "No Shortcut";
+                }
+                if (t.Category == 1)
+                {
+                    categoryName = "Glitch";
+                }
+                if (t.Category == 2)
+                {
+                    categoryName = "Shortcut";
+                }
+            }
+            try
+            {
+                var webClient = new WebClient();
+
+                webClient.DownloadFile(new Uri($"http://tt.chadsoft.co.uk{t.BKTLink.Split('.')[0]}.rkg"),
+                    $"rkgs/150/{String.Join("", t.Name.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))} - {categoryName} (150cc).rkg");
+                Console.WriteLine($"{t.Name} 150cc {categoryName} has been downloaded");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"No ghosts found for {t.Name} 150cc {categoryName}");
+                Console.WriteLine(ex.ToString());
+            }
+
+            await Task.CompletedTask;
         }
     }
 }

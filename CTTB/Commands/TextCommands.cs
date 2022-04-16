@@ -35,32 +35,15 @@ namespace CTTB.Commands
                 {
                     description += "\n\n__**Council Commands:**__" +
                         "\nc!hw" +
-                        "\nc!gethw track" +
+                        "\nc!gethw track/all" +
                         "\nc!submithw yes/fixes/neutral/no \"track\" feedback";
                 }
             }
 
-            bool paa = false;
             foreach (var role in ctx.Member.Roles)
             {
-                if (role.Name == "Pack & Bot Dev")
-                {
-                    if (!paa)
-                    {
-                        description += "\n\n__**Admin Commands:**__" +
-                        "\nc!update" +
-                        "\nc!reportissue major/minor \"track\" -Issue" +
-                        "\nc!clearissues track" +
-                        "\nc!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps" +
-                        "\nc!gethw \"track\" mention/name" +
-                        "\nc!addhw \"track\" \"author\" \"version\" \"download link\" \"slot-filename\" \"speed/lap modifiers\" notes" +
-                        "\nc!delhw track";
-                    }
-                    paa = true;
-                }
                 if (role.Name == "Admin")
                 {
-                    if (!paa)
                     {
                         description += "\n\n__**Admin Commands:**__" +
                             "\nc!update" +
@@ -68,11 +51,10 @@ namespace CTTB.Commands
                             "\nc!reportissue major/minor \"track\" -Issue" +
                             "\nc!clearissues track" +
                             "\nc!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps" +
-                            "\nc!gethw \"track\" mention/name" +
+                            "\nc!gethw \"track\"/all mention/name" +
                             "\nc!addhw \"track\" \"author\" \"version\" \"download link\" \"slot-filename\" \"speed/lap modifiers\" notes" +
                             "\nc!delhw track";
                     }
-                    paa = true;
                 }
             }
 

@@ -36,16 +36,16 @@ namespace CTTB.Commands
 
         [Command("update")]
         [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
-        public async Task UpdateTimer(CommandContext ctx, [RemainingText] string timerArg = "")
+        public async Task UpdateTimer(CommandContext ctx, [RemainingText] string arg = "")
         {
             var embed = new DiscordEmbedBuilder() { };
 
             await ctx.TriggerTypingAsync();
-            if (timerArg.ToLowerInvariant() == "timer")
+            if (arg.ToLowerInvariant() == "timer")
             {
                 var timer = new System.Timers.Timer(172800000);
                 timer.AutoReset = true;
-                timer.Elapsed += async (s, e) => await Update(ctx);
+                timer.Elapsed += async (s, e) => await Update(ctx, "all");
                 timer.Start();
                 embed = new DiscordEmbedBuilder
                 {
@@ -60,7 +60,7 @@ namespace CTTB.Commands
             }
             else
             {
-                await Update(ctx);
+                await Update(ctx, arg);
 
                 embed = new DiscordEmbedBuilder
                 {
@@ -76,7 +76,7 @@ namespace CTTB.Commands
             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
 
-        public async Task Update(CommandContext ctx)
+        public async Task Update(CommandContext ctx, string arg)
         {
             try
             {
@@ -100,25 +100,21 @@ namespace CTTB.Commands
 
                 foreach (var track in rtRawJson.Leaderboard)
                 {
-                    track.WiimmfiName = "";
                     track.LeaderboardLink = track.Link.Href.LeaderboardLink;
                     track.Link = null;
                 }
                 foreach (var track in ctRawJson.Leaderboard)
                 {
-                    track.WiimmfiName = "";
                     track.LeaderboardLink = track.Link.Href.LeaderboardLink;
                     track.Link = null;
                 }
                 foreach (var track in rtRaw200Json.Leaderboard)
                 {
-                    track.WiimmfiName = "";
                     track.LeaderboardLink = track.Link.Href.LeaderboardLink;
                     track.Link = null;
                 }
                 foreach (var track in ctRaw200Json.Leaderboard)
                 {
-                    track.WiimmfiName = "";
                     track.LeaderboardLink = track.Link.Href.LeaderboardLink;
                     track.Link = null;
                 }
@@ -156,22 +152,101 @@ namespace CTTB.Commands
                     }
                 }
 
-                var scrapeTask = Scraper.WiimmfiScrape(rtJson,
-                    rt200Json,
-                    ctwwDl1,
-                    ctwwDl2,
-                    ctwwDl3,
-                    wwDl,
-                    trackListRt,
-                    trackListRt200,
-                    trackList,
-                    trackList200,
-                    trackListNc,
-                    trackList200Nc);
+                var oldJson = File.ReadAllText("cts.json");
+                List<Track> oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
 
-                var bktTask = Scraper.GetBKTLeaderboards(trackListRt, trackListRt200, trackList, trackList200);
+                for (int i = 0; i < oldTrackList.Count; i++)
+                {
+                    trackList[i].WiimmfiName = oldTrackList[i].WiimmfiName;
+                    trackList[i].WiimmfiScore = oldTrackList[i].WiimmfiScore;
+                    trackList[i].BKTLink = oldTrackList[i].BKTLink;
+                    trackList[i].BKTHolder = oldTrackList[i].BKTHolder;
+                    trackList[i].CategoryName = oldTrackList[i].CategoryName;
+                }
 
-                await Task.WhenAll(scrapeTask, bktTask);
+                oldJson = File.ReadAllText("rts.json");
+                oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
+
+                for (int i = 0; i < oldTrackList.Count; i++)
+                {
+                    trackListRt[i].WiimmfiName = oldTrackList[i].WiimmfiName;
+                    trackListRt[i].WiimmfiScore = oldTrackList[i].WiimmfiScore;
+                    trackListRt[i].BKTLink = oldTrackList[i].BKTLink;
+                    trackListRt[i].BKTHolder = oldTrackList[i].BKTHolder;
+                    trackListRt[i].CategoryName = oldTrackList[i].CategoryName;
+                }
+
+                oldJson = File.ReadAllText("cts200.json");
+                oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
+
+                for (int i = 0; i < oldTrackList.Count; i++)
+                {
+                    trackList200[i].WiimmfiName = oldTrackList[i].WiimmfiName;
+                    trackList200[i].WiimmfiScore = oldTrackList[i].WiimmfiScore;
+                    trackList200[i].BKTLink = oldTrackList[i].BKTLink;
+                    trackList200[i].BKTHolder = oldTrackList[i].BKTHolder;
+                    trackList200[i].CategoryName = oldTrackList[i].CategoryName;
+                }
+
+                oldJson = File.ReadAllText("rts200.json");
+                oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
+
+                for (int i = 0; i < oldTrackList.Count; i++)
+                {
+                    trackListRt200[i].WiimmfiName = oldTrackList[i].WiimmfiName;
+                    trackListRt200[i].WiimmfiScore = oldTrackList[i].WiimmfiScore;
+                    trackListRt200[i].BKTLink = oldTrackList[i].BKTLink;
+                    trackListRt200[i].BKTHolder = oldTrackList[i].BKTHolder;
+                    trackListRt200[i].CategoryName = oldTrackList[i].CategoryName;
+                }
+
+                try
+                {
+                    if (arg.ToLowerInvariant().Contains("wiimmfi") || arg.ToLowerInvariant().Contains("all"))
+                    {
+                        await Scraper.WiimmfiScrape(rtJson,
+                            rt200Json,
+                            ctwwDl1,
+                            ctwwDl2,
+                            ctwwDl3,
+                            wwDl,
+                            trackListRt,
+                            trackListRt200,
+                            trackList,
+                            trackList200,
+                            trackListNc,
+                            trackList200Nc);
+                    }
+                }
+                catch
+                {
+                    Thread.Sleep(300000);
+                    await Scraper.WiimmfiScrape(rtJson,
+                             rt200Json,
+                             ctwwDl1,
+                             ctwwDl2,
+                             ctwwDl3,
+                             wwDl,
+                             trackListRt,
+                             trackListRt200,
+                             trackList,
+                             trackList200,
+                             trackListNc,
+                             trackList200Nc);
+                }
+
+                try
+                {
+                    if (arg.ToLowerInvariant().Contains("bkts") || arg.ToLowerInvariant().Contains("all"))
+                    {
+                        await Scraper.GetBKTLeaderboards(trackListRt, trackListRt200, trackList, trackList200);
+                    }
+                }
+                catch
+                {
+                    Thread.Sleep(300000);
+                    await Scraper.GetBKTLeaderboards(trackListRt, trackListRt200, trackList, trackList200);
+                }
 
                 JsonSerializerSettings settings = new JsonSerializerSettings()
                 {
@@ -216,6 +291,7 @@ namespace CTTB.Commands
         public async Task GetBKTs(CommandContext ctx, [RemainingText] string arg = "")
         {
             var embed = new DiscordEmbedBuilder() { };
+            var time = DateTime.Now.ToString();
 
             try
             {
@@ -225,21 +301,62 @@ namespace CTTB.Commands
                 Directory.CreateDirectory("rkgs/150");
                 Directory.CreateDirectory("rkgs/200");
 
-                string json = File.ReadAllText($"rts.json");
-                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
-                json = File.ReadAllText($"cts.json");
-                foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
+                string json = string.Empty;
+                List<Track> trackList = new List<Track>();
+                List<Track> trackList200 = new List<Track>();
+
+                if (arg.ToLowerInvariant() == "rts")
                 {
-                    trackList.Add(t);
+                    json = File.ReadAllText($"rts.json");
+                    foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
+                    {
+                        trackList.Add(t);
+                    }
+                    json = File.ReadAllText($"rts200.json");
+                    foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
+                    {
+                        trackList200.Add(t);
+                    }
                 }
 
-                json = File.ReadAllText($"rts200.json");
-                List<Track> trackList200 = JsonConvert.DeserializeObject<List<Track>>(json);
-                json = File.ReadAllText($"cts200.json");
-                foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
+                else if (arg.ToLowerInvariant() == "cts")
                 {
-                    trackList200.Add(t);
+                    json = File.ReadAllText($"cts.json");
+                    foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
+                    {
+                        trackList.Add(t);
+                    }
+                    json = File.ReadAllText($"cts200.json");
+                    foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
+                    {
+                        trackList200.Add(t);
+                    }
                 }
+
+                else
+                {
+                    json = File.ReadAllText($"rts.json");
+                    foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
+                    {
+                        trackList.Add(t);
+                    }
+                    json = File.ReadAllText($"rts200.json");
+                    foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
+                    {
+                        trackList200.Add(t);
+                    }
+                    json = File.ReadAllText($"cts.json");
+                    foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
+                    {
+                        trackList.Add(t);
+                    }
+                    json = File.ReadAllText($"cts200.json");
+                    foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
+                    {
+                        trackList200.Add(t);
+                    }
+                }
+
                 if (arg == "")
                 {
                     embed = new DiscordEmbedBuilder
@@ -256,91 +373,33 @@ namespace CTTB.Commands
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
-                else if (arg.ToLowerInvariant() == "all")
+                else if (arg.ToLowerInvariant() == "all" ||
+                    arg.ToLowerInvariant() == "rts" ||
+                    arg.ToLowerInvariant() == "cts")
                 {
-                    var webClient = new WebClient();
-                    foreach (var track in trackList)
+                    Parallel.ForEach(trackList, track =>
                     {
-                        string categoryName = string.Empty;
-                        var name = string.Empty;
-                        int f = 0;
-                        if (track.Name == name)
-                        {
-                        }
-                        else if (track.Category == 16)
-                        {
-                            f = 0;
-                        }
-                        else
-                        {
-                            f = 1;
-                        }
-                        if (f == 0)
-                        {
-                            if (track.Category == 16)
-                            {
-                                categoryName = "Shortcut";
-                            }
-                            if (track.Category == 1)
-                            {
-                                categoryName = "Glitch";
-                            }
-                            if (track.Category == 2)
-                            {
-                                categoryName = "No Shortcut";
-                            }
-                        }
-                        else
-                        {
-                            if (track.Category == 0)
-                            {
-                                categoryName = "No Shortcut";
-                            }
-                            if (track.Category == 1)
-                            {
-                                categoryName = "Glitch";
-                            }
-                            if (track.Category == 2)
-                            {
-                                categoryName = "Shortcut";
-                            }
-                        }
-                        name = track.Name;
-                        webClient.DownloadFile(new Uri($"http://tt.chadsoft.co.uk{track.BKTLink.Split('.')[0]}.rkg"), $"rkgs/150/{String.Join("", track.Name.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))} - {categoryName} (150cc).rkg");
-                    }
-                    foreach (var track in trackList200)
+                        Task.WaitAll(Scraper.Dl150ccBKT(track));
+                    });
+
+                    Parallel.ForEach(trackList200, track =>
                     {
-                        string categoryName = string.Empty;
-                        if (track.Category == 4)
-                        {
-                            categoryName = "Shortcut";
-                        }
-                        if (track.Category == 5)
-                        {
-                            categoryName = "Glitch";
-                        }
-                        if (track.Category == 6 || track.Category == 0)
-                        {
-                            categoryName = "No Shortcut";
-                        }
-                        webClient.DownloadFile(new Uri($"http://tt.chadsoft.co.uk{track.BKTLink.Split('.')[0]}.rkg"), $"rkgs/200/{String.Join("", track.Name.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))} - {categoryName} (200cc).rkg");
-                    }
+                        Task.WaitAll(Scraper.Dl200ccBKT(track));
+                    });
 
                     ZipFile.CreateFromDirectory(@"rkgs",
-                        $"All BKT RKGs - {String.Join("", DateTime.Now.ToString().Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip");
-                    using (var fs = new FileStream($"All BKT RKGs - {String.Join("", DateTime.Now.ToString().Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip", FileMode.Open, FileAccess.Read))
+                        $"All BKT RKGs - {String.Join("", time.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip");
+                    using (var fs = new FileStream($"All BKT RKGs - {String.Join("", time.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip", FileMode.Open, FileAccess.Read))
                     {
                         var msg = await new DiscordMessageBuilder()
-                            .WithFiles(new Dictionary<string, Stream>() { { $"All BKT RKGs - {String.Join("", DateTime.Now.ToString().Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip", fs } })
+                            .WithFiles(new Dictionary<string, Stream>() { { $"{arg.ToUpperInvariant().Split('S')[0]} BKT RKGs - {String.Join("", time.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip", fs } })
                             .SendAsync(ctx.Channel);
                     }
                     Directory.Delete("rkgs", true);
-                    File.Delete($"All BKT RKGs - {String.Join("", DateTime.Now.ToString().Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip");
+                    File.Delete($"All BKT RKGs - {String.Join("", time.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip");
                 }
                 else
                 {
-                    var webClient = new WebClient();
-
                     List<Track> trackDisplay = new List<Track>();
                     List<Track> trackDisplay200 = new List<Track>();
 
@@ -378,82 +437,25 @@ namespace CTTB.Commands
                     }
                     else
                     {
-                        foreach (var track in trackDisplay)
+                        Parallel.ForEach(trackDisplay, track =>
                         {
-                            string categoryName = string.Empty;
-                            var name = string.Empty;
-                            int f = 0;
-                            if (track.Name == name)
-                            {
-                            }
-                            else if (track.Category == 16)
-                            {
-                                f = 0;
-                            }
-                            else
-                            {
-                                f = 1;
-                            }
-                            if (f == 0)
-                            {
-                                if (track.Category == 16)
-                                {
-                                    categoryName = "Shortcut";
-                                }
-                                if (track.Category == 1)
-                                {
-                                    categoryName = "Glitch";
-                                }
-                                if (track.Category == 2)
-                                {
-                                    categoryName = "No Shortcut";
-                                }
-                            }
-                            else
-                            {
-                                if (track.Category == 0)
-                                {
-                                    categoryName = "No Shortcut";
-                                }
-                                if (track.Category == 1)
-                                {
-                                    categoryName = "Glitch";
-                                }
-                                if (track.Category == 2)
-                                {
-                                    categoryName = "Shortcut";
-                                }
-                            }
-                            name = track.Name;
-                            webClient.DownloadFile(new Uri($"http://tt.chadsoft.co.uk{track.BKTLink.Split('.')[0]}.rkg"), $"rkgs/150/{String.Join("", track.Name.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))} - {categoryName} (150cc).rkg");
-                        }
-                        foreach (var track in trackDisplay200)
+                            Task.WaitAll(Scraper.Dl150ccBKT(track));
+                        });
+
+                        Parallel.ForEach(trackDisplay200, track =>
                         {
-                            string categoryName = string.Empty;
-                            if (track.Category == 4)
-                            {
-                                categoryName = "Shortcut";
-                            }
-                            if (track.Category == 5)
-                            {
-                                categoryName = "Glitch";
-                            }
-                            if (track.Category == 6 || track.Category == 0)
-                            {
-                                categoryName = "No Shortcut";
-                            }
-                            webClient.DownloadFile(new Uri($"http://tt.chadsoft.co.uk{track.BKTLink.Split('.')[0]}.rkg"), $"rkgs/200/{String.Join("", track.Name.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))} - {categoryName} (200cc).rkg");
-                        }
-                        ZipFile.CreateFromDirectory(@"rkgs", $"BKT RKGs containing {arg} - {String.Join("", DateTime.Now.ToString().Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip");
-                        using (var fs = new FileStream($"BKT RKGs containing {arg} - {String.Join("", DateTime.Now.ToString().Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip", FileMode.Open, FileAccess.Read))
+                            Task.WaitAll(Scraper.Dl200ccBKT(track));
+                        });
+                        ZipFile.CreateFromDirectory(@"rkgs", $"BKT RKGs containing {arg} - {String.Join("", time.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip");
+                        using (var fs = new FileStream($"BKT RKGs containing {arg} - {String.Join("", time.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip", FileMode.Open, FileAccess.Read))
                         {
                             var msg = await new DiscordMessageBuilder()
-                                .WithFiles(new Dictionary<string, Stream>() { { $"BKT RKGs containing {arg} - {String.Join("", DateTime.Now.ToString().Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip", fs } })
+                                .WithFiles(new Dictionary<string, Stream>() { { $"BKT RKGs containing {arg} - {String.Join("", time.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip", fs } })
                                 .SendAsync(ctx.Channel);
                         }
                     }
                     Directory.Delete("rkgs", true);
-                    File.Delete($"BKT RKGs containing {arg} - {String.Join("", DateTime.Now.ToString().Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip");
+                    File.Delete($"BKT RKGs containing {arg} - {String.Join("", time.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))}.zip");
                 }
             }
 
@@ -490,52 +492,46 @@ namespace CTTB.Commands
 
             try
             {
-                json = File.ReadAllText($"cts.json");
-                var trackList = JsonConvert.DeserializeObject<List<Track>>(json);
-                for (int i = 0; i < trackList.Count; i++)
+                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                ServiceAccountCredential credential = new ServiceAccountCredential(
+                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                var service = new SheetsService(new BaseClientService.Initializer()
                 {
-                    if (trackList[i].Category % 16 != 0)
-                    {
-                        trackList.RemoveAt(i);
-                        i--;
-                    }
-                }
+                    HttpClientInitializer = credential,
+                    ApplicationName = "Custom Track Testing Bot",
+                });
+
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Early 2022 Track Rating Data'!A226:Q443");
+                var response = await request.ExecuteAsync();
 
                 int j = 0;
-                List<Track> trackDisplay = new List<Track>();
+                List<string> trackDisplay = new List<string>();
 
-                for (int i = 0; i < trackList.Count; i++)
+                for (int i = 0; i < response.Values.Count; i++)
                 {
-                    if (trackList[i].Name.ToLowerInvariant().Contains(track.ToLowerInvariant()))
+                    if (response.Values[i][0].ToString().ToLowerInvariant().Contains(track.ToLowerInvariant()))
                     {
-                        trackDisplay.Add(trackList[i]);
+                        trackDisplay.Add(response.Values[i][0].ToString());
                         j++;
                     }
                 }
+
+
                 if (track == "average")
                 {
-                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                    ServiceAccountCredential credential = new ServiceAccountCredential(
-                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                    var service = new SheetsService(new BaseClientService.Initializer()
-                    {
-                        HttpClientInitializer = credential,
-                        ApplicationName = "Custom Track Testing Bot",
-                    });
-
-                    var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Early 2022 Track Rating Graphs'");
-                    var response = await request.ExecuteAsync();
+                    request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Early 2022 Track Rating Graphs'");
+                    response = await request.ExecuteAsync();
 
                     description += $"__**Average**__:\n{Math.Round((double.Parse(response.Values[4][12].ToString()) / (double.Parse(response.Values[4][12].ToString()) + double.Parse(response.Values[4][13].ToString()) + double.Parse(response.Values[4][14].ToString()))) * 100)}/{Math.Round((double.Parse(response.Values[4][13].ToString()) / (double.Parse(response.Values[4][12].ToString()) + double.Parse(response.Values[4][13].ToString()) + double.Parse(response.Values[4][14].ToString()))) * 100)}/{Math.Round((double.Parse(response.Values[4][14].ToString()) / (double.Parse(response.Values[4][12].ToString()) + double.Parse(response.Values[4][13].ToString()) + double.Parse(response.Values[4][14].ToString()))) * 100)}%\n";
 
                     embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
-                        Title = $"__**2022 Track Rating Average (Remove/Indifferent/Keep):**__",
+                        Title = $"__**Early 2022 Track Rating Average (Remove/Indifferent/Keep):**__",
                         Description = description,
                         Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -551,7 +547,7 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
-                        Description = $"*{track} could not be found.*" +
+                        Description = $"*{track} was not found in the latest track rating poll.*" +
                         "\n**c!rating track**",
                         Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -563,26 +559,11 @@ namespace CTTB.Commands
                 }
                 else
                 {
-                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                    ServiceAccountCredential credential = new ServiceAccountCredential(
-                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                    var service = new SheetsService(new BaseClientService.Initializer()
-                    {
-                        HttpClientInitializer = credential,
-                        ApplicationName = "Custom Track Testing Bot",
-                    });
-
-                    var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Early 2022 Track Rating Data'!A226:Q443");
-                    var response = await request.ExecuteAsync();
                     for (int i = 0; i < trackDisplay.Count; i++)
                     {
                         foreach (var t in response.Values)
                         {
-                            if (trackDisplay[i].Name == t[0].ToString())
+                            if (trackDisplay[i] == t[0].ToString())
                             {
                                 description += $"__**{t[0]}**__:\nAll - {Math.Round((double.Parse(t[2].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}/{Math.Round((double.Parse(t[3].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}/{Math.Round((double.Parse(t[4].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}%\n";
                                 description += $"Comp - {Math.Round((double.Parse(t[6].ToString()) / (double.Parse(t[6].ToString()) + double.Parse(t[7].ToString()) + double.Parse(t[8].ToString()))) * 100)}/{Math.Round((double.Parse(t[7].ToString()) / (double.Parse(t[6].ToString()) + double.Parse(t[7].ToString()) + double.Parse(t[8].ToString()))) * 100)}/{Math.Round((double.Parse(t[8].ToString()) / (double.Parse(t[6].ToString()) + double.Parse(t[7].ToString()) + double.Parse(t[8].ToString()))) * 100)}%\n";
@@ -612,7 +593,7 @@ namespace CTTB.Commands
                         embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**2022 Track Ratings for {track} (Remove/Indifferent/Keep):**__",
+                            Title = $"__**Early 2022 Track Ratings for {track} (Remove/Indifferent/Keep):**__",
                             Description = description,
                             Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -816,7 +797,7 @@ namespace CTTB.Commands
                     {
                         if (j < 1)
                         {
-                            if (response.Values[i][2].ToString().ToLowerInvariant().Contains(track.ToLowerInvariant()))
+                            if (response.Values[i][2].ToString().ToLowerInvariant().Contains(track.ToLowerInvariant()) && !response.Values[i][0].ToString().ToLowerInvariant().Contains("ignore"))
                             {
                                 k = i;
 
@@ -835,6 +816,10 @@ namespace CTTB.Commands
                                 else if (tally[0].ToString() == "✔")
                                 {
                                     tally[0] = DiscordEmoji.FromName(ctx.Client, ":Yes:");
+                                }
+                                if (tally.Count == 1)
+                                {
+                                    tally.Add("");
                                 }
                                 if (response.Values[i][6].ToString().ToCharArray().Length > 3500)
                                 {
@@ -1117,6 +1102,18 @@ namespace CTTB.Commands
                             }
                         };
                         await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                        DiscordChannel channel = ctx.Channel;
+
+                        foreach (var c in ctx.Guild.Channels)
+                        {
+                            if (c.Value.Id == 635313521487511554)
+                            {
+                                channel = c.Value;
+                            }
+                        }
+
+                        await channel.SendMessageAsync($"<@&608386209655554058> {track} has been added as homework. It is due for {dueMonth} {due.Day}, {due.Year}.");
                     }
                 }
             }
@@ -1535,7 +1532,7 @@ namespace CTTB.Commands
 
                     if (j == 0)
                     {
-                        mention = $"<@!{ctx.Member.Id}>";
+                        mention = $"<@{ctx.Member.Id}>";
                     }
 
                     if (track == "")
@@ -1545,7 +1542,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
                             Description = $"*Track was not inputted.*" +
-                                   "\n**c!gethw track mention/name**",
+                                   "\n**c!gethw track/all mention/name**",
                             Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
@@ -1581,7 +1578,7 @@ namespace CTTB.Commands
                         }
                         foreach (var m in councilJson)
                         {
-                            if ($"<@!{m.DiscordId}>" == mention)
+                            if ($"<@{m.DiscordId}>" == mention)
                             {
                                 l++;
                             }
@@ -1643,37 +1640,89 @@ namespace CTTB.Commands
                             }
                         }
 
+                        List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+
                         if (ix > 11)
                         {
-                            foreach (var t in response.Values)
+                            if (track.ToLowerInvariant() != "all")
                             {
-                                while (t.Count < response.Values[0].Count)
+                                foreach (var t in response.Values)
                                 {
-                                    t.Add("");
-                                }
-                                if (j < 1)
-                                {
-                                    j++;
-                                }
-                                else if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
-                                {
-                                    if (t[ix].ToString() == "")
+                                    while (t.Count < response.Values[0].Count)
                                     {
-                                        description = $"*{mention} has not done their homework yet.*";
+                                        t.Add("");
                                     }
-                                    else
+                                    if (j < 1)
                                     {
-                                        if (t[ix].ToString().ToCharArray().Length > 3500)
+                                        j++;
+                                    }
+                                    else if (t[0].ToString().ToLowerInvariant() == track.ToLowerInvariant())
+                                    {
+                                        if (t[ix].ToString() == "")
                                         {
-                                            description = $"**Homework of {mention}:**\n{t[ix].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
+                                            description = $"*{mention} has not done their homework yet.*";
                                         }
                                         else
                                         {
-                                            description = $"**Homework of {mention}:**\n{t[ix]}";
+                                            if (t[ix].ToString().ToCharArray().Length > 3500)
+                                            {
+                                                description = $"**Homework of {mention}:**\n{t[ix].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
+                                            }
+                                            else
+                                            {
+                                                description = $"**Homework of {mention}:**\n{t[ix]}";
+                                            }
                                         }
+                                        trackDisplay = t[0].ToString();
+                                        l++;
                                     }
-                                    trackDisplay = t[0].ToString();
-                                    l++;
+                                }
+                            }
+                            else
+                            {
+                                foreach (var t in response.Values)
+                                {
+                                    while (t.Count < response.Values[0].Count)
+                                    {
+                                        t.Add("");
+                                    }
+                                    if (j < 1)
+                                    {
+                                        j++;
+                                    }
+                                    else
+                                    {
+                                        if (t[ix].ToString() == "")
+                                        {
+                                            description = $"*{mention} has not done their homework yet.*";
+                                        }
+                                        else
+                                        {
+                                            if (t[ix].ToString().ToCharArray().Length > 3500)
+                                            {
+                                                description = $"**Homework of {mention}:**\n{t[ix].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
+                                            }
+                                            else
+                                            {
+                                                description = $"**Homework of {mention}:**\n{t[ix]}";
+                                            }
+                                        }
+                                        trackDisplay = t[0].ToString();
+
+                                        embed = new DiscordEmbedBuilder
+                                        {
+                                            Color = new DiscordColor("#FF0000"),
+                                            Title = $"__**{trackDisplay}**__",
+                                            Description = description,
+                                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                                            {
+                                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                            }
+                                        };
+
+                                        embeds.Add(embed);
+                                    }
                                 }
                             }
                         }
@@ -1685,7 +1734,7 @@ namespace CTTB.Commands
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
                                 Description = $"*{mention} could not be found on council.*" +
-                                   "\n**c!gethw track mention/name**",
+                                   "\n**c!gethw track/all mention/name**",
                                 Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
@@ -1695,6 +1744,18 @@ namespace CTTB.Commands
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         }
 
+                        else if (track.ToLowerInvariant() == "all")
+                        {
+                            List<Page> pages = new List<Page>();
+
+                            foreach (var e in embeds)
+                            {
+                                pages.Add(new Page("", e));
+                            }
+
+                            await ctx.Channel.SendPaginatedMessageAsync(ctx.User, pages);
+                        }
+
                         else if (l == 0)
                         {
                             embed = new DiscordEmbedBuilder
@@ -1702,7 +1763,7 @@ namespace CTTB.Commands
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
                                 Description = $"*{track} could not be found.*" +
-                                   "\n**c!gethw track mention/name**",
+                                   "\n**c!gethw track/all mention/name**",
                                 Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
@@ -1736,7 +1797,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!gethw track mention/name**",
+                           "\n**c!gethw track/all mention/name**",
                     Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
@@ -1834,7 +1895,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!hw [name of track]**",
+                           "\n**c!hw**",
                     Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
@@ -1894,12 +1955,15 @@ namespace CTTB.Commands
                         {
                             for (int h = 0; i < response.Values.Count; h++)
                             {
-                                if (response.Values[h][0].ToString().ToLowerInvariant().Contains(track.ToLowerInvariant()))
+                                if (h != 0)
                                 {
-                                    description = $"**[Easy:](https://chadsoft.co.uk/time-trials/rkgd/{response.Values[h + 251][1].ToString().Substring(0, 2)}/{response.Values[h + 251][1].ToString().Substring(2, 2)}/{response.Values[h + 251][1].ToString().Substring(4)}.html)**\n*{response.Values[h][1]}*\n**[Expert:](https://chadsoft.co.uk/time-trials/rkgd/{response.Values[h + 251][2].ToString().Substring(0, 2)}/{response.Values[h + 251][2].ToString().Substring(2, 2)}/{response.Values[h + 251][2].ToString().Substring(4)}.html)**\n*{response.Values[h][2]}*";
-                                    trackDisplay = trackList[i];
-                                    j++;
-                                    break;
+                                    if (response.Values[h][0].ToString().ToLowerInvariant().Contains(track.ToLowerInvariant()))
+                                    {
+                                        description = $"**Easy:**\n*[{response.Values[h][1]}](https://chadsoft.co.uk/time-trials/rkgd/{response.Values[h + 251][1].ToString().Substring(0, 2)}/{response.Values[h + 251][1].ToString().Substring(2, 2)}/{response.Values[h + 251][1].ToString().Substring(4)}.html)*\n**Expert:**\n*[{response.Values[h][2]}](https://chadsoft.co.uk/time-trials/rkgd/{response.Values[h + 251][2].ToString().Substring(0, 2)}/{response.Values[h + 251][2].ToString().Substring(2, 2)}/{response.Values[h + 251][2].ToString().Substring(4)}.html)*";
+                                        trackDisplay = trackList[i];
+                                        j++;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -1916,7 +1980,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.*" +
-                        "\n**c!staff track**",
+                               "\n**c!staff track**",
                         Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1188255728",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
@@ -2032,7 +2096,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*No track inputted.*" +
-                           "\n**c!getinfo track**",
+                           "\n**c!info track**",
                         Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
@@ -2049,7 +2113,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{track} could not be found.\nThe track does not exist, or is not in CTGP.*" +
-                        "\n**c!getinfo track**",
+                        "\n**c!info track**",
                         Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
@@ -2081,7 +2145,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!getinfo track**",
+                           "\n**c!info track**",
                     Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
@@ -2259,7 +2323,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
                             Description = $"*{track} could not be found.\nThe track does not exist, or is not in CTGP.*" +
-                            "\n**c!getissues track**",
+                            "\n**c!issues track**",
                             Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
@@ -2292,7 +2356,7 @@ namespace CTTB.Commands
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
                     Description = $"*An exception has occured.*" +
-                           "\n**c!getissues track**",
+                           "\n**c!issues track**",
                     Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
@@ -2798,7 +2862,15 @@ namespace CTTB.Commands
 
                 for (int i = 0; i < trackList.Count; i++)
                 {
-                    if (trackList[i].Name.ToLowerInvariant().Contains(track.ToLowerInvariant()))
+                    if (trackDisplay.Count > 0)
+                    {
+                        if (trackList[i].Name == trackDisplay[0].Name)
+                        {
+                            trackDisplay.Add(trackList[i]);
+                            j++;
+                        }
+                    }
+                    else if (trackList[i].Name.ToLowerInvariant().Contains(track.ToLowerInvariant()))
                     {
                         trackDisplay.Add(trackList[i]);
                         j++;
@@ -2807,7 +2879,15 @@ namespace CTTB.Commands
 
                 for (int i = 0; i < trackList200.Count; i++)
                 {
-                    if (trackList200[i].Name.ToLowerInvariant().Contains(track.ToLowerInvariant()))
+                    if (trackDisplay200.Count > 0)
+                    {
+                        if (trackList200[i].Name == trackDisplay200[0].Name)
+                        {
+                            trackDisplay200.Add(trackList200[i]);
+                            j++;
+                        }
+                    }
+                    else if (trackList200[i].Name.ToLowerInvariant().Contains(track.ToLowerInvariant()))
                     {
                         trackDisplay200.Add(trackList200[i]);
                         j++;
@@ -2830,116 +2910,37 @@ namespace CTTB.Commands
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
-                else if (j == 1)
+                else
                 {
+                    if (trackDisplay.Count > 0)
+                    {
+                        description += "__**150cc:**__";
+                        foreach (var t in trackDisplay)
+                        {
+                            description += $"\n[{t.BestTime}](https://chadsoft.co.uk/time-trials{t.BKTLink.Split('.')[0]}.html) *({t.CategoryName})* - {t.BKTHolder} *({t.BKTUploadTime.Split('T')[0]})*";
+                        }
+                    }
+
+                    if (trackDisplay200.Count > 0)
+                    {
+                        description += "\n__**200cc:**__";
+                        foreach (var t in trackDisplay200)
+                        {
+                            description += $"\n[{t.BestTime}](https://chadsoft.co.uk/time-trials{t.BKTLink.Split('.')[0]}.html) *({t.CategoryName})* - {t.BKTHolder} *({t.BKTUploadTime.Split('T')[0]})*";
+                        }
+                    }
+
                     embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Best Time on {track}:**__",
-                        Description = $"{trackDisplay[0].Name} - *{trackDisplay[0].BestTime}*",
-                        Url = "https://chadsoft.co.uk/time-trials/",
+                        Title = $"__**Best Times on {trackDisplay[0].Name} *(First result)*:**__",
+                        Description = description,
+                        Url = $"https://chadsoft.co.uk/time-trials/",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                         }
                     };
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                }
-                else
-                {
-                    var name = string.Empty;
-                    int f = 0;
-                    description += "__**150cc:**__\n";
-                    foreach (var t in trackDisplay)
-                    {
-                        if (t.Name == name)
-                        {
-                        }
-                        else if (trackDisplay[0].Category == 16)
-                        {
-                            f = 0;
-                        }
-                        else
-                        {
-                            f = 1;
-                        }
-                        if (f == 0)
-                        {
-                            if (t.Category == 16)
-                            {
-                                description += $"{t.Name} (Shortcut) - *{t.BestTime}*\n";
-                            }
-                            if (t.Category == 1)
-                            {
-                                description += $"{t.Name} (Glitch) - *{t.BestTime}*\n";
-                            }
-                            if (t.Category == 2)
-                            {
-                                description += $"{t.Name} (No Shortcut) - *{t.BestTime}*\n";
-                            }
-                        }
-                        else
-                        {
-                            if (t.Category == 0)
-                            {
-                                description += $"{t.Name} (No Shortcut) - *{t.BestTime}*\n";
-                            }
-                            if (t.Category == 1)
-                            {
-                                description += $"{t.Name} (Glitch) - *{t.BestTime}*\n";
-                            }
-                            if (t.Category == 2)
-                            {
-                                description += $"{t.Name} (Shortcut) - *{t.BestTime}*\n";
-                            }
-                        }
-                        name = t.Name;
-                    }
-                    description += "__**200cc:**__\n";
-                    foreach (var t in trackDisplay200)
-                    {
-                        if (t.Category == 4)
-                        {
-                            description += $"{t.Name} (Shortcut) - *{t.BestTime}*\n";
-                        }
-                        if (t.Category == 5)
-                        {
-                            description += $"{t.Name} (Glitch) - *{t.BestTime}*\n";
-                        }
-                        if (t.Category == 6 || t.Category == 0)
-                        {
-                            description += $"{t.Name} (No Shortcut) - *{t.BestTime}*\n";
-                        }
-                    }
-                    if (description.ToCharArray().Length > 800)
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Error:**__",
-                            Description = "*Embed too large. Please refine your search.*" +
-                                   "\n**c!bkt track**",
-                            Url = "https://chadsoft.co.uk/time-trials/",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                    }
-                    else
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Best Times on {track}:**__",
-                            Description = description,
-                            Url = "https://chadsoft.co.uk/time-trials/",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                    }
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
                 }
