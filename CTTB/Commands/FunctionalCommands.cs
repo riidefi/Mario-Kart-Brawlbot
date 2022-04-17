@@ -21,6 +21,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -287,6 +288,108 @@ namespace CTTB.Commands
             }
         }
 
+        [Command("dmrole")]
+        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        public async Task DMRole(CommandContext ctx, string role = "", [RemainingText] string message = "")
+        {
+            if (ctx.Channel.Id == 751534710068477953)
+            {
+                try
+                {
+                    DiscordRole discordRole = null;
+                    var embed = new DiscordEmbedBuilder() { };
+                    foreach (var r in ctx.Guild.Roles.Values)
+                    {
+                        if (r.Id.ToString() == role.Replace("<@&", string.Empty).Replace(">", string.Empty))
+                        {
+                            discordRole = r;
+                        }
+                    }
+                    if (discordRole == null)
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{role} could not be found in the server.*" +
+                            "\n**c!dmrole role message**",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else if (message == "")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*Message was empty.*" +
+                            "\n**c!dmrole role message**",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        var members = ctx.Guild.GetAllMembersAsync();
+                        foreach (var member in members.Result)
+                        {
+                            foreach (var r in member.Roles)
+                            {
+                                if (r == discordRole)
+                                {
+                                    try
+                                    {
+                                        await member.SendMessageAsync(message).ConfigureAwait(false);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine(ex.Message);
+                                        Console.WriteLine("DMs are likely closed.");
+                                    }
+                                }
+                            }
+                        }
+
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Success:**__",
+                            Description = $"*Message was sent to {role} successfully.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*An exception has occured.*" +
+                            "\n**c!dmrole role message**",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                    Console.WriteLine(ex.ToString());
+                }
+            }
+        }
+
         [Command("dlbkt")]
         public async Task GetBKTs(CommandContext ctx, [RemainingText] string arg = "")
         {
@@ -484,8 +587,6 @@ namespace CTTB.Commands
         public async Task GetTrackRating(CommandContext ctx, [RemainingText] string track = "")
         {
             await ctx.TriggerTypingAsync();
-
-            string json = "";
             string description = "";
 
             var embed = new DiscordEmbedBuilder { };
@@ -899,7 +1000,7 @@ namespace CTTB.Commands
 
             try
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320)
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                 {
                     string description = string.Empty;
 
@@ -1145,7 +1246,7 @@ namespace CTTB.Commands
             var embed = new DiscordEmbedBuilder { };
             try
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320)
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                 {
                     if (track == "")
                     {
@@ -1285,13 +1386,13 @@ namespace CTTB.Commands
         }
 
         [Command("submithw")]
-        [RequireRoles(RoleCheckMode.Any, "Track Council")]
+        [RequireRoles(RoleCheckMode.Any, "Track Council", "Admin")]
         public async Task SubmitHomework(CommandContext ctx, string vote = "", string track = "", [RemainingText] string feedback = "")
         {
             var embed = new DiscordEmbedBuilder { };
             try
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320)
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                 {
                     string strAlpha = "";
 
@@ -1508,13 +1609,13 @@ namespace CTTB.Commands
         }
 
         [Command("gethw")]
-        [RequireRoles(RoleCheckMode.Any, "Track Council")]
+        [RequireRoles(RoleCheckMode.Any, "Track Council", "Admin")]
         public async Task GetHomework(CommandContext ctx, string track = "", string mention = "")
         {
             var embed = new DiscordEmbedBuilder { };
             try
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320)
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                 {
                     string description = string.Empty;
                     string json = string.Empty;
@@ -1811,13 +1912,13 @@ namespace CTTB.Commands
         }
 
         [Command("hw")]
-        [RequireRoles(RoleCheckMode.Any, "Track Council")]
+        [RequireRoles(RoleCheckMode.Any, "Track Council", "Admin")]
         public async Task GetHomework(CommandContext ctx, [RemainingText] string placeholder)
         {
             var embed = new DiscordEmbedBuilder { };
             try
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320)
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                 {
                     string description = string.Empty;
                     await ctx.TriggerTypingAsync();

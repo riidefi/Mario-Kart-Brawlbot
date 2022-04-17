@@ -62,5 +62,9 @@ namespace CTTB.Commands
     {
         [JsonProperty("_links")]
         public Link Link { get; set; }
+        [JsonProperty("player")]
+        public string BKTHolder { get; set; }
+        [JsonProperty("dateSet")]
+        public string DateSet { get; set; }
     }
 }

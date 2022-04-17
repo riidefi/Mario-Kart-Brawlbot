@@ -11,7 +11,6 @@ namespace CTTB.Commands
     {
 
         [Command("help")]
-        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task Help(CommandContext ctx)
         {
             string description = "__**Standard Commands:**__" +

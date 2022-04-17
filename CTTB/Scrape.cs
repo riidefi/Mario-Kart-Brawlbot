@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -251,11 +252,11 @@ namespace CTTB
                 DownloadLeaderboard(trackListRt),
                 DownloadLeaderboard(trackListRt200),
                 DownloadLeaderboard(trackList200));
-            
-            Task.WaitAll(DownloadBKTInfo(trackList),
-                 DownloadBKTInfo(trackListRt),
-                 DownloadBKTInfo(trackListRt200),
-                 DownloadBKTInfo(trackList200));
+
+            Task.WaitAll(DownloadBKTInfo(trackList, "cts"),
+                 DownloadBKTInfo(trackListRt, "rts"),
+                 DownloadBKTInfo(trackListRt200, "rts200"),
+                 DownloadBKTInfo(trackList200, "cts200"));
             await Task.CompletedTask;
         }
 
@@ -281,6 +282,8 @@ namespace CTTB
                 if (ghostList.Count > 0)
                 {
                     t.BKTLink = ghostList[0].Link.Href.LeaderboardLink;
+                    t.BKTHolder = ghostList[0].BKTHolder;
+                    t.BKTUploadTime = ghostList[0].DateSet;
                 }
                 Console.WriteLine($"{t.Name} has been downloaded.");
                 webClient.Dispose();
@@ -302,79 +305,75 @@ namespace CTTB
             }
         }
 
-        private async Task DownloadBKTInfo(List<Track> trackList)
+        private async Task DownloadBKTInfo(List<Track> trackList, string type)
         {
-            foreach (var trackBatch in trackList.Batch(5))
+            WebClient webClient = new WebClient();
+            HtmlDocument document = new HtmlDocument();
+            int l = 0;
+        retry:
+            l++;
+            try
             {
-                List<Task> tasks = new List<Task>();
-                foreach (var track in trackBatch)
+                string html = string.Empty;
+                if (type == "rts")
                 {
-                    tasks.Add(DownloadBKTInfoTask(track));
+                    html = await webClient.DownloadStringTaskAsync("https://www.chadsoft.co.uk/time-trials/original-track-leaderboards.html");
                 }
-
-                Task.WaitAll(tasks.ToArray());
+                else if (type == "cts")
+                {
+                    html = await webClient.DownloadStringTaskAsync("https://www.chadsoft.co.uk/time-trials/ctgp-leaderboards.html");
+                }
+                else if (type == "rts200")
+                {
+                    html = await webClient.DownloadStringTaskAsync("https://www.chadsoft.co.uk/time-trials/original-track-leaderboards-200cc.html");
+                }
+                else
+                {
+                    html = await webClient.DownloadStringTaskAsync("https://www.chadsoft.co.uk/time-trials/ctgp-leaderboards-200cc.html");
+                }
+                document.LoadHtml(html);
             }
+            catch
+            {
+                if (l > 10)
+                {
+                    Console.WriteLine("Failed to download leaderboard. Retrying...");
+                    Thread.Sleep(5000);
+                    goto retry;
+                }
+                else
+                {
+                    Console.WriteLine("Leaderboard download failed.");
+                }
+            }
+            Parallel.ForEach(trackList, track =>
+            {
+                Task.WaitAll(DownloadBKTInfoTask(track, document));
+            });
             await Task.CompletedTask;
 
         }
 
-        private async Task DownloadBKTInfoTask(Track t)
+        private async Task DownloadBKTInfoTask(Track t, HtmlDocument document)
         {
-            int l = 0;
-        retry:
-            l++;
-            WebClient webClient = new WebClient();
-            try
+            var hrefs = document.DocumentNode.SelectNodes("//td/a");
+            foreach (var href in hrefs)
             {
-                var document = new HtmlDocument();
-                var html = await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{t.BKTLink.Split('.')[0]}.html");
-                document.LoadHtml(html);
-                var strongs = document.DocumentNode.SelectNodes("//div//p//strong");
-                t.BKTHolder = strongs[0].InnerText;
-                t.BKTUploadTime = strongs[3].InnerText;
-                if (strongs[1].InnerText.Contains("Normal"))
+                if (href.OuterHtml.Split('"')[1] == $".{t.LeaderboardLink.Split('.')[0]}.html")
                 {
-                    t.CategoryName = "Normal";
-                }
-
-                else if (strongs[1].InnerText.Contains("No-shortcut"))
-                {
-                    t.CategoryName = "No-shortcut";
-                }
-
-                else if (strongs[1].InnerText.Contains("Shortcut"))
-                {
-                    t.CategoryName = "Shortcut";
-                }
-
-                else if (strongs[1].InnerText.Contains("Glitch"))
-                {
-                    t.CategoryName = "Glitch";
-                }
-
-                else
-                {
-                    t.CategoryName = "Normal";
-                }
-
-                Console.WriteLine($"Downloaded BKT info for {t.Name}");
-                webClient.Dispose();
-            }
-            catch
-            {
-                if (l >= 10)
-                {
-                    Console.WriteLine($"{t.Name} download failed after 10 retries. Skipping...");
-                    webClient.Dispose();
-                }
-                else
-                {
-                    Console.WriteLine($"{t.Name} download failed after {l} retries. Retrying...");
-                    webClient.Dispose();
-                    Thread.Sleep(10000);
-                    goto retry;
+                    if (!href.InnerText.Contains("Normal") && !href.InnerText.Contains("No-shortcut") && !href.InnerText.Contains("Shortcut") && !href.InnerText.Contains("Glitch"))
+                    {
+                        t.CategoryName = "Normal";
+                    }
+                    else
+                    {
+                        t.CategoryName = href.InnerText.Split(' ')[href.InnerText.Split(' ').Count() - 1];
+                    }
                 }
             }
+
+            Console.WriteLine($"Downloaded BKT info for {t.Name}");
+            await Task.CompletedTask;
         }
 
         public async Task Dl200ccBKT(Track t)
