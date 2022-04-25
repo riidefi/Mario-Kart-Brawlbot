@@ -52,7 +52,8 @@ namespace CTTB.Commands
                             "\nc!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps" +
                             "\nc!gethw \"track\"/all mention/name" +
                             "\nc!addhw \"track\" \"author\" \"version\" \"download link\" \"slot-filename\" \"speed/lap modifiers\" notes" +
-                            "\nc!delhw track";
+                            "\nc!delhw track" +
+                            "\nc!createtest";
                     }
                 }
             }

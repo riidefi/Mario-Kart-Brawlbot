@@ -342,3 +342,7 @@ ASALocalRun/
 /CTTB/CTTB.csproj
 /CTTB.sln
 *.p12
+*.dll
+*.szs
+*.bin
+[Rr]esources/

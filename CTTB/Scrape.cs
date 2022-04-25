@@ -1,4 +1,8 @@
 ﻿using CTTB.Commands;
+using DSharpPlus.CommandsNext;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Services;
+using Google.Apis.Sheets.v4;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using System;
@@ -7,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -262,18 +267,15 @@ namespace CTTB
 
         private async Task DownloadLeaderboard(List<Track> trackList)
         {
-            Parallel.ForEach(trackList, track =>
+            foreach (var track in trackList)
             {
-                Task.WaitAll(DownloadLeaderboardTask(track));
-            });
+                await DownloadLeaderboardTask(track);
+            }
             await Task.CompletedTask;
         }
 
         private async Task DownloadLeaderboardTask(Track t)
         {
-            int l = 0;
-        retry:
-            l++;
             WebClient webClient = new WebClient();
             try
             {
@@ -290,18 +292,8 @@ namespace CTTB
             }
             catch
             {
-                if (l >= 10)
-                {
-                    Console.WriteLine($"{t.Name} download failed after 10 retries. Skipping...");
-                    webClient.Dispose();
-                }
-                else
-                {
-                    Console.WriteLine($"{t.Name} download failed after {l} retries. Retrying...");
-                    webClient.Dispose();
-                    Thread.Sleep(10000);
-                    goto retry;
-                }
+                Console.WriteLine($"{t.Name} download failed. Skipping...");
+                webClient.Dispose();
             }
         }
 
