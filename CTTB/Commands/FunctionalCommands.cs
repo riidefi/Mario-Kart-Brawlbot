@@ -1,4 +1,5 @@
-﻿using DSharpPlus.CommandsNext;
+﻿using DSharpPlus;
+using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
@@ -23,12 +24,14 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices.ComTypes;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Xml;
 
 namespace CTTB.Commands
 {
@@ -36,9 +39,13 @@ namespace CTTB.Commands
     {
         Scrape Scraper = new Scrape();
 
+        System.Timers.Timer dailyTimer;
+
+        int lastHwDateChecked;
+
         public bool CompareStrings(string arg1, string arg2)
         {
-            if (arg1.Replace(".", string.Empty).Replace("_", " ").Replace("'", string.Empty).ToLowerInvariant() == arg2.Replace(".", string.Empty).Replace("_", " ").Replace("'", string.Empty).ToLowerInvariant())
+            if (arg1.Replace(".", string.Empty).Replace("_", " ").Replace("`", string.Empty).Replace("'", string.Empty).ToLowerInvariant() == arg2.Replace(".", string.Empty).Replace("_", " ").Replace("'", string.Empty).ToLowerInvariant())
             {
                 return true;
             }
@@ -50,7 +57,7 @@ namespace CTTB.Commands
 
         public bool CompareIncompleteStrings(string arg1, string arg2)
         {
-            if (arg1.Replace(".", string.Empty).Replace("_", " ").Replace("'", string.Empty).ToLowerInvariant().Contains(arg2.Replace(".", string.Empty).Replace("_", " ").Replace("'", string.Empty).ToLowerInvariant()))
+            if (arg1.Replace(".", string.Empty).Replace("_", " ").Replace("`", string.Empty).Replace("'", string.Empty).ToLowerInvariant().Contains(arg2.Replace(".", string.Empty).Replace("_", " ").Replace("'", string.Empty).ToLowerInvariant()))
             {
                 return true;
             }
@@ -60,35 +67,90 @@ namespace CTTB.Commands
             }
         }
 
-        [Command("update")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
-        public async Task UpdateTimer(CommandContext ctx, [RemainingText] string arg = "")
+        public bool CompareStringsLevenshteinDistance(string arg1, string arg2)
         {
-            var embed = new DiscordEmbedBuilder() { };
+            arg1 = arg1.ToLowerInvariant();
+            arg2 = arg2.ToLowerInvariant();
 
-            await ctx.TriggerTypingAsync();
-            if (CompareStrings(arg, "timer"))
+            var bounds = new { Height = arg1.Length + 1, Width = arg2.Length + 1 };
+
+            int[,] matrix = new int[bounds.Height, bounds.Width];
+
+            for (int height = 0; height < bounds.Height; height++) { matrix[height, 0] = height; };
+            for (int width = 0; width < bounds.Width; width++) { matrix[0, width] = width; };
+
+            for (int height = 1; height < bounds.Height; height++)
             {
-                var timer = new System.Timers.Timer(172800000);
-                timer.AutoReset = true;
-                timer.Elapsed += async (s, e) => await Update(ctx, "all");
-                timer.Start();
-                embed = new DiscordEmbedBuilder
+                for (int width = 1; width < bounds.Width; width++)
                 {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Notice:**__",
-                    Description = "Timer has been started.",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    int cost = (arg1[height - 1] == arg2[width - 1]) ? 0 : 1;
+                    int insertion = matrix[height, width - 1] + 1;
+                    int deletion = matrix[height - 1, width] + 1;
+                    int substitution = matrix[height - 1, width - 1] + cost;
+
+                    int distance = Math.Min(insertion, Math.Min(deletion, substitution));
+
+                    if (height > 1 && width > 1 && arg1[height - 1] == arg2[width - 2] && arg1[height - 2] == arg2[width - 1])
                     {
-                        Text = $"Server Time: {DateTime.Now}"
+                        distance = Math.Min(distance, matrix[height - 2, width - 2] + cost);
                     }
-                };
+
+                    matrix[height, width] = distance;
+                }
+            }
+
+            if (matrix[bounds.Height - 1, bounds.Width - 1] > 2)
+            {
+                return false;
             }
             else
             {
+                return true;
+            }
+        }
+
+        public bool CompareStringAbbreviation(string abbr, string full)
+        {
+            string[] fullArray = full.Split(' ');
+
+            string abbreviation = string.Empty;
+
+            if (full.Contains(" ") && (fullArray[0] == "SNES" ||
+                fullArray[0] == "N64" ||
+                fullArray[0] == "GBA" ||
+                fullArray[0] == "GCN" ||
+                fullArray[0] == "DS" ||
+                fullArray[0] == "3DS"))
+            {
+                abbreviation = $"{fullArray[0]} ";
+                fullArray[0] = "";
+            }
+
+            for (int i = 0; i < fullArray.Length; i++)
+            {
+                if (fullArray[i].Length != 0)
+                {
+                    abbreviation += fullArray[i].Substring(0, 1);
+                }
+            }
+            if (abbreviation.ToLowerInvariant() == abbr.ToLowerInvariant())
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        [Command("update")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task UpdateTimer(CommandContext ctx, [RemainingText] string arg = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176)
+            {
+                await ctx.TriggerTypingAsync();
                 await Update(ctx, arg);
 
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Notice:**__",
@@ -98,8 +160,9 @@ namespace CTTB.Commands
                         Text = $"Server Time: {DateTime.Now}"
                     }
                 };
+
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
             }
-            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
 
         public async Task Update(CommandContext ctx, string arg)
@@ -178,7 +241,31 @@ namespace CTTB.Commands
                     }
                 }
 
-                var oldJson = File.ReadAllText("cts.json");
+                string oldRtJson = File.ReadAllText("rts.json");
+                List<Track> oldRtTrackList = JsonConvert.DeserializeObject<List<Track>>(oldRtJson);
+
+                for (int i = 0; i < oldRtTrackList.Count; i++)
+                {
+                    trackListRt[i].WiimmfiName = oldRtTrackList[i].WiimmfiName;
+                    trackListRt[i].WiimmfiScore = oldRtTrackList[i].WiimmfiScore;
+                    trackListRt[i].BKTLink = oldRtTrackList[i].BKTLink;
+                    trackListRt[i].BKTHolder = oldRtTrackList[i].BKTHolder;
+                    trackListRt[i].CategoryName = oldRtTrackList[i].CategoryName;
+                }
+
+                oldRtJson = File.ReadAllText("rts200.json");
+                oldRtTrackList = JsonConvert.DeserializeObject<List<Track>>(oldRtJson);
+
+                for (int i = 0; i < oldRtTrackList.Count; i++)
+                {
+                    trackListRt200[i].WiimmfiName = oldRtTrackList[i].WiimmfiName;
+                    trackListRt200[i].WiimmfiScore = oldRtTrackList[i].WiimmfiScore;
+                    trackListRt200[i].BKTLink = oldRtTrackList[i].BKTLink;
+                    trackListRt200[i].BKTHolder = oldRtTrackList[i].BKTHolder;
+                    trackListRt200[i].CategoryName = oldRtTrackList[i].CategoryName;
+                }
+
+                string oldJson = File.ReadAllText("cts.json");
                 List<Track> oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
 
                 for (int i = 0; i < oldTrackList.Count; i++)
@@ -188,18 +275,6 @@ namespace CTTB.Commands
                     trackList[i].BKTLink = oldTrackList[i].BKTLink;
                     trackList[i].BKTHolder = oldTrackList[i].BKTHolder;
                     trackList[i].CategoryName = oldTrackList[i].CategoryName;
-                }
-
-                oldJson = File.ReadAllText("rts.json");
-                oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
-
-                for (int i = 0; i < oldTrackList.Count; i++)
-                {
-                    trackListRt[i].WiimmfiName = oldTrackList[i].WiimmfiName;
-                    trackListRt[i].WiimmfiScore = oldTrackList[i].WiimmfiScore;
-                    trackListRt[i].BKTLink = oldTrackList[i].BKTLink;
-                    trackListRt[i].BKTHolder = oldTrackList[i].BKTHolder;
-                    trackListRt[i].CategoryName = oldTrackList[i].CategoryName;
                 }
 
                 oldJson = File.ReadAllText("cts200.json");
@@ -212,18 +287,6 @@ namespace CTTB.Commands
                     trackList200[i].BKTLink = oldTrackList[i].BKTLink;
                     trackList200[i].BKTHolder = oldTrackList[i].BKTHolder;
                     trackList200[i].CategoryName = oldTrackList[i].CategoryName;
-                }
-
-                oldJson = File.ReadAllText("rts200.json");
-                oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
-
-                for (int i = 0; i < oldTrackList.Count; i++)
-                {
-                    trackListRt200[i].WiimmfiName = oldTrackList[i].WiimmfiName;
-                    trackListRt200[i].WiimmfiScore = oldTrackList[i].WiimmfiScore;
-                    trackListRt200[i].BKTLink = oldTrackList[i].BKTLink;
-                    trackListRt200[i].BKTHolder = oldTrackList[i].BKTHolder;
-                    trackListRt200[i].CategoryName = oldTrackList[i].CategoryName;
                 }
 
                 try
@@ -274,6 +337,16 @@ namespace CTTB.Commands
                     await Scraper.GetBKTLeaderboards(trackListRt, trackListRt200, trackList, trackList200);
                 }
 
+                try
+                {
+                    await Scraper.GetSlotIds(trackListRt, trackListRt200, trackList, trackList200);
+                }
+                catch
+                {
+                    Thread.Sleep(300000);
+                    await Scraper.GetSlotIds(trackListRt, trackListRt200, trackList, trackList200);
+                }
+
                 JsonSerializerSettings settings = new JsonSerializerSettings()
                 {
                     DefaultValueHandling = DefaultValueHandling.Ignore
@@ -292,6 +365,58 @@ namespace CTTB.Commands
 
                 var today = DateTime.Now;
                 File.WriteAllText("lastUpdated.txt", today.ToString());
+
+                var processInfo = new ProcessStartInfo();
+                processInfo.FileName = @"sudo";
+                processInfo.Arguments = $"cp rts.json /var/www/brawlbox/";
+                processInfo.CreateNoWindow = true;
+                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                processInfo.UseShellExecute = false;
+                processInfo.RedirectStandardOutput = true;
+
+                var process = new Process();
+                process.StartInfo = processInfo;
+                process.Start();
+                process.WaitForExit();
+
+                processInfo = new ProcessStartInfo();
+                processInfo.FileName = @"sudo";
+                processInfo.Arguments = $"cp rts200.json /var/www/brawlbox/";
+                processInfo.CreateNoWindow = true;
+                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                processInfo.UseShellExecute = false;
+                processInfo.RedirectStandardOutput = true;
+
+                process = new Process();
+                process.StartInfo = processInfo;
+                process.Start();
+                process.WaitForExit();
+
+                processInfo = new ProcessStartInfo();
+                processInfo.FileName = @"sudo";
+                processInfo.Arguments = $"cp cts.json /var/www/brawlbox/";
+                processInfo.CreateNoWindow = true;
+                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                processInfo.UseShellExecute = false;
+                processInfo.RedirectStandardOutput = true;
+
+                process = new Process();
+                process.StartInfo = processInfo;
+                process.Start();
+                process.WaitForExit();
+
+                processInfo = new ProcessStartInfo();
+                processInfo.FileName = @"sudo";
+                processInfo.Arguments = $"cp cts200.json /var/www/brawlbox/";
+                processInfo.CreateNoWindow = true;
+                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                processInfo.UseShellExecute = false;
+                processInfo.RedirectStandardOutput = true;
+
+                process = new Process();
+                process.StartInfo = processInfo;
+                process.Start();
+                process.WaitForExit();
             }
 
             catch (Exception ex)
@@ -300,7 +425,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
-                    Description = $"*An exception has occured.*" +
+                    Description = $"*{ex.Message}*" +
                               "\n**c!update**",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
@@ -313,41 +438,899 @@ namespace CTTB.Commands
             }
         }
 
-        [Command("createtest")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
-        public async Task CreateTestPack(CommandContext ctx, [RemainingText] string placeholder)
+        [Command("assignedthreads")]
+        [RequireRoles(RoleCheckMode.Any, "Track Council", "Admin")]
+        public async Task CheckAssignedThreads(CommandContext ctx, [RemainingText] string member = "")
         {
             try
             {
-                await ctx.TriggerTypingAsync();
-
-                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                ServiceAccountCredential credential = new ServiceAccountCredential(
-                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                var service = new SheetsService(new BaseClientService.Initializer()
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                 {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "Custom Track Testing Bot",
-                });
-
-                var request = service.Spreadsheets.Values.Get("19CF8UP1ubGfkM31uHha6bxYFENnQ-k7L7AEtozENnvk", "'Track Pack Downloads'");
-                var responseRaw = await request.ExecuteAsync();
-                request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                var response = await request.ExecuteAsync();
-
-                foreach (var v in response.Values)
-                {
-                    while (v.Count < 10)
+                    string json;
+                    if (member == "reset" && ctx.Member.Roles.Select(x => x.Name == "Admin").Count() > 0)
                     {
-                        v.Add("");
+                        using (var fs = File.OpenRead("council.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        foreach (var m in councilJson)
+                        {
+                            m.AssignedThreadIds.Clear();
+                        }
+
+                        string council = JsonConvert.SerializeObject(councilJson);
+                        File.WriteAllText("council.json", council);
+
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Success:**__",
+                            Description = "The council json has been reset.",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        string description = string.Empty;
+                        using (var fs = File.OpenRead("council.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        int j = 0;
+                        foreach (var role in ctx.Member.Roles)
+                        {
+                            if (role.Name == "Admin")
+                            {
+                                j++;
+                                break;
+                            }
+                        }
+                        int ix = -1;
+
+                        if (j == 0)
+                        {
+                            ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
+                        }
+                        else
+                        {
+                            if (member == "")
+                            {
+                                ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
+                            }
+                            else
+                            {
+                                ix = councilJson.FindIndex(x => CompareIncompleteStrings(x.SheetName, member) || CompareStringsLevenshteinDistance(x.SheetName, member));
+                            }
+                        }
+
+                        for (int i = 0; i < councilJson[ix].AssignedThreadIds.Count; i++)
+                        {
+                            string tName = string.Empty;
+                            DiscordChannel wipFeedbackChannel;
+                            ctx.Guild.Channels.TryGetValue(369281592407097345, out wipFeedbackChannel);
+                            List<DiscordChannel> threads = new List<DiscordChannel>((await wipFeedbackChannel.ListPublicArchivedThreadsAsync()).Threads);
+                            foreach (var thread in wipFeedbackChannel.Threads)
+                            {
+                                threads.Add(thread);
+                            }
+                            foreach (var thread in threads)
+                            {
+                                if (thread.Id == councilJson[ix].AssignedThreadIds[i])
+                                {
+                                    tName = thread.Name;
+                                }
+                            }
+                            description += $"*[{tName}](https://discord.com/channels/180306609233330176/{councilJson[ix].AssignedThreadIds[i]})*\n";
+                        }
+
+                        if (councilJson[ix].AssignedThreadIds.Count == 0)
+                        {
+                            description = "*No assigned threads.*";
+                        }
+
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Assigned Threads of {councilJson[ix].SheetName}:**__",
+                            Description = description,
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Error:**__",
+                    Description = $"*{ex.Message}*" +
+                        "\n**c!assignedthreads member**",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
-                string[] courseStrings = new[] { "Luigi Circuit",
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("threadassign")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task AssignCouncilMemberToThread(CommandContext ctx, [RemainingText] string arg = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176 && ctx.Channel.IsThread && ctx.Channel.ParentId == 369281592407097345)
+            {
+                var embed = new DiscordEmbedBuilder();
+                try
+                {
+                    string json = string.Empty;
+                    await ctx.TriggerTypingAsync();
+
+                    if (arg == "reset")
+                    {
+                        List<CouncilMember> recentlyAssigned = new List<CouncilMember>();
+                        List<CouncilMember> remove = new List<CouncilMember>();
+
+                        string assigned = JsonConvert.SerializeObject(recentlyAssigned);
+                        string removals = JsonConvert.SerializeObject(remove);
+                        File.WriteAllText("assigned.json", assigned);
+
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Success:**__",
+                            Description = "The thread json has been reset.",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+
+                    else
+                    {
+                        Random rng = new Random();
+
+                        using (var fs = File.OpenRead("council.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        List<CouncilMember> compJson = new List<CouncilMember>();
+                        List<CouncilMember> nonCompJson = new List<CouncilMember>();
+                        List<CouncilMember> assignedMembers = new List<CouncilMember>();
+
+                        using (var fs = File.OpenRead("assigned.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> recentlyAssigned = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        for (int i = 0; i < councilJson.Count; i++)
+                        {
+                            if (councilJson[i].CompPlayer)
+                            {
+                                compJson.Add(councilJson[i]);
+                            }
+                            else
+                            {
+                                nonCompJson.Add(councilJson[i]);
+                            }
+                        }
+
+                        for (int i = 0; i < ctx.Channel.Name.Split(',').Length; i++)
+                        {
+                            int ix = councilJson.FindIndex(x => ctx.Channel.Name.ToLowerInvariant().Contains(x.SheetName.ToLowerInvariant()));
+                            if (ix != -1)
+                            {
+                                councilJson.RemoveAt(ix);
+                            }
+                        }
+
+                        int[] randomNums = new int[councilJson.Count];
+
+                        for (int i = 0; i < councilJson.Count; i++)
+                        {
+                            randomNums[i] = i;
+                        }
+
+                        randomNums = randomNums.OrderBy(x => rng.Next()).ToArray();
+
+                        if (councilJson.Count < 3)
+                        {
+                            for (int i = 0; i < councilJson.Count; i++)
+                            {
+                                assignedMembers.Add(councilJson[i]);
+                                if (councilJson[i].AssignedThreadIds.Count == 3)
+                                {
+                                    councilJson[i].AssignedThreadIds.RemoveAt(0);
+                                }
+                                councilJson[i].AssignedThreadIds.Add(ctx.Channel.Id);
+                            }
+                            using (var fs = File.OpenRead("council.json"))
+                            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                            councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+                            recentlyAssigned = new List<CouncilMember>();
+                        }
+
+                        for (int i = 0; i < 3; i++)
+                        {
+                            if (assignedMembers.Count == 3)
+                            {
+                                break;
+                            }
+                            assignedMembers.Add(councilJson[randomNums[i]]);
+                            if (councilJson[randomNums[i]].AssignedThreadIds.Count == 3)
+                            {
+                                councilJson[randomNums[i]].AssignedThreadIds.RemoveAt(0);
+                            }
+                            councilJson[randomNums[i]].AssignedThreadIds.Add(ctx.Channel.Id);
+                        }
+
+                        if (assignedMembers.Count(x => x.CompPlayer == true) == 3)
+                        {
+                            for (int i = 2; i < councilJson.Count; i++)
+                            {
+                                if (!councilJson[i].CompPlayer)
+                                {
+                                    assignedMembers.Add(councilJson[i]);
+                                    if (councilJson[i].AssignedThreadIds.Count == 3)
+                                    {
+                                        councilJson[i].AssignedThreadIds.RemoveAt(0);
+                                    }
+                                    councilJson[i].AssignedThreadIds.Add(ctx.Channel.Id);
+                                    break;
+                                }
+                            }
+                        }
+                        else if (assignedMembers.Count(x => x.CompPlayer == false) == 3)
+                        {
+                            for (int i = 2; i < councilJson.Count; i++)
+                            {
+                                if (councilJson[randomNums[i]].CompPlayer)
+                                {
+                                    assignedMembers.Add(councilJson[randomNums[i]]);
+                                    if (councilJson[randomNums[i]].AssignedThreadIds.Count == 3)
+                                    {
+                                        councilJson[randomNums[i]].AssignedThreadIds.RemoveAt(0);
+                                    }
+                                    councilJson[randomNums[i]].AssignedThreadIds.Add(ctx.Channel.Id);
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            assignedMembers.Add(councilJson[randomNums[2]]);
+                        }
+
+                        while (assignedMembers.Count < 5)
+                        {
+                            assignedMembers.Add(councilJson[randomNums[2]]);
+                        }
+
+                        foreach (var m in assignedMembers)
+                        {
+                            recentlyAssigned.Add(m);
+                        }
+
+                        await ctx.Channel.SendMessageAsync(
+                        $"<@{assignedMembers[0].DiscordId}>, " +
+                        $"<@{assignedMembers[1].DiscordId}>, " +
+                        $"<@{assignedMembers[2].DiscordId}>, " +
+                        $"<@{assignedMembers[3].DiscordId}>, and " +
+                        $"<@{assignedMembers[4].DiscordId}> have been assigned to this thread.");
+
+                        string assigned = JsonConvert.SerializeObject(recentlyAssigned);
+                        File.WriteAllText("assigned.json", assigned);
+                        string council = JsonConvert.SerializeObject(councilJson);
+                        File.WriteAllText("council.json", council);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{ex.Message}*" +
+                            "\n**c!threadassign**",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                    Console.WriteLine(ex.ToString());
+                }
+            }
+        }
+
+        [Command("checkmissedhw")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task CheckHw(CommandContext ctx, [RemainingText] string placeholder)
+        {
+            await ctx.TriggerTypingAsync();
+            var embed = new DiscordEmbedBuilder() { };
+            try
+            {
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                {
+                    List<string> trackDisplay = new List<string>();
+                    string json;
+
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+                    var service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Custom Track Testing Bot",
+                    });
+
+                    var temp = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluation Log'");
+                    var tempResponse = await temp.ExecuteAsync();
+                    var today = int.Parse(tempResponse.Values[tempResponse.Values.Count - 1][tempResponse.Values[tempResponse.Values.Count - 1].Count - 1].ToString());
+
+                    var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                    request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                    var response = await request.ExecuteAsync();
+                    foreach (var t in response.Values)
+                    {
+                        while (t.Count < response.Values[0].Count)
+                        {
+                            t.Add("");
+                        }
+                    }
+
+                    using (var fs = File.OpenRead("council.json"))
+                    using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                        json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                    List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                    for (int i = 1; i < response.Values.Count; i++)
+                    {
+                        if (today == int.Parse(response.Values[i][1].ToString()))
+                        {
+                            trackDisplay.Add(response.Values[i][0].ToString());
+                        }
+                        if (lastHwDateChecked != int.Parse(response.Values[i][1].ToString()) && today > int.Parse(response.Values[i][1].ToString()))
+                        {
+                            lastHwDateChecked = int.Parse(response.Values[i][1].ToString());
+                            for (int j = 12; j < response.Values[0].Count; j++)
+                            {
+                                bool check = false;
+                                for (int k = 1; k < response.Values.Count; k++)
+                                {
+                                    if ((response.Values[k][j].ToString() == "" ||
+                                        response.Values[k][j].ToString().ToLowerInvariant() == "yes" ||
+                                        response.Values[k][j].ToString().ToLowerInvariant() == "no" ||
+                                        response.Values[k][j].ToString().ToLowerInvariant() == "neutral" ||
+                                        response.Values[k][j].ToString().ToLowerInvariant() == "fixes" ||
+                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("yes") ||
+                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("no") ||
+                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("neutral") ||
+                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("fixes")) &&
+                                        response.Values[k][j].ToString() != "This member is the author thus cannot vote")
+                                    {
+                                        check = true;
+                                    }
+                                }
+                                int ix = councilJson.FindIndex(x => x.SheetName == response.Values[0][j].ToString());
+                                if (check)
+                                {
+                                    councilJson[ix].TimesMissedHw++;
+                                    councilJson[ix].HwInARow = 0;
+                                    if (councilJson[ix].TimesMissedHw > 0 && councilJson[ix].TimesMissedHw % 3 == 0)
+                                    {
+                                        string message = $"Hello {councilJson[ix].SheetName}. Just to let you know, you appear to have not completed council homework in a while, have been inconsistent with your homework, or are not completing it sufficiently enough. Just to remind you, if you miss homework too many times, admins might have to remove you from council. If you have an issue which stops you from doing homework, please let an admin know.";
+
+                                        var members = ctx.Guild.GetAllMembersAsync();
+                                        foreach (var member in members.Result)
+                                        {
+                                            if (member.Id == councilJson[ix].DiscordId)
+                                            {
+                                                try
+                                                {
+                                                    Console.WriteLine($"DM'd Member: {councilJson[ix].SheetName}");
+                                                    await member.SendMessageAsync(message).ConfigureAwait(false);
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    Console.WriteLine(ex.Message);
+                                                    Console.WriteLine("DMs are likely closed.");
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                bool completed = true;
+                                for (int k = 1; k < response.Values.Count; k++)
+                                {
+                                    if ((response.Values[k][j].ToString() == "" ||
+                                        response.Values[k][j].ToString().ToLowerInvariant() == "yes" ||
+                                        response.Values[k][j].ToString().ToLowerInvariant() == "no" ||
+                                        response.Values[k][j].ToString().ToLowerInvariant() == "neutral" ||
+                                        response.Values[k][j].ToString().ToLowerInvariant() == "fixes" ||
+                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("yes") ||
+                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("no") ||
+                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("neutral") ||
+                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("fixes")) &&
+                                        response.Values[k][j].ToString() != "This member is the author thus cannot vote")
+                                    {
+                                        completed = false;
+                                    }
+                                }
+                                if (completed)
+                                {
+                                    councilJson[ix].HwInARow++;
+                                    if (councilJson[ix].HwInARow > 4)
+                                    {
+                                        councilJson[ix].TimesMissedHw = 0;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Notice:**__",
+                        Description = $"*Any missed homework has been recorded.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Server Time: {DateTime.Now}"
+                        }
+                    };
+                    string council = JsonConvert.SerializeObject(councilJson);
+                    File.WriteAllText("council.json", council);
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                    DiscordChannel channel = ctx.Channel;
+
+                    foreach (var c in ctx.Guild.Channels)
+                    {
+                        if (c.Value.Id == 635313521487511554)
+                        {
+                            channel = c.Value;
+                        }
+                    }
+
+                    string listOfTracks = "";
+                    if (trackDisplay.Count > 0)
+                    {
+                        listOfTracks = trackDisplay[0];
+                        for (int i = 1; i < trackDisplay.Count - 1; i++)
+                        {
+                            listOfTracks += $", {trackDisplay[i]}";
+                        }
+                        if (trackDisplay.Count == 1)
+                        {
+                            listOfTracks += " is";
+                        }
+                        else
+                        {
+                            listOfTracks += " are";
+                        }
+
+                        await channel.SendMessageAsync($"<@&608386209655554058> {listOfTracks} due for today.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*{ex.Message}*" +
+                       "\n**c!checkmissedhw**",
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("addmissedhw")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task IncrementMissedHw(CommandContext ctx, [RemainingText] string member = "")
+        {
+            await ctx.TriggerTypingAsync();
+            var embed = new DiscordEmbedBuilder() { };
+            try
+            {
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                {
+                    string json;
+                    using (var fs = File.OpenRead("council.json"))
+                    using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                        json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                    List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                    int ix = councilJson.FindIndex(x => CompareIncompleteStrings(x.SheetName, member) || CompareStringsLevenshteinDistance(x.SheetName, member));
+
+                    if (ix != -1)
+                    {
+                        councilJson[ix].TimesMissedHw++;
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Notice:**__",
+                            Description = $"*Missed homework count for {councilJson[ix].SheetName} has been incremented.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Server Time: {DateTime.Now}"
+                            }
+                        };
+                        string council = JsonConvert.SerializeObject(councilJson);
+                        File.WriteAllText("council.json", council);
+                    }
+                    else if (member == "")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{member} was not inputted.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Server Time: {DateTime.Now}"
+                            }
+                        };
+                    }
+                    else
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{member} could not be found.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Server Time: {DateTime.Now}"
+                            }
+                        };
+                    }
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*{ex.Message}*" +
+                       "\n**c!resetmissedhw member**",
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("removemissedhw")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task DecrementMissedHw(CommandContext ctx, [RemainingText] string member = "")
+        {
+            await ctx.TriggerTypingAsync();
+            var embed = new DiscordEmbedBuilder() { };
+            try
+            {
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                {
+                    string json;
+                    using (var fs = File.OpenRead("council.json"))
+                    using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                        json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                    List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                    int ix = councilJson.FindIndex(x => CompareIncompleteStrings(x.SheetName, member) || CompareStringsLevenshteinDistance(x.SheetName, member));
+
+                    if (ix != -1)
+                    {
+                        councilJson[ix].TimesMissedHw--;
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Notice:**__",
+                            Description = $"*Missed homework count for {councilJson[ix].SheetName} has been decremented.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Server Time: {DateTime.Now}"
+                            }
+                        };
+                        string council = JsonConvert.SerializeObject(councilJson);
+                        File.WriteAllText("council.json", council);
+                    }
+                    else if (member == "")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{member} was not inputted.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Server Time: {DateTime.Now}"
+                            }
+                        };
+                    }
+                    else
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{member} could not be found.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Server Time: {DateTime.Now}"
+                            }
+                        };
+                    }
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*{ex.Message}*" +
+                       "\n**c!resetmissedhw member**",
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("resetmissedhw")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task ResetMissedHw(CommandContext ctx, [RemainingText] string member = "")
+        {
+            await ctx.TriggerTypingAsync();
+            var embed = new DiscordEmbedBuilder() { };
+            try
+            {
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                {
+                    string json;
+                    using (var fs = File.OpenRead("council.json"))
+                    using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                        json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                    List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                    int ix = councilJson.FindIndex(x => CompareIncompleteStrings(x.SheetName, member) || CompareStringsLevenshteinDistance(x.SheetName, member));
+
+                    if (ix != -1)
+                    {
+                        councilJson[ix].TimesMissedHw = 0;
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Notice:**__",
+                            Description = $"*Missed homework count for {councilJson[ix].SheetName} has been reset.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Server Time: {DateTime.Now}"
+                            }
+                        };
+                        string council = JsonConvert.SerializeObject(councilJson);
+                        File.WriteAllText("council.json", council);
+                    }
+                    else if (member == "")
+                    {
+                        foreach (var m in councilJson)
+                        {
+                            m.TimesMissedHw = 0;
+                        }
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Notice:**__",
+                            Description = "*Missed homework count for all members has been reset.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Server Time: {DateTime.Now}"
+                            }
+                        };
+                        string council = JsonConvert.SerializeObject(councilJson);
+                        File.WriteAllText("council.json", council);
+                    }
+                    else
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{member} could not be found.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Server Time: {DateTime.Now}"
+                            }
+                        };
+                    }
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*{ex.Message}*" +
+                       "\n**c!resetmissedhw member**",
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("missedhw")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task DisplayMissedHw(CommandContext ctx, [RemainingText] string placeholder)
+        {
+            await ctx.TriggerTypingAsync();
+            try
+            {
+                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                {
+                    string json;
+                    using (var fs = File.OpenRead("council.json"))
+                    using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                        json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                    List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                    string description = string.Empty;
+                    foreach (var member in councilJson)
+                    {
+                        description += $"*{member.SheetName}: {member.TimesMissedHw}*\n";
+                    }
+
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Council Members Missed Homework Count:**__",
+                        Description = description,
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Server Time: {DateTime.Now}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*{ex.Message}*" +
+                       "\n**c!missedhw**",
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("starttimer")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task StartTimers(CommandContext ctx, [RemainingText] string arg = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176)
+            {
+                await ctx.TriggerTypingAsync();
+                var embed = new DiscordEmbedBuilder() { };
+
+                if (dailyTimer != null)
+                {
+                    dailyTimer.Stop();
+                }
+                dailyTimer = new System.Timers.Timer(86400000);
+                dailyTimer.AutoReset = true;
+                dailyTimer.Elapsed += async (s, e) => await Update(ctx, "all");
+                dailyTimer.Elapsed += async (s, e) => await CheckHw(ctx, "");
+                dailyTimer.Start();
+                embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Notice:**__",
+                    Description = "Timer has been started.",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Server Time: {DateTime.Now}"
+                    }
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+            }
+        }
+
+        [Command("createtest")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task CreateTestPack(CommandContext ctx, [RemainingText] string placeholder)
+        {
+            if (ctx.Guild.Id == 180306609233330176)
+            {
+                try
+                {
+                    await ctx.TriggerTypingAsync();
+
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                    var service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Custom Track Testing Bot",
+                    });
+
+                    var request = service.Spreadsheets.Values.Get("19CF8UP1ubGfkM31uHha6bxYFENnQ-k7L7AEtozENnvk", "'Track Pack Downloads'");
+                    var responseRaw = await request.ExecuteAsync();
+                    request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                    var response = await request.ExecuteAsync();
+
+                    foreach (var v in response.Values)
+                    {
+                        while (v.Count < 10)
+                        {
+                            v.Add("");
+                        }
+                    }
+
+                    string[] courseStrings = new[] { "Luigi Circuit",
             "Moo Moo Meadows",
             "Mushroom Gorge",
             "Toad's Factory",
@@ -389,7 +1372,7 @@ namespace CTTB.Commands
             "N64 Skyscraper",
             "GCN Cookie Land",
             "DS Twilight House" };
-                string[] courseMusicIds = new[] { "117",
+                    string[] courseMusicIds = new[] { "117",
             "119",
             "121",
             "123",
@@ -431,7 +1414,7 @@ namespace CTTB.Commands
             "41",
             "37",
             "38"};
-                string[] courseSlotIds = new[] { "T11",
+                    string[] courseSlotIds = new[] { "T11",
             "T12",
             "T13",
             "T14",
@@ -464,596 +1447,488 @@ namespace CTTB.Commands
             "T83",
             "T84" };
 
-                int[] trackSlots = new int[12];
-                int[] musicSlots = new int[12];
+                    int[] trackSlots = new int[12];
+                    int[] musicSlots = new int[12];
 
-                Directory.CreateDirectory(@"workdir/");
-                Directory.CreateDirectory(@"workdir/input");
-                Directory.CreateDirectory(@"workdir/output");
-                Directory.CreateDirectory(@"output/");
-                Directory.CreateDirectory(@"output/CTTP");
-                Directory.CreateDirectory(@"output/CTTP/rel");
-                Directory.CreateDirectory(@"output/CTTP/Scene");
-                Directory.CreateDirectory(@"output/CTTP/Scene/YourMom");
+                    Directory.CreateDirectory(@"workdir/");
+                    Directory.CreateDirectory(@"workdir/input");
+                    Directory.CreateDirectory(@"workdir/output");
+                    Directory.CreateDirectory(@"output/");
+                    Directory.CreateDirectory(@"output/CTTP");
+                    Directory.CreateDirectory(@"output/CTTP/rel");
+                    Directory.CreateDirectory(@"output/CTTP/Scene");
+                    Directory.CreateDirectory(@"output/CTTP/Scene/YourMom");
 
-                for (int i = 3; i < 15; i++)
-                {
-                    WebClient webClient = new WebClient();
-                    await webClient.DownloadFileTaskAsync(response.Values[i][5].ToString().Split('"')[1], $@"workdir/input/{response.Values[i][2]}.szs");
-                    for (int j = 0; j < courseStrings.Length; j++)
+                    for (int i = 3; i < 15; i++)
                     {
-                        if (response.Values[i][6].ToString().Split('/')[0].Remove(response.Values[i][6].ToString().Split('/')[0].Length - 1) == courseStrings[j])
+                        WebClient webClient = new WebClient();
+                        await webClient.DownloadFileTaskAsync(response.Values[i][5].ToString().Split('"')[1], $@"workdir/input/{response.Values[i][2]}.szs");
+                        for (int j = 0; j < courseStrings.Length; j++)
                         {
-                            trackSlots[i - 3] = j + 1;
-                        }
-                        if (response.Values[i][6].ToString().Split('/')[1].Substring(1) == courseStrings[j])
-                        {
-                            musicSlots[i - 3] = j + 1;
-                        }
-                        else if (musicSlots[i - 3] == 0)
-                        {
-                            musicSlots[i - 3] = trackSlots[i - 3];
+                            if (response.Values[i][6].ToString().Split('/')[0].Remove(response.Values[i][6].ToString().Split('/')[0].Length - 1) == courseStrings[j])
+                            {
+                                trackSlots[i - 3] = j + 1;
+                            }
+                            if (response.Values[i][6].ToString().Split('/')[1].Substring(1) == courseStrings[j])
+                            {
+                                musicSlots[i - 3] = j + 1;
+                            }
+                            else if (musicSlots[i - 3] == 0)
+                            {
+                                musicSlots[i - 3] = trackSlots[i - 3];
+                            }
                         }
                     }
-                }
 
-                List<CupInfo> cups = new List<CupInfo>(3);
-                for (int i = 0; i < 3; i++)
-                {
-                    cups.Add(new CupInfo(response.Values[3 + i * 4][2].ToString(),
-                        response.Values[4 + i * 4][2].ToString(),
-                        response.Values[5 + i * 4][2].ToString(),
-                        response.Values[6 + i * 4][2].ToString(),
-                        response.Values[3 + i * 4][2].ToString(),
-                        response.Values[4 + i * 4][2].ToString(),
-                        response.Values[5 + i * 4][2].ToString(),
-                        response.Values[6 + i * 4][2].ToString(),
-                        trackSlots[0 + i * 4],
-                        trackSlots[1 + i * 4],
-                        trackSlots[2 + i * 4],
-                        trackSlots[3 + i * 4],
-                        musicSlots[0 + i * 4],
-                        musicSlots[1 + i * 4],
-                        musicSlots[2 + i * 4],
-                        musicSlots[3 + i * 4]));
-                }
+                    List<CupInfo> cups = new List<CupInfo>(3);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        cups.Add(new CupInfo(response.Values[3 + i * 4][2].ToString(),
+                            response.Values[4 + i * 4][2].ToString(),
+                            response.Values[5 + i * 4][2].ToString(),
+                            response.Values[6 + i * 4][2].ToString(),
+                            response.Values[3 + i * 4][2].ToString(),
+                            response.Values[4 + i * 4][2].ToString(),
+                            response.Values[5 + i * 4][2].ToString(),
+                            response.Values[6 + i * 4][2].ToString(),
+                            trackSlots[0 + i * 4],
+                            trackSlots[1 + i * 4],
+                            trackSlots[2 + i * 4],
+                            trackSlots[3 + i * 4],
+                            musicSlots[0 + i * 4],
+                            musicSlots[1 + i * 4],
+                            musicSlots[2 + i * 4],
+                            musicSlots[3 + i * 4]));
+                    }
 
-                string fileName = @"workdir/config.txt";
+                    string fileName = @"workdir/config.txt";
 
-                if (File.Exists(fileName))
-                {
-                    File.Delete(fileName);
-                }
-                using (StreamWriter streamwriter = File.CreateText(fileName))
-                {
-                    streamwriter.WriteLine("#CT-CODE\n\n");
-                    streamwriter.WriteLine("[RACING-TRACK-LIST]\n");
-                    streamwriter.WriteLine("%LE-FLAGS  = 1\n");
-                    streamwriter.WriteLine("%WIIMM-CUP = 0\n");
-                    streamwriter.WriteLine("N N$SWAP | N$F_WII");
+                    if (File.Exists(fileName))
+                    {
+                        File.Delete(fileName);
+                    }
+                    using (StreamWriter streamwriter = File.CreateText(fileName))
+                    {
+                        streamwriter.WriteLine("#CT-CODE\n\n");
+                        streamwriter.WriteLine("[RACING-TRACK-LIST]\n");
+                        streamwriter.WriteLine("%LE-FLAGS  = 1\n");
+                        streamwriter.WriteLine("%WIIMM-CUP = 0\n");
+                        streamwriter.WriteLine("N N$SWAP | N$F_WII");
 
+                        for (int i = 0; i < cups.Count; i++)
+                        {
+                            streamwriter.WriteLine($"\nC \"{i + 1}\" # {i + 12}");
+                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track1Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track1Slot) - 1]}; 0x00; \"{cups[i].Track1Name}\"; \"{cups[i].Track1Name.Replace("???", "secret")}\"; \"\"");
+                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track2Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track2Slot) - 1]}; 0x00; \"{cups[i].Track2Name}\"; \"{cups[i].Track2Name.Replace("???", "secret")}\"; \"\"");
+                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track3Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track3Slot) - 1]}; 0x00; \"{cups[i].Track3Name}\"; \"{cups[i].Track3Name.Replace("???", "secret")}\"; \"\"");
+                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track4Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track4Slot) - 1]}; 0x00; \"{cups[i].Track4Name}\"; \"{cups[i].Track4Name.Replace("???", "secret")}\"; \"\"");
+
+                        }
+                        streamwriter.Close();
+                    }
+
+                    File.WriteAllBytes(@"workdir/lecode-JAP.bin", Properties.Resources.lecode_JAP);
+                    File.WriteAllBytes(@"workdir/lecode-USA.bin", Properties.Resources.lecode_USA);
+                    File.WriteAllBytes(@"workdir/lecode-PAL.bin", Properties.Resources.lecode_PAL);
+
+                    File.WriteAllBytes(@"workdir/cygattr-1.dll", Properties.Resources.cygattr_1);
+                    File.WriteAllBytes(@"workdir/cygcrypto-1.1.dll", Properties.Resources.cygcrypto_1_1);
+                    File.WriteAllBytes(@"workdir/cygiconv-2.dll", Properties.Resources.cygiconv_2);
+                    File.WriteAllBytes(@"workdir/cygintl-8.dll", Properties.Resources.cygintl_8);
+                    File.WriteAllBytes(@"workdir/cygncursesw-10.dll", Properties.Resources.cygncursesw_10);
+                    File.WriteAllBytes(@"workdir/cygpcre-1.dll", Properties.Resources.cygpcre_1);
+                    File.WriteAllBytes(@"workdir/cygpng16-16.dll", Properties.Resources.cygpng16_16);
+                    File.WriteAllBytes(@"workdir/cygreadline7.dll", Properties.Resources.cygreadline7);
+                    File.WriteAllBytes(@"workdir/cygwin1.dll", Properties.Resources.cygwin1);
+                    File.WriteAllBytes(@"workdir/cygz.dll", Properties.Resources.cygz);
+
+                    File.WriteAllBytes(@"workdir/MenuSingle_E_reg.szs", Properties.Resources.MenuSingle_E_reg);
+                    File.WriteAllBytes(@"workdir/MenuSingle_E_mom.szs", Properties.Resources.MenuSingle_E_mom);
+
+                    var processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wszst";
+                    processInfo.Arguments = @"extract MenuSingle_E_reg.szs";
+                    processInfo.WorkingDirectory = @"workdir/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
+
+                    var process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
+
+                    process.WaitForExit();
+
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wbmgt";
+                    processInfo.Arguments = @"decode Common.bmg";
+                    processInfo.WorkingDirectory = @"workdir/MenuSingle_E_reg.d/message/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
+
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
+
+                    process.WaitForExit();
+
+                    StreamWriter sw = new StreamWriter(@"workdir/MenuSingle_E_reg.d/message/Common.txt", true);
+                    sw.WriteLine("\n\n#--- [7000:7fff] LE-CODE: track names");
+                    sw.WriteLine(@"  7000	= \c{blue1}Wii \c{off}Mario Circuit");
+                    sw.WriteLine(@"  7001	= \c{blue1}Wii \c{off}Moo Moo Meadows");
+                    sw.WriteLine(@"  7002	= \c{blue1}Wii \c{off}Mushroom Gorge");
+                    sw.WriteLine(@"  7003	= \c{blue1}Wii \c{off}Grumble Volcano");
+                    sw.WriteLine(@"  7004	= \c{blue1}Wii \c{off}Toad's Factory");
+                    sw.WriteLine(@"  7005	= \c{blue1}Wii \c{off}Coconut Mall");
+                    sw.WriteLine(@"  7006	= \c{blue1}Wii \c{off}DK's Snowboard Cross");
+                    sw.WriteLine(@"  7007	= \c{blue1}Wii \c{off}Wario's Gold Mine");
+                    sw.WriteLine(@"  7008	= \c{blue1}Wii \c{off}Luigi Circuit");
+                    sw.WriteLine(@"  7009	= \c{blue1}Wii \c{off}Daisy Circuit");
+                    sw.WriteLine(@"  700a	= \c{blue1}Wii \c{off}Moonview Highway");
+                    sw.WriteLine(@"  700b	= \c{blue1}Wii \c{off}Maple Treeway");
+                    sw.WriteLine(@"  700c	= \c{blue1}Wii \c{off}Bowser's Castle");
+                    sw.WriteLine(@"  700d	= \c{blue1}Wii \c{off}Rainbow Road");
+                    sw.WriteLine(@"  700e	= \c{blue1}Wii \c{off}Dry Dry Ruins");
+                    sw.WriteLine(@"  700f	= \c{blue1}Wii \c{off}Koopa Cape");
+                    sw.WriteLine(@"  7010	= \c{blue1}GCN \c{off}Peach Beach");
+                    sw.WriteLine(@"  7011	= \c{blue1}GCN \c{off}Mario Circuit");
+                    sw.WriteLine(@"  7012	= \c{blue1}GCN \c{off}Waluigi Stadium");
+                    sw.WriteLine(@"  7013	= \c{blue1}GCN \c{off}DK Mountain");
+                    sw.WriteLine(@"  7014	= \c{blue1}DS \c{off}Yoshi Falls");
+                    sw.WriteLine(@"  7015	= \c{blue1}DS \c{off}Desert Hills");
+                    sw.WriteLine(@"  7016	= \c{blue1}DS \c{off}Peach Gardens");
+                    sw.WriteLine(@"  7017	= \c{blue1}DS \c{off}Delfino Square");
+                    sw.WriteLine(@"  7018	= \c{blue1}SNES \c{off}Mario Circuit 3");
+                    sw.WriteLine(@"  7019	= \c{blue1}SNES \c{off}Ghost Valley 2");
+                    sw.WriteLine(@"  701a	= \c{blue1}N64 \c{off}Mario Raceway");
+                    sw.WriteLine(@"  701b	= \c{blue1}N64 \c{off}Sherbet Land");
+                    sw.WriteLine(@"  701c	= \c{blue1}N64 \c{off}Bowser's Castle");
+                    sw.WriteLine(@"  701d	= \c{blue1}N64 \c{off}DK's Jungle Parkway");
+                    sw.WriteLine(@"  701e	= \c{blue1}GBA \c{off}Bowser Castle 3");
+                    sw.WriteLine(@"  701f	= \c{blue1}GBA \c{off}Shy Guy Beach");
+                    sw.WriteLine(@"  7020	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7021	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7022	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7023	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7024	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7025	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7026	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7027	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7028	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7029	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  702a	/");
+                    sw.WriteLine(@"  702b	/");
+                    sw.WriteLine(@"  702c	/");
+                    sw.WriteLine(@"  702d	/");
+                    sw.WriteLine(@"  702e	/");
+                    sw.WriteLine(@"  702f	/");
+                    sw.WriteLine(@"  7030	/");
+                    sw.WriteLine(@"  7031	/");
+                    sw.WriteLine(@"  7032	/");
+                    sw.WriteLine(@"  7033	/");
+                    sw.WriteLine(@"  7034	/");
+                    sw.WriteLine(@"  7035	/");
+                    sw.WriteLine(@"  7036	= Ring Mission");
+                    sw.WriteLine(@"  7037	= Winningrun Demo");
+                    sw.WriteLine(@"  7038	= Loser Demo");
+                    sw.WriteLine(@"  7039	= Draw Demo");
+                    sw.WriteLine(@"  703a	= Ending Demo");
+                    sw.WriteLine(@"  703b	/");
+                    sw.WriteLine(@"  703c	/");
+                    sw.WriteLine(@"  703d	/");
+                    sw.WriteLine(@"  703e	/");
+                    sw.WriteLine(@"  703f	/");
+                    sw.WriteLine(@"  7040	/");
+                    sw.WriteLine(@"  7041	/");
+                    sw.WriteLine(@"  7042	/");
+                    sw.WriteLine(@"  7043	=  Wiimms SZS Toolset v2.25a r8443");
                     for (int i = 0; i < cups.Count; i++)
                     {
-                        streamwriter.WriteLine($"\nC \"{i + 1}\" # {i + 12}");
-                        streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track1Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track1Slot) - 1]}; 0x00; \"{cups[i].Track1Name}\"; \"{cups[i].Track1Name}\"; \"\"");
-                        streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track2Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track2Slot) - 1]}; 0x00; \"{cups[i].Track2Name}\"; \"{cups[i].Track2Name}\"; \"\"");
-                        streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track3Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track3Slot) - 1]}; 0x00; \"{cups[i].Track3Name}\"; \"{cups[i].Track3Name}\"; \"\"");
-                        streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track4Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track4Slot) - 1]}; 0x00; \"{cups[i].Track4Name}\"; \"{cups[i].Track4Name}\"; \"\"");
-
+                        sw.WriteLine($"  {28740 + i * 4:X}	= {cups[i].Track1BMG}");
+                        sw.WriteLine($"  {28741 + i * 4:X}	= {cups[i].Track2BMG}");
+                        sw.WriteLine($"  {28742 + i * 4:X}	= {cups[i].Track3BMG}");
+                        sw.WriteLine($"  {28743 + i * 4:X}	= {cups[i].Track4BMG}");
                     }
-                    streamwriter.Close();
-                }
+                    sw.WriteLine(@"");
+                    sw.WriteLine(@" 18697	/");
+                    sw.WriteLine(@" 18698	/");
+                    sw.WriteLine(@" 18699	/");
+                    sw.WriteLine(@" 1869a	/");
+                    sw.WriteLine(@" 1869b	/");
+                    sw.WriteLine(@" 1869c	/");
+                    sw.WriteLine(@" 1869d	/");
+                    sw.WriteLine(@" 1869e	/");
+                    sw.Close();
 
-                File.WriteAllBytes(@"workdir/lecode-JAP.bin", Properties.Resources.lecode_JAP);
-                File.WriteAllBytes(@"workdir/lecode-USA.bin", Properties.Resources.lecode_USA);
-                File.WriteAllBytes(@"workdir/lecode-PAL.bin", Properties.Resources.lecode_PAL);
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wbmgt";
+                    processInfo.Arguments = @"encode Common.txt -o";
+                    processInfo.WorkingDirectory = @"workdir/MenuSingle_E_reg.d/message/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
 
-                File.WriteAllBytes(@"workdir/cygattr-1.dll", Properties.Resources.cygattr_1);
-                File.WriteAllBytes(@"workdir/cygcrypto-1.1.dll", Properties.Resources.cygcrypto_1_1);
-                File.WriteAllBytes(@"workdir/cygiconv-2.dll", Properties.Resources.cygiconv_2);
-                File.WriteAllBytes(@"workdir/cygintl-8.dll", Properties.Resources.cygintl_8);
-                File.WriteAllBytes(@"workdir/cygncursesw-10.dll", Properties.Resources.cygncursesw_10);
-                File.WriteAllBytes(@"workdir/cygpcre-1.dll", Properties.Resources.cygpcre_1);
-                File.WriteAllBytes(@"workdir/cygpng16-16.dll", Properties.Resources.cygpng16_16);
-                File.WriteAllBytes(@"workdir/cygreadline7.dll", Properties.Resources.cygreadline7);
-                File.WriteAllBytes(@"workdir/cygwin1.dll", Properties.Resources.cygwin1);
-                File.WriteAllBytes(@"workdir/cygz.dll", Properties.Resources.cygz);
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
 
-                File.WriteAllBytes(@"workdir/MenuSingle_E_reg.szs", Properties.Resources.MenuSingle_E_reg);
-                File.WriteAllBytes(@"workdir/MenuSingle_E_mom.szs", Properties.Resources.MenuSingle_E_mom);
+                    process.WaitForExit();
 
-                var processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wszst";
-                processInfo.Arguments = @"extract MenuSingle_E_reg.szs";
-                processInfo.WorkingDirectory = @"workdir/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wszst";
+                    processInfo.Arguments = @"create MenuSingle_E_reg.d -o";
+                    processInfo.WorkingDirectory = @"workdir/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
 
-                var process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
 
-                process.WaitForExit();
+                    process.WaitForExit();
 
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wbmgt";
-                processInfo.Arguments = @"decode Common.bmg";
-                processInfo.WorkingDirectory = @"workdir/MenuSingle_E_reg.d/message/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wszst";
+                    processInfo.Arguments = @"extract MenuSingle_E_mom.szs";
+                    processInfo.WorkingDirectory = @"workdir/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
 
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
 
-                process.WaitForExit();
+                    process.WaitForExit();
 
-                StreamWriter sw = new StreamWriter(@"workdir/MenuSingle_E_reg.d/message/Common.txt", true);
-                sw.WriteLine("\n\n#--- [7000:7fff] LE-CODE: track names");
-                sw.WriteLine(@"  7000	= \c{blue1}Wii \c{off}Mario Circuit");
-                sw.WriteLine(@"  7001	= \c{blue1}Wii \c{off}Moo Moo Meadows");
-                sw.WriteLine(@"  7002	= \c{blue1}Wii \c{off}Mushroom Gorge");
-                sw.WriteLine(@"  7003	= \c{blue1}Wii \c{off}Grumble Volcano");
-                sw.WriteLine(@"  7004	= \c{blue1}Wii \c{off}Toad's Factory");
-                sw.WriteLine(@"  7005	= \c{blue1}Wii \c{off}Coconut Mall");
-                sw.WriteLine(@"  7006	= \c{blue1}Wii \c{off}DK's Snowboard Cross");
-                sw.WriteLine(@"  7007	= \c{blue1}Wii \c{off}Wario's Gold Mine");
-                sw.WriteLine(@"  7008	= \c{blue1}Wii \c{off}Luigi Circuit");
-                sw.WriteLine(@"  7009	= \c{blue1}Wii \c{off}Daisy Circuit");
-                sw.WriteLine(@"  700a	= \c{blue1}Wii \c{off}Moonview Highway");
-                sw.WriteLine(@"  700b	= \c{blue1}Wii \c{off}Maple Treeway");
-                sw.WriteLine(@"  700c	= \c{blue1}Wii \c{off}Bowser's Castle");
-                sw.WriteLine(@"  700d	= \c{blue1}Wii \c{off}Rainbow Road");
-                sw.WriteLine(@"  700e	= \c{blue1}Wii \c{off}Dry Dry Ruins");
-                sw.WriteLine(@"  700f	= \c{blue1}Wii \c{off}Koopa Cape");
-                sw.WriteLine(@"  7010	= \c{blue1}GCN \c{off}Peach Beach");
-                sw.WriteLine(@"  7011	= \c{blue1}GCN \c{off}Mario Circuit");
-                sw.WriteLine(@"  7012	= \c{blue1}GCN \c{off}Waluigi Stadium");
-                sw.WriteLine(@"  7013	= \c{blue1}GCN \c{off}DK Mountain");
-                sw.WriteLine(@"  7014	= \c{blue1}DS \c{off}Yoshi Falls");
-                sw.WriteLine(@"  7015	= \c{blue1}DS \c{off}Desert Hills");
-                sw.WriteLine(@"  7016	= \c{blue1}DS \c{off}Peach Gardens");
-                sw.WriteLine(@"  7017	= \c{blue1}DS \c{off}Delfino Square");
-                sw.WriteLine(@"  7018	= \c{blue1}SNES \c{off}Mario Circuit 3");
-                sw.WriteLine(@"  7019	= \c{blue1}SNES \c{off}Ghost Valley 2");
-                sw.WriteLine(@"  701a	= \c{blue1}N64 \c{off}Mario Raceway");
-                sw.WriteLine(@"  701b	= \c{blue1}N64 \c{off}Sherbet Land");
-                sw.WriteLine(@"  701c	= \c{blue1}N64 \c{off}Bowser's Castle");
-                sw.WriteLine(@"  701d	= \c{blue1}N64 \c{off}DK's Jungle Parkway");
-                sw.WriteLine(@"  701e	= \c{blue1}GBA \c{off}Bowser Castle 3");
-                sw.WriteLine(@"  701f	= \c{blue1}GBA \c{off}Shy Guy Beach");
-                sw.WriteLine(@"  7020	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7021	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7022	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7023	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7024	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7025	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7026	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7027	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7028	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7029	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  702a	/");
-                sw.WriteLine(@"  702b	/");
-                sw.WriteLine(@"  702c	/");
-                sw.WriteLine(@"  702d	/");
-                sw.WriteLine(@"  702e	/");
-                sw.WriteLine(@"  702f	/");
-                sw.WriteLine(@"  7030	/");
-                sw.WriteLine(@"  7031	/");
-                sw.WriteLine(@"  7032	/");
-                sw.WriteLine(@"  7033	/");
-                sw.WriteLine(@"  7034	/");
-                sw.WriteLine(@"  7035	/");
-                sw.WriteLine(@"  7036	= Ring Mission");
-                sw.WriteLine(@"  7037	= Winningrun Demo");
-                sw.WriteLine(@"  7038	= Loser Demo");
-                sw.WriteLine(@"  7039	= Draw Demo");
-                sw.WriteLine(@"  703a	= Ending Demo");
-                sw.WriteLine(@"  703b	/");
-                sw.WriteLine(@"  703c	/");
-                sw.WriteLine(@"  703d	/");
-                sw.WriteLine(@"  703e	/");
-                sw.WriteLine(@"  703f	/");
-                sw.WriteLine(@"  7040	/");
-                sw.WriteLine(@"  7041	/");
-                sw.WriteLine(@"  7042	/");
-                sw.WriteLine(@"  7043	=  Wiimms SZS Toolset v2.25a r8443");
-                for (int i = 0; i < cups.Count; i++)
-                {
-                    sw.WriteLine($"  {28740 + i * 4:X}	= {cups[i].Track1BMG}");
-                    sw.WriteLine($"  {28741 + i * 4:X}	= {cups[i].Track2BMG}");
-                    sw.WriteLine($"  {28742 + i * 4:X}	= {cups[i].Track3BMG}");
-                    sw.WriteLine($"  {28743 + i * 4:X}	= {cups[i].Track4BMG}");
-                }
-                sw.WriteLine(@"");
-                sw.WriteLine(@" 18697	/");
-                sw.WriteLine(@" 18698	/");
-                sw.WriteLine(@" 18699	/");
-                sw.WriteLine(@" 1869a	/");
-                sw.WriteLine(@" 1869b	/");
-                sw.WriteLine(@" 1869c	/");
-                sw.WriteLine(@" 1869d	/");
-                sw.WriteLine(@" 1869e	/");
-                sw.Close();
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wbmgt";
+                    processInfo.Arguments = @"decode Common.bmg";
+                    processInfo.WorkingDirectory = @"workdir/MenuSingle_E_mom.d/message/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
 
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wbmgt";
-                processInfo.Arguments = @"encode Common.txt -o";
-                processInfo.WorkingDirectory = @"workdir/MenuSingle_E_reg.d/message/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
 
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
+                    process.WaitForExit();
 
-                process.WaitForExit();
-
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wszst";
-                processInfo.Arguments = @"create MenuSingle_E_reg.d -o";
-                processInfo.WorkingDirectory = @"workdir/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-
-                process.WaitForExit();
-
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wszst";
-                processInfo.Arguments = @"extract MenuSingle_E_mom.szs";
-                processInfo.WorkingDirectory = @"workdir/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-
-                process.WaitForExit();
-
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wbmgt";
-                processInfo.Arguments = @"decode Common.bmg";
-                processInfo.WorkingDirectory = @"workdir/MenuSingle_E_mom.d/message/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-
-                process.WaitForExit();
-
-                sw = new StreamWriter(@"workdir/MenuSingle_E_mom.d/message/Common.txt", true);
-                sw.WriteLine("\n\n#--- [7000:7fff] LE-CODE: track names");
-                sw.WriteLine(@"  7000	= \c{blue1}Wii \c{off}Mario Circuit");
-                sw.WriteLine(@"  7001	= \c{blue1}Wii \c{off}Moo Moo Meadows");
-                sw.WriteLine(@"  7002	= \c{blue1}Wii \c{off}Mushroom Gorge");
-                sw.WriteLine(@"  7003	= \c{blue1}Wii \c{off}Grumble Volcano");
-                sw.WriteLine(@"  7004	= \c{blue1}Wii \c{off}Toad's Factory");
-                sw.WriteLine(@"  7005	= \c{blue1}Wii \c{off}Coconut Mall");
-                sw.WriteLine(@"  7006	= \c{blue1}Wii \c{off}DK's Snowboard Cross");
-                sw.WriteLine(@"  7007	= \c{blue1}Wii \c{off}Wario's Gold Mine");
-                sw.WriteLine(@"  7008	= \c{blue1}Wii \c{off}Luigi Circuit");
-                sw.WriteLine(@"  7009	= \c{blue1}Wii \c{off}Daisy Circuit");
-                sw.WriteLine(@"  700a	= \c{blue1}Wii \c{off}Moonview Highway");
-                sw.WriteLine(@"  700b	= \c{blue1}Wii \c{off}Maple Treeway");
-                sw.WriteLine(@"  700c	= \c{blue1}Wii \c{off}Bowser's Castle");
-                sw.WriteLine(@"  700d	= \c{blue1}Wii \c{off}Rainbow Road");
-                sw.WriteLine(@"  700e	= \c{blue1}Wii \c{off}Dry Dry Ruins");
-                sw.WriteLine(@"  700f	= \c{blue1}Wii \c{off}Koopa Cape");
-                sw.WriteLine(@"  7010	= \c{blue1}GCN \c{off}Peach Beach");
-                sw.WriteLine(@"  7011	= \c{blue1}GCN \c{off}Mario Circuit");
-                sw.WriteLine(@"  7012	= \c{blue1}GCN \c{off}Waluigi Stadium");
-                sw.WriteLine(@"  7013	= \c{blue1}GCN \c{off}DK Mountain");
-                sw.WriteLine(@"  7014	= \c{blue1}DS \c{off}Yoshi Falls");
-                sw.WriteLine(@"  7015	= \c{blue1}DS \c{off}Desert Hills");
-                sw.WriteLine(@"  7016	= \c{blue1}DS \c{off}Peach Gardens");
-                sw.WriteLine(@"  7017	= \c{blue1}DS \c{off}Delfino Square");
-                sw.WriteLine(@"  7018	= \c{blue1}SNES \c{off}Mario Circuit 3");
-                sw.WriteLine(@"  7019	= \c{blue1}SNES \c{off}Ghost Valley 2");
-                sw.WriteLine(@"  701a	= \c{blue1}N64 \c{off}Mario Raceway");
-                sw.WriteLine(@"  701b	= \c{blue1}N64 \c{off}Sherbet Land");
-                sw.WriteLine(@"  701c	= \c{blue1}N64 \c{off}Bowser's Castle");
-                sw.WriteLine(@"  701d	= \c{blue1}N64 \c{off}DK's Jungle Parkway");
-                sw.WriteLine(@"  701e	= \c{blue1}GBA \c{off}Bowser Castle 3");
-                sw.WriteLine(@"  701f	= \c{blue1}GBA \c{off}Shy Guy Beach");
-                sw.WriteLine(@"  7020	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7021	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7022	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7023	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7024	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7025	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7026	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7027	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7028	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  7029	= \c{yor7}-----\c{off}");
-                sw.WriteLine(@"  702a	/");
-                sw.WriteLine(@"  702b	/");
-                sw.WriteLine(@"  702c	/");
-                sw.WriteLine(@"  702d	/");
-                sw.WriteLine(@"  702e	/");
-                sw.WriteLine(@"  702f	/");
-                sw.WriteLine(@"  7030	/");
-                sw.WriteLine(@"  7031	/");
-                sw.WriteLine(@"  7032	/");
-                sw.WriteLine(@"  7033	/");
-                sw.WriteLine(@"  7034	/");
-                sw.WriteLine(@"  7035	/");
-                sw.WriteLine(@"  7036	= Ring Mission");
-                sw.WriteLine(@"  7037	= Winningrun Demo");
-                sw.WriteLine(@"  7038	= Loser Demo");
-                sw.WriteLine(@"  7039	= Draw Demo");
-                sw.WriteLine(@"  703a	= Ending Demo");
-                sw.WriteLine(@"  703b	/");
-                sw.WriteLine(@"  703c	/");
-                sw.WriteLine(@"  703d	/");
-                sw.WriteLine(@"  703e	/");
-                sw.WriteLine(@"  703f	/");
-                sw.WriteLine(@"  7040	/");
-                sw.WriteLine(@"  7041	/");
-                sw.WriteLine(@"  7042	/");
-                sw.WriteLine(@"  7043	=  Wiimms SZS Toolset v2.25a r8443");
-                for (int i = 0; i < cups.Count; i++)
-                {
-                    sw.WriteLine($"  {28740 + i * 4:X}	= {cups[i].Track1BMG}");
-                    sw.WriteLine($"  {28741 + i * 4:X}	= {cups[i].Track2BMG}");
-                    sw.WriteLine($"  {28742 + i * 4:X}	= {cups[i].Track3BMG}");
-                    sw.WriteLine($"  {28743 + i * 4:X}	= {cups[i].Track4BMG}");
-                }
-                sw.WriteLine(@"");
-                sw.WriteLine(@" 18697	/");
-                sw.WriteLine(@" 18698	/");
-                sw.WriteLine(@" 18699	/");
-                sw.WriteLine(@" 1869a	/");
-                sw.WriteLine(@" 1869b	/");
-                sw.WriteLine(@" 1869c	/");
-                sw.WriteLine(@" 1869d	/");
-                sw.WriteLine(@" 1869e	/");
-                sw.Close();
-
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wbmgt";
-                processInfo.Arguments = @"encode Common.txt -o";
-                processInfo.WorkingDirectory = @"workdir/MenuSingle_E_mom.d/message/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-
-                process.WaitForExit();
-
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wszst";
-                processInfo.Arguments = @"create MenuSingle_E_mom.d -o";
-                processInfo.WorkingDirectory = @"workdir/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-
-                process.WaitForExit();
-
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wlect";
-                processInfo.Arguments = @"patch lecode-PAL.bin --le-define config.txt --custom-tt -o";
-                processInfo.WorkingDirectory = @"workdir/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-
-                process.WaitForExit();
-
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wlect";
-                processInfo.Arguments = @"patch lecode-USA.bin --le-define config.txt --custom-tt -o";
-                processInfo.WorkingDirectory = @"workdir/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-
-                process.WaitForExit();
-
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wlect";
-                processInfo.Arguments = @"patch lecode-JAP.bin --le-define config.txt --custom-tt -o";
-                processInfo.WorkingDirectory = @"workdir/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-
-                process.WaitForExit();
-
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"wlect";
-                processInfo.Arguments = @"patch lecode-PAL.bin -od lecode-PAL.bin --le-define config.txt --track-dir output --copy-tracks input";
-                processInfo.WorkingDirectory = @"workdir/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-                processInfo.RedirectStandardOutput = true;
-
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-                process.WaitForExit();
-
-                Directory.Move(@"workdir/output", @"output/CTTP/Course");
-                File.Move(@"workdir/MenuSingle_E_reg.szs", @"output/CTTP/Scene/MenuSingle_E.szs");
-                File.Move(@"workdir/MenuSingle_E_mom.szs", @"output/CTTP/Scene/YourMom/MenuSingle_E.szs");
-                File.Move(@"workdir/lecode-PAL.bin", @"output/CTTP/rel/lecode-PAL.bin");
-                File.Move(@"workdir/lecode-USA.bin", @"output/CTTP/rel/lecode-USA.bin");
-                File.Move(@"workdir/lecode-JAP.bin", @"output/CTTP/rel/lecode-JAP.bin");
-                Directory.Delete(@"workdir/", true);
-
-                ZipFile.CreateFromDirectory(@"output/", $"{responseRaw.Values[1][1].ToString().Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip");
-
-                /*
-                using (var fs = new FileStream($"{responseRaw.Values[1][1].ToString().Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip", FileMode.Open, FileAccess.Read))
-                {
-                    await ctx.TriggerTypingAsync();
-                    var msg = await new DiscordMessageBuilder()
-                        .WithFiles(new Dictionary<string, Stream>() { { $"{responseRaw.Values[1][1].ToString().Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip", fs } })
-                        .SendAsync(ctx.Channel);
-                }
-                */
-
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"sudo";
-                processInfo.Arguments = $"cp '{responseRaw.Values[1][1].ToString().Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip' /var/www/brawlbox/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-                processInfo.RedirectStandardOutput = true;
-
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-                process.WaitForExit();
-
-                await ctx.Channel.SendMessageAsync($"http://brawlbox.xyz/{responseRaw.Values[1][1].ToString().Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip");
-
-                File.Delete($"{responseRaw.Values[1][1].ToString().Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip");
-                Directory.Delete(@"output/", true);
-            }
-            catch (Exception ex)
-            {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*An exception has occured.*" +
-                        "\n**c!createtest**",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    sw = new StreamWriter(@"workdir/MenuSingle_E_mom.d/message/Common.txt", true);
+                    sw.WriteLine("\n\n#--- [7000:7fff] LE-CODE: track names");
+                    sw.WriteLine(@"  7000	= \c{blue1}Wii \c{off}Mario Circuit");
+                    sw.WriteLine(@"  7001	= \c{blue1}Wii \c{off}Moo Moo Meadows");
+                    sw.WriteLine(@"  7002	= \c{blue1}Wii \c{off}Mushroom Gorge");
+                    sw.WriteLine(@"  7003	= \c{blue1}Wii \c{off}Grumble Volcano");
+                    sw.WriteLine(@"  7004	= \c{blue1}Wii \c{off}Toad's Factory");
+                    sw.WriteLine(@"  7005	= \c{blue1}Wii \c{off}Coconut Mall");
+                    sw.WriteLine(@"  7006	= \c{blue1}Wii \c{off}DK's Snowboard Cross");
+                    sw.WriteLine(@"  7007	= \c{blue1}Wii \c{off}Wario's Gold Mine");
+                    sw.WriteLine(@"  7008	= \c{blue1}Wii \c{off}Luigi Circuit");
+                    sw.WriteLine(@"  7009	= \c{blue1}Wii \c{off}Daisy Circuit");
+                    sw.WriteLine(@"  700a	= \c{blue1}Wii \c{off}Moonview Highway");
+                    sw.WriteLine(@"  700b	= \c{blue1}Wii \c{off}Maple Treeway");
+                    sw.WriteLine(@"  700c	= \c{blue1}Wii \c{off}Bowser's Castle");
+                    sw.WriteLine(@"  700d	= \c{blue1}Wii \c{off}Rainbow Road");
+                    sw.WriteLine(@"  700e	= \c{blue1}Wii \c{off}Dry Dry Ruins");
+                    sw.WriteLine(@"  700f	= \c{blue1}Wii \c{off}Koopa Cape");
+                    sw.WriteLine(@"  7010	= \c{blue1}GCN \c{off}Peach Beach");
+                    sw.WriteLine(@"  7011	= \c{blue1}GCN \c{off}Mario Circuit");
+                    sw.WriteLine(@"  7012	= \c{blue1}GCN \c{off}Waluigi Stadium");
+                    sw.WriteLine(@"  7013	= \c{blue1}GCN \c{off}DK Mountain");
+                    sw.WriteLine(@"  7014	= \c{blue1}DS \c{off}Yoshi Falls");
+                    sw.WriteLine(@"  7015	= \c{blue1}DS \c{off}Desert Hills");
+                    sw.WriteLine(@"  7016	= \c{blue1}DS \c{off}Peach Gardens");
+                    sw.WriteLine(@"  7017	= \c{blue1}DS \c{off}Delfino Square");
+                    sw.WriteLine(@"  7018	= \c{blue1}SNES \c{off}Mario Circuit 3");
+                    sw.WriteLine(@"  7019	= \c{blue1}SNES \c{off}Ghost Valley 2");
+                    sw.WriteLine(@"  701a	= \c{blue1}N64 \c{off}Mario Raceway");
+                    sw.WriteLine(@"  701b	= \c{blue1}N64 \c{off}Sherbet Land");
+                    sw.WriteLine(@"  701c	= \c{blue1}N64 \c{off}Bowser's Castle");
+                    sw.WriteLine(@"  701d	= \c{blue1}N64 \c{off}DK's Jungle Parkway");
+                    sw.WriteLine(@"  701e	= \c{blue1}GBA \c{off}Bowser Castle 3");
+                    sw.WriteLine(@"  701f	= \c{blue1}GBA \c{off}Shy Guy Beach");
+                    sw.WriteLine(@"  7020	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7021	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7022	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7023	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7024	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7025	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7026	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7027	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7028	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  7029	= \c{yor7}-----\c{off}");
+                    sw.WriteLine(@"  702a	/");
+                    sw.WriteLine(@"  702b	/");
+                    sw.WriteLine(@"  702c	/");
+                    sw.WriteLine(@"  702d	/");
+                    sw.WriteLine(@"  702e	/");
+                    sw.WriteLine(@"  702f	/");
+                    sw.WriteLine(@"  7030	/");
+                    sw.WriteLine(@"  7031	/");
+                    sw.WriteLine(@"  7032	/");
+                    sw.WriteLine(@"  7033	/");
+                    sw.WriteLine(@"  7034	/");
+                    sw.WriteLine(@"  7035	/");
+                    sw.WriteLine(@"  7036	= Ring Mission");
+                    sw.WriteLine(@"  7037	= Winningrun Demo");
+                    sw.WriteLine(@"  7038	= Loser Demo");
+                    sw.WriteLine(@"  7039	= Draw Demo");
+                    sw.WriteLine(@"  703a	= Ending Demo");
+                    sw.WriteLine(@"  703b	/");
+                    sw.WriteLine(@"  703c	/");
+                    sw.WriteLine(@"  703d	/");
+                    sw.WriteLine(@"  703e	/");
+                    sw.WriteLine(@"  703f	/");
+                    sw.WriteLine(@"  7040	/");
+                    sw.WriteLine(@"  7041	/");
+                    sw.WriteLine(@"  7042	/");
+                    sw.WriteLine(@"  7043	=  Wiimms SZS Toolset v2.25a r8443");
+                    for (int i = 0; i < cups.Count; i++)
                     {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        sw.WriteLine($"  {28740 + i * 4:X}	= {cups[i].Track1BMG}");
+                        sw.WriteLine($"  {28741 + i * 4:X}	= {cups[i].Track2BMG}");
+                        sw.WriteLine($"  {28742 + i * 4:X}	= {cups[i].Track3BMG}");
+                        sw.WriteLine($"  {28743 + i * 4:X}	= {(cups[i].Track4BMG.ToLowerInvariant() == "secret" ? "???" : cups[i].Track4BMG)}");
                     }
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    sw.WriteLine(@"");
+                    sw.WriteLine(@" 18697	/");
+                    sw.WriteLine(@" 18698	/");
+                    sw.WriteLine(@" 18699	/");
+                    sw.WriteLine(@" 1869a	/");
+                    sw.WriteLine(@" 1869b	/");
+                    sw.WriteLine(@" 1869c	/");
+                    sw.WriteLine(@" 1869d	/");
+                    sw.WriteLine(@" 1869e	/");
+                    sw.Close();
 
-                Console.WriteLine(ex.ToString());
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wbmgt";
+                    processInfo.Arguments = @"encode Common.txt -o";
+                    processInfo.WorkingDirectory = @"workdir/MenuSingle_E_mom.d/message/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
 
-                if (Directory.Exists(@"workdir/"))
-                {
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
+
+                    process.WaitForExit();
+
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wszst";
+                    processInfo.Arguments = @"create MenuSingle_E_mom.d -o";
+                    processInfo.WorkingDirectory = @"workdir/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
+
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
+
+                    process.WaitForExit();
+
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wlect";
+                    processInfo.Arguments = @"patch lecode-PAL.bin --le-define config.txt --custom-tt -o";
+                    processInfo.WorkingDirectory = @"workdir/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
+
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
+
+                    process.WaitForExit();
+
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wlect";
+                    processInfo.Arguments = @"patch lecode-USA.bin --le-define config.txt --custom-tt -o";
+                    processInfo.WorkingDirectory = @"workdir/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
+
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
+
+                    process.WaitForExit();
+
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wlect";
+                    processInfo.Arguments = @"patch lecode-JAP.bin --le-define config.txt --custom-tt -o";
+                    processInfo.WorkingDirectory = @"workdir/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
+
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
+
+                    process.WaitForExit();
+
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"wlect";
+                    processInfo.Arguments = @"patch lecode-PAL.bin -od lecode-PAL.bin --le-define config.txt --track-dir output --copy-tracks input";
+                    processInfo.WorkingDirectory = @"workdir/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
+                    processInfo.RedirectStandardOutput = true;
+
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
+                    process.WaitForExit();
+
+                    Directory.Move(@"workdir/output", @"output/CTTP/Course");
+                    File.Move(@"workdir/MenuSingle_E_reg.szs", @"output/CTTP/Scene/MenuSingle_E.szs");
+                    File.Move(@"workdir/MenuSingle_E_mom.szs", @"output/CTTP/Scene/YourMom/MenuSingle_E.szs");
+                    File.Move(@"workdir/lecode-PAL.bin", @"output/CTTP/rel/lecode-PAL.bin");
+                    File.Move(@"workdir/lecode-USA.bin", @"output/CTTP/rel/lecode-USA.bin");
+                    File.Move(@"workdir/lecode-JAP.bin", @"output/CTTP/rel/lecode-JAP.bin");
                     Directory.Delete(@"workdir/", true);
-                }
 
-                if (Directory.Exists(@"output/"))
-                {
+                    string dateString = responseRaw.Values[1][1].ToString();
+                    var date = DateTime.Parse(dateString);
+
+                    ZipFile.CreateFromDirectory(@"output/", $"{(date.Year + "-" + date.Month + "-" + date.Day).Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip");
+
+                    /*
+                    using (var fs = new FileStream($"{(date.Year + "-" + date.Month + "-" + date.Day).Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip", FileMode.Open, FileAccess.Read))
+                    {
+                        await ctx.TriggerTypingAsync();
+                        var msg = await new DiscordMessageBuilder()
+                            .WithFiles(new Dictionary<string, Stream>() { { $"{(date.Year + "-" + date.Month + "-" + date.Day).Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip", fs } })
+                            .SendAsync(ctx.Channel);
+                    }
+                    */
+
+                    processInfo = new ProcessStartInfo();
+                    processInfo.FileName = @"sudo";
+                    processInfo.Arguments = $"cp '{(date.Year + "-" + date.Month + "-" + date.Day).Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip' /var/www/brawlbox/";
+                    processInfo.CreateNoWindow = true;
+                    processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    processInfo.UseShellExecute = false;
+                    processInfo.RedirectStandardOutput = true;
+
+                    process = new Process();
+                    process.StartInfo = processInfo;
+                    process.Start();
+                    process.WaitForExit();
+
+                    await ctx.Channel.SendMessageAsync($"https://brawlbox.xyz/{(date.Year + "-" + date.Month + "-" + date.Day).Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip");
+
+                    File.Delete($"{(date.Year + "-" + date.Month + "-" + date.Day).Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip");
                     Directory.Delete(@"output/", true);
-                }
-            }
-        }
-
-        [Command("dmrole")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
-        public async Task DMRole(CommandContext ctx, string role = "", [RemainingText] string message = "")
-        {
-            if (ctx.Channel.Id == 751534710068477953)
-            {
-                try
-                {
-                    DiscordRole discordRole = null;
-                    var embed = new DiscordEmbedBuilder() { };
-                    foreach (var r in ctx.Guild.Roles.Values)
-                    {
-                        if (r.Id.ToString() == role.Replace("<@&", string.Empty).Replace(">", string.Empty))
-                        {
-                            discordRole = r;
-                        }
-                    }
-                    if (discordRole == null)
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = "__**Error:**__",
-                            Description = $"*{role} could not be found in the server.*" +
-                            "\n**c!dmrole role message**",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else if (message == "")
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = "__**Error:**__",
-                            Description = $"*Message was empty.*" +
-                            "\n**c!dmrole role message**",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        var members = ctx.Guild.GetAllMembersAsync();
-                        foreach (var member in members.Result)
-                        {
-                            foreach (var r in member.Roles)
-                            {
-                                if (r == discordRole)
-                                {
-                                    try
-                                    {
-                                        await member.SendMessageAsync(message).ConfigureAwait(false);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Console.WriteLine(ex.Message);
-                                        Console.WriteLine("DMs are likely closed.");
-                                    }
-                                }
-                            }
-                        }
-
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = "__**Success:**__",
-                            Description = $"*Message was sent to {role} successfully.*",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -1061,8 +1936,8 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
-                        Description = $"*An exception has occured.*" +
-                            "\n**c!dmrole role message**",
+                        Description = $"*{ex.Message}*" +
+                            "\n**c!createtest**",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -1071,6 +1946,121 @@ namespace CTTB.Commands
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
                     Console.WriteLine(ex.ToString());
+
+                    if (Directory.Exists(@"workdir/"))
+                    {
+                        Directory.Delete(@"workdir/", true);
+                    }
+
+                    if (Directory.Exists(@"output/"))
+                    {
+                        Directory.Delete(@"output/", true);
+                    }
+                }
+            }
+        }
+
+        [Command("dmrole")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task DMRole(CommandContext ctx, string role = "", [RemainingText] string message = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176)
+            {
+                if (ctx.Channel.Id == 751534710068477953)
+                {
+                    try
+                    {
+                        DiscordRole discordRole = null;
+                        var embed = new DiscordEmbedBuilder() { };
+                        foreach (var r in ctx.Guild.Roles.Values)
+                        {
+                            if (r.Id.ToString() == role.Replace("<@&", string.Empty).Replace(">", string.Empty))
+                            {
+                                discordRole = r;
+                            }
+                        }
+                        if (discordRole == null)
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Error:**__",
+                                Description = $"*{role} could not be found in the server.*" +
+                                "\n**c!dmrole role message**",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else if (message == "")
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Error:**__",
+                                Description = $"*Message was empty.*" +
+                                "\n**c!dmrole role message**",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            var members = ctx.Guild.GetAllMembersAsync();
+                            foreach (var member in members.Result)
+                            {
+                                foreach (var r in member.Roles)
+                                {
+                                    if (r == discordRole)
+                                    {
+                                        try
+                                        {
+                                            await member.SendMessageAsync(message).ConfigureAwait(false);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine(ex.Message);
+                                            Console.WriteLine("DMs are likely closed.");
+                                        }
+                                    }
+                                }
+                            }
+
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Success:**__",
+                                Description = $"*Message was sent to {role} successfully.*",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{ex.Message}*" +
+                                "\n**c!dmrole role message**",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                        Console.WriteLine(ex.ToString());
+                    }
                 }
             }
         }
@@ -1253,7 +2243,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
-                    Description = "*An exception has occured.*" +
+                    Description = $"*{ex.Message}*" +
                        "\n**c!dlbkt track/all**",
                     Url = "https://chadsoft.co.uk/time-trials/",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -1398,7 +2388,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
-                    Description = "*An exception has occured.*" +
+                    Description = $"*{ex.Message}*" +
                        "\n**c!rating track**",
                     Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -1445,9 +2435,10 @@ namespace CTTB.Commands
                     }
                 }
 
-                string description = "**New:**";
-
                 int k = 3;
+
+                string description = $"**{response.Values[k][1]}:**";
+
                 while (response.Values[k][2].ToString() != "delimiter")
                 {
                     if (response.Values[k][2].ToString() == "")
@@ -1461,32 +2452,38 @@ namespace CTTB.Commands
                     k++;
                 }
                 k++;
-                description += $"\n**Major:**";
-                while (response.Values[k][2].ToString() != "delimiter")
+                if (response.Values[k][1].ToString() != "end")
                 {
-                    if (response.Values[k][2].ToString() == "")
+                    description += $"\n**{response.Values[k][1]}:**";
+                    while (response.Values[k][2].ToString() != "delimiter")
                     {
-                        description += "\n*TBD*";
-                    }
-                    else
-                    {
-                        description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | [{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})";
+                        if (response.Values[k][2].ToString() == "")
+                        {
+                            description += "\n*TBD*";
+                        }
+                        else
+                        {
+                            description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | [{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})";
+                        }
+                        k++;
                     }
                     k++;
                 }
-                k++;
-                description += $"\n**Minor:**";
-                while (response.Values[k][2].ToString() != "delimiter")
+                if (response.Values[k][1].ToString() != "end")
                 {
-                    if (response.Values[k][2].ToString() == "")
+                    description += $"\n**{response.Values[k][1]}:**";
+                    while (response.Values[k][2].ToString() != "delimiter")
                     {
-                        description += "\n*TBD*";
+                        if (response.Values[k][2].ToString() == "")
+                        {
+                            description += "\n*TBD*";
+                        }
+                        else
+                        {
+                            description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | [{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})";
+                        }
+                        k++;
                     }
-                    else
-                    {
-                        description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | [{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})";
-                    }
-                    k++;
                 }
 
                 embed = new DiscordEmbedBuilder
@@ -1508,7 +2505,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
-                    Description = $"*An exception has occured.*" +
+                    Description = $"*{ex.Message}*" +
                            "\n**c!nextupdate**",
                     Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1751905284",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -1583,7 +2580,10 @@ namespace CTTB.Commands
                     {
                         if (j < 1)
                         {
-                            if (CompareIncompleteStrings(response.Values[i][2].ToString(), track) && !CompareIncompleteStrings(response.Values[i][0].ToString(), "ignore"))
+                            if ((CompareIncompleteStrings(response.Values[i][2].ToString(), track) ||
+                                CompareStringAbbreviation(track, response.Values[i][2].ToString()) ||
+                                CompareStringsLevenshteinDistance(response.Values[i][2].ToString(), track)) &&
+                                !CompareIncompleteStrings(response.Values[i][0].ToString(), "ignore"))
                             {
                                 k = i;
 
@@ -1663,7 +2663,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
-                    Description = $"*An exception has occured.*" +
+                    Description = $"*{ex.Message}*" +
                            "\n**c!summary track**",
                     Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=798417105",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -1678,333 +2678,281 @@ namespace CTTB.Commands
         }
 
         [Command("addhw")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
         public async Task AddHomework(CommandContext ctx, string track = "", string author = "", string version = "", string download = "", string slot = "", string lapSpeed = "1/3", [RemainingText] string notes = "")
         {
-            var embed = new DiscordEmbedBuilder { };
-
-            try
+            if (ctx.Guild.Id == 180306609233330176)
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                var embed = new DiscordEmbedBuilder { };
+
+                try
                 {
-                    string description = string.Empty;
-
-                    if (track == "")
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Error:**__",
-                            Description = $"*Track was not inputted.*" +
-                                   "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else if (author == "")
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Error:**__",
-                            Description = $"*Author was not inputted.*" +
-                                   "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else if (version == "")
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Error:**__",
-                            Description = $"*Version was not inputted.*" +
-                                   "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else if (slot == "")
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Error:**__",
-                            Description = $"*Slot was not inputted.*" +
-                                   "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                        var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                        ServiceAccountCredential credential = new ServiceAccountCredential(
-                           new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                        var service = new SheetsService(new BaseClientService.Initializer()
-                        {
-                            HttpClientInitializer = credential,
-                            ApplicationName = "Custom Track Testing Bot",
-                        });
-
-                        await ctx.TriggerTypingAsync();
-
-                        var countRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
-                        var countResponse = await countRequest.ExecuteAsync();
-
-                        var due = DateTime.Today;
-
-                        due = due.AddDays(10);
-                        while (due.Day % 10 != 0)
-                        {
-                            due = due.AddDays(1);
-                        }
-                        string dueMonth = string.Empty;
-                        switch (due.Month)
-                        {
-                            case 1:
-                                dueMonth = "January";
-                                break;
-                            case 2:
-                                dueMonth = "Feburary";
-                                break;
-                            case 3:
-                                dueMonth = "March";
-                                break;
-                            case 4:
-                                dueMonth = "April";
-                                break;
-                            case 5:
-                                dueMonth = "May";
-                                break;
-                            case 6:
-                                dueMonth = "June";
-                                break;
-                            case 7:
-                                dueMonth = "July";
-                                break;
-                            case 8:
-                                dueMonth = "August";
-                                break;
-                            case 9:
-                                dueMonth = "September";
-                                break;
-                            case 10:
-                                dueMonth = "October";
-                                break;
-                            case 11:
-                                dueMonth = "November";
-                                break;
-                            case 12:
-                                dueMonth = "December";
-                                break;
-                        }
-
-                        string dl = string.Empty;
-                        if (download.ToLowerInvariant().Contains("discord"))
-                        {
-                            dl = $"=HYPERLINK(\"{download}\", \"Discord\")";
-                        }
-                        else if (download.ToLowerInvariant().Contains("google"))
-                        {
-                            dl = $"=HYPERLINK(\"{download}\", \"Google Drive\")";
-                        }
-                        else if (download.ToLowerInvariant().Contains("mega"))
-                        {
-                            dl = $"=HYPERLINK(\"{download}\", \"Mega\")";
-                        }
-                        else if (download.ToLowerInvariant().Contains("mediafire"))
-                        {
-                            dl = $"=HYPERLINK(\"{download}\", \"MediaFire\")";
-                        }
-                        else if (download.ToLowerInvariant().Contains("icedrive"))
-                        {
-                            dl = $"=HYPERLINK(\"{download}\", \"Icedrive\")";
-                        }
-                        else if (download.ToLowerInvariant().Contains("sync"))
-                        {
-                            dl = $"=HYPERLINK(\"{download}\", \"Sync\")";
-                        }
-                        else if (download.ToLowerInvariant().Contains("pcloud"))
-                        {
-                            dl = $"=HYPERLINK(\"{download}\", \"pCloud\")";
-                        }
-                        else
-                        {
-                            dl = $"=HYPERLINK(\"{download}\", \"Unregistered\")";
-                        }
-
-                        IList<object> obj = new List<Object>();
-                        obj.Add(track);
-                        obj.Add($"{dueMonth} {due.Day}, {due.Year}");
-                        obj.Add(author);
-                        obj.Add(version);
-                        obj.Add(dl);
-                        obj.Add(slot);
-                        obj.Add(lapSpeed);
-                        obj.Add(notes);
-                        obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"yes*\")");
-                        obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"fixes*\")");
-                        obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"neutral*\")");
-                        obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"no*\")");
-                        IList<IList<Object>> values = new List<IList<Object>>();
-                        values.Add(obj);
-
-                        var request = service.Spreadsheets.Values.Append(new Google.Apis.Sheets.v4.Data.ValueRange() { Values = values }, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'!A1:A1");
-                        request.InsertDataOption = SpreadsheetsResource.ValuesResource.AppendRequest.InsertDataOptionEnum.INSERTROWS;
-                        request.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
-                        var response = await request.ExecuteAsync();
-
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Success:**__",
-                            Description = $"*{track} has been added as homework.*",
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-
-                        DiscordChannel channel = ctx.Channel;
-
-                        foreach (var c in ctx.Guild.Channels)
-                        {
-                            if (c.Value.Id == 635313521487511554)
-                            {
-                                channel = c.Value;
-                            }
-                        }
-
-                        await channel.SendMessageAsync($"<@&608386209655554058> {track} has been added as homework. It is due for {dueMonth} {due.Day}, {due.Year}.");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Error:**__",
-                    Description = $"*An exception has occured.*" +
-                           "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-
-                Console.WriteLine(ex.ToString());
-
-            }
-        }
-
-        [Command("delhw")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
-        public async Task DeleteHomework(CommandContext ctx, [RemainingText] string track = "")
-        {
-            var embed = new DiscordEmbedBuilder { };
-            try
-            {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
-                {
-                    if (track == "")
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Error:**__",
-                            Description = $"*Track was not inputted.*" +
-                                   "\n**c!delhw track**",
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else
+                    if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                     {
                         string description = string.Empty;
-                        string json = string.Empty;
-                        string member = string.Empty;
 
-                        using (var fs = File.OpenRead("council.json"))
-                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-
-                        foreach (var m in councilJson)
-                        {
-                            if (m.DiscordId == ctx.Member.Id)
-                            {
-                                member = m.SheetName;
-                            }
-                        }
-
-                        await ctx.TriggerTypingAsync();
-
-                        string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                        var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                        ServiceAccountCredential credential = new ServiceAccountCredential(
-                           new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                        var service = new SheetsService(new BaseClientService.Initializer()
-                        {
-                            HttpClientInitializer = credential,
-                            ApplicationName = "Custom Track Testing Bot",
-                        });
-
-                        var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
-                        var response = await request.ExecuteAsync();
-
-                        int ix = -1;
-
-                        string trackDisplay = string.Empty;
-
-                        for (int i = 0; i < response.Values.Count; i++)
-                        {
-                            if (CompareStrings(response.Values[i][0].ToString(), track))
-                            {
-                                ix = i;
-                                trackDisplay = response.Values[i][0].ToString();
-                            }
-                        }
-                        if (ix < 0)
+                        if (track == "")
                         {
                             embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
-                                Title = "__**Error:**__",
-                                Description = $"*{track} could not be found.*" +
+                                Title = $"__**Error:**__",
+                                Description = $"*Track was not inputted.*" +
+                                       "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else if (author == "")
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Error:**__",
+                                Description = $"*Author was not inputted.*" +
+                                       "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else if (version == "")
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Error:**__",
+                                Description = $"*Version was not inputted.*" +
+                                       "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else if (slot == "")
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Error:**__",
+                                Description = $"*Slot was not inputted.*" +
+                                       "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                            ServiceAccountCredential credential = new ServiceAccountCredential(
+                               new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                            var service = new SheetsService(new BaseClientService.Initializer()
+                            {
+                                HttpClientInitializer = credential,
+                                ApplicationName = "Custom Track Testing Bot",
+                            });
+
+                            await ctx.TriggerTypingAsync();
+
+                            var countRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                            var countResponse = await countRequest.ExecuteAsync();
+
+                            var due = DateTime.Today;
+
+                            due = due.AddDays(10);
+                            while (due.Day % 10 != 0)
+                            {
+                                due = due.AddDays(1);
+                            }
+                            string dueMonth = string.Empty;
+                            switch (due.Month)
+                            {
+                                case 1:
+                                    dueMonth = "January";
+                                    break;
+                                case 2:
+                                    dueMonth = "Feburary";
+                                    break;
+                                case 3:
+                                    dueMonth = "March";
+                                    break;
+                                case 4:
+                                    dueMonth = "April";
+                                    break;
+                                case 5:
+                                    dueMonth = "May";
+                                    break;
+                                case 6:
+                                    dueMonth = "June";
+                                    break;
+                                case 7:
+                                    dueMonth = "July";
+                                    break;
+                                case 8:
+                                    dueMonth = "August";
+                                    break;
+                                case 9:
+                                    dueMonth = "September";
+                                    break;
+                                case 10:
+                                    dueMonth = "October";
+                                    break;
+                                case 11:
+                                    dueMonth = "November";
+                                    break;
+                                case 12:
+                                    dueMonth = "December";
+                                    break;
+                            }
+
+                            string dl = string.Empty;
+                            if (download.ToLowerInvariant().Contains("discord"))
+                            {
+                                dl = $"=HYPERLINK(\"{download}\", \"Discord\")";
+                            }
+                            else if (download.ToLowerInvariant().Contains("google"))
+                            {
+                                dl = $"=HYPERLINK(\"{download}\", \"Google Drive\")";
+                            }
+                            else if (download.ToLowerInvariant().Contains("mega"))
+                            {
+                                dl = $"=HYPERLINK(\"{download}\", \"Mega\")";
+                            }
+                            else if (download.ToLowerInvariant().Contains("mediafire"))
+                            {
+                                dl = $"=HYPERLINK(\"{download}\", \"MediaFire\")";
+                            }
+                            else if (download.ToLowerInvariant().Contains("icedrive"))
+                            {
+                                dl = $"=HYPERLINK(\"{download}\", \"Icedrive\")";
+                            }
+                            else if (download.ToLowerInvariant().Contains("sync"))
+                            {
+                                dl = $"=HYPERLINK(\"{download}\", \"Sync\")";
+                            }
+                            else if (download.ToLowerInvariant().Contains("pcloud"))
+                            {
+                                dl = $"=HYPERLINK(\"{download}\", \"pCloud\")";
+                            }
+                            else
+                            {
+                                dl = $"=HYPERLINK(\"{download}\", \"Unregistered\")";
+                            }
+
+                            IList<object> obj = new List<object>();
+                            obj.Add(track);
+                            obj.Add($"{dueMonth} {due.Day}, {due.Year}");
+                            obj.Add(author);
+                            obj.Add($"'{version}");
+                            obj.Add(dl);
+                            obj.Add(slot);
+                            obj.Add(lapSpeed);
+                            obj.Add(notes);
+                            obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"yes*\")");
+                            obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"fixes*\")");
+                            obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"neutral*\")");
+                            obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"no*\")");
+                            IList<IList<object>> values = new List<IList<object>>();
+                            values.Add(obj);
+
+                            string strAlpha = "";
+
+                            for (int i = 65; i <= 90; i++)
+                            {
+                                strAlpha += ((char)i).ToString() + "";
+                            }
+
+                            var appendRequest = service.Spreadsheets.Values.Append(new ValueRange() { Values = values }, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                            appendRequest.InsertDataOption = SpreadsheetsResource.ValuesResource.AppendRequest.InsertDataOptionEnum.INSERTROWS;
+                            appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+                            appendRequest.ResponseValueRenderOption = SpreadsheetsResource.ValuesResource.AppendRequest.ResponseValueRenderOptionEnum.FORMULA;
+                            var appendResponse = await appendRequest.ExecuteAsync();
+
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Success:**__",
+                                Description = $"*{track} has been added as homework.*",
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                            DiscordChannel channel = ctx.Channel;
+
+                            foreach (var c in ctx.Guild.Channels)
+                            {
+                                if (c.Value.Id == 635313521487511554)
+                                {
+                                    channel = c.Value;
+                                }
+                            }
+
+                            await channel.SendMessageAsync($"<@&608386209655554058> {track} has been added as homework. It is due for {dueMonth} {due.Day}, {due.Year}.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Error:**__",
+                        Description = $"*{ex.Message}*" +
+                               "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
+                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                    Console.WriteLine(ex.ToString());
+
+                }
+            }
+        }
+
+        [Command("delhw")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task DeleteHomework(CommandContext ctx, [RemainingText] string track = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176)
+            {
+                var embed = new DiscordEmbedBuilder { };
+                try
+                {
+                    if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                    {
+                        if (track == "")
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Error:**__",
+                                Description = $"*Track was not inputted.*" +
                                        "\n**c!delhw track**",
                                 Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -2016,57 +2964,123 @@ namespace CTTB.Commands
                         }
                         else
                         {
-                            var req = new Request
+                            string description = string.Empty;
+                            string json = string.Empty;
+                            string member = string.Empty;
+
+                            using (var fs = File.OpenRead("council.json"))
+                            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                            List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                            foreach (var m in councilJson)
                             {
-                                DeleteDimension = new DeleteDimensionRequest
+                                if (m.DiscordId == ctx.Member.Id)
                                 {
-                                    Range = new DimensionRange
+                                    member = m.SheetName;
+                                }
+                            }
+
+                            await ctx.TriggerTypingAsync();
+
+                            string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                            ServiceAccountCredential credential = new ServiceAccountCredential(
+                               new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                            var service = new SheetsService(new BaseClientService.Initializer()
+                            {
+                                HttpClientInitializer = credential,
+                                ApplicationName = "Custom Track Testing Bot",
+                            });
+
+                            var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                            var response = await request.ExecuteAsync();
+
+                            int ix = -1;
+
+                            string trackDisplay = string.Empty;
+
+                            for (int i = 0; i < response.Values.Count; i++)
+                            {
+                                if (CompareStrings(response.Values[i][0].ToString(), track))
+                                {
+                                    ix = i;
+                                    trackDisplay = response.Values[i][0].ToString();
+                                }
+                            }
+                            if (ix < 0)
+                            {
+                                embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Error:**__",
+                                    Description = $"*{track} could not be found.*" +
+                                           "\n**c!delhw track**",
+                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
-                                        SheetId = 906385082,
-                                        Dimension = "ROWS",
-                                        StartIndex = ix,
-                                        EndIndex = ix + 1
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                                     }
-                                }
-                            };
-
-                            var deleteRequest = new BatchUpdateSpreadsheetRequest { Requests = new List<Request> { req } };
-                            var deleteResponse = service.Spreadsheets.BatchUpdate(deleteRequest, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss").Execute();
-
-
-                            embed = new DiscordEmbedBuilder
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                            else
                             {
-                                Color = new DiscordColor("#FF0000"),
-                                Title = "__**Success:**__",
-                                Description = $"*{trackDisplay} has been deleted from homework.*",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                var req = new Request
                                 {
-                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                                }
-                            };
-                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                                    DeleteDimension = new DeleteDimensionRequest
+                                    {
+                                        Range = new DimensionRange
+                                        {
+                                            SheetId = 906385082,
+                                            Dimension = "ROWS",
+                                            StartIndex = ix,
+                                            EndIndex = ix + 1
+                                        }
+                                    }
+                                };
+
+                                var deleteRequest = new BatchUpdateSpreadsheetRequest { Requests = new List<Request> { req } };
+                                var deleteResponse = service.Spreadsheets.BatchUpdate(deleteRequest, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss").Execute();
+
+
+                                embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Success:**__",
+                                    Description = $"*{trackDisplay} has been deleted from homework.*",
+                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                embed = new DiscordEmbedBuilder
+                catch (Exception ex)
                 {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*An exception has occured.*" +
-                           "\n**c!delhw track**",
-                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    embed = new DiscordEmbedBuilder
                     {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{ex.Message}*" +
+                               "\n**c!delhw track**",
+                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
-                Console.WriteLine(ex.ToString());
+                    Console.WriteLine(ex.ToString());
+                }
             }
         }
 
@@ -2074,126 +3088,32 @@ namespace CTTB.Commands
         [RequireRoles(RoleCheckMode.Any, "Track Council", "Admin")]
         public async Task SubmitHomework(CommandContext ctx, string vote = "", string track = "", [RemainingText] string feedback = "")
         {
-            var embed = new DiscordEmbedBuilder { };
-            try
+            if (ctx.Guild.Id == 180306609233330176)
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                var embed = new DiscordEmbedBuilder { };
+                try
                 {
-                    string strAlpha = "";
-
-                    for (int i = 65; i <= 90; i++)
+                    if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                     {
-                        strAlpha += ((char)i).ToString() + "";
-                    }
+                        string strAlpha = "";
 
-                    string description = string.Empty;
-                    string json = string.Empty;
-                    string member = string.Empty;
-
-                    if (vote == "")
-                    {
-                        embed = new DiscordEmbedBuilder
+                        for (int i = 65; i <= 90; i++)
                         {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Error:**__",
-                            Description = $"*Track was not inputted.*" +
-                                   "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else if (track == "")
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Error:**__",
-                            Description = $"*Author was not inputted.*" +
-                                   "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else if (vote.ToLowerInvariant() != "no" && vote.ToLowerInvariant() != "yes" && vote.ToLowerInvariant() != "neutral" && vote.ToLowerInvariant() != "fixes")
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Error:**__",
-                            Description = $"*{vote} is not a valid vote.*" +
-                                      "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
-
-                        vote = textInfo.ToTitleCase(vote);
-
-                        using (var fs = File.OpenRead("council.json"))
-                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-
-                        foreach (var m in councilJson)
-                        {
-                            if (m.DiscordId == ctx.Member.Id)
-                            {
-                                member = m.SheetName;
-                            }
+                            strAlpha += ((char)i).ToString() + "";
                         }
 
-                        await ctx.TriggerTypingAsync();
+                        string description = string.Empty;
+                        string json = string.Empty;
+                        string member = string.Empty;
 
-                        string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                        var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                        ServiceAccountCredential credential = new ServiceAccountCredential(
-                           new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                        var service = new SheetsService(new BaseClientService.Initializer()
-                        {
-                            HttpClientInitializer = credential,
-                            ApplicationName = "Custom Track Testing Bot",
-                        });
-
-                        var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
-                        request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                        var response = await request.ExecuteAsync();
-
-                        int ix = -1;
-
-                        for (int i = 0; i < response.Values[0].Count; i++)
-                        {
-                            if (CompareStrings(response.Values[0][i].ToString(), member))
-                            {
-                                ix = i;
-                            }
-                        }
-
-                        if (ix < 0)
+                        if (vote == "")
                         {
                             embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
-                                Title = "__**Error:**__",
-                                Description = $"*<@{ctx.Member.Id}> is not able to submit feedback.*" +
-                                   "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
+                                Title = $"__**Error:**__",
+                                Description = $"*Track was not inputted.*" +
+                                       "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
                                 Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
@@ -2202,49 +3122,93 @@ namespace CTTB.Commands
                             };
                             await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         }
-
+                        else if (track == "")
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Error:**__",
+                                Description = $"*Author was not inputted.*" +
+                                       "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else if (vote.ToLowerInvariant() != "no" && vote.ToLowerInvariant() != "yes" && vote.ToLowerInvariant() != "neutral" && vote.ToLowerInvariant() != "fixes")
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Error:**__",
+                                Description = $"*{vote} is not a valid vote.*" +
+                                          "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
                         else
                         {
+                            TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
 
-                            int j = 0;
+                            vote = textInfo.ToTitleCase(vote);
 
-                            foreach (var t in response.Values)
+                            using (var fs = File.OpenRead("council.json"))
+                            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                            List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                            foreach (var m in councilJson)
                             {
-                                while (t.Count < response.Values[0].Count)
+                                if (m.DiscordId == ctx.Member.Id)
                                 {
-                                    t.Add("");
-                                }
-                                if (j > 0)
-                                {
-                                    break;
-                                }
-                                else if (CompareStrings(t[0].ToString(), track))
-                                {
-                                    t[ix] = vote + "\n" + feedback;
-                                    j++;
+                                    member = m.SheetName;
                                 }
                             }
 
-                            SpreadsheetsResource.ValuesResource.UpdateRequest updateRequest;
+                            await ctx.TriggerTypingAsync();
 
-                            if (response.Values[0].Count < 27)
-                            {
-                                updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:{strAlpha[response.Values[0].Count - 1]}{response.Values.Count}");
-                            }
-                            else
-                            {
-                                updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:A{strAlpha[response.Values[0].Count % 26 - 1]}{response.Values.Count}");
-                            }
-                            updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-                            var update = await updateRequest.ExecuteAsync();
+                            string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                            if (j == 0)
+                            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                            ServiceAccountCredential credential = new ServiceAccountCredential(
+                               new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                            var service = new SheetsService(new BaseClientService.Initializer()
+                            {
+                                HttpClientInitializer = credential,
+                                ApplicationName = "Custom Track Testing Bot",
+                            });
+
+                            var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                            request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                            var response = await request.ExecuteAsync();
+
+                            int ix = -1;
+
+                            for (int i = 0; i < response.Values[0].Count; i++)
+                            {
+                                if (CompareStrings(response.Values[0][i].ToString(), member))
+                                {
+                                    ix = i;
+                                }
+                            }
+
+                            if (ix < 0)
                             {
                                 embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = "__**Error:**__",
-                                    Description = $"*{track} could not be found.*" +
+                                    Description = $"*<@{ctx.Member.Id}> is not able to submit feedback.*" +
                                        "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
                                     Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -2254,13 +3218,410 @@ namespace CTTB.Commands
                                 };
                                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                             }
+
+                            else
+                            {
+
+                                int j = 0;
+
+                                foreach (var t in response.Values)
+                                {
+                                    while (t.Count < response.Values[0].Count)
+                                    {
+                                        t.Add("");
+                                    }
+                                    if (j > 0)
+                                    {
+                                        break;
+                                    }
+                                    else if (CompareStringAbbreviation(track, t[0].ToString()) || CompareStringsLevenshteinDistance(track, t[0].ToString()))
+                                    {
+                                        t[ix] = vote + "\n" + feedback;
+                                        j++;
+                                    }
+                                }
+
+                                SpreadsheetsResource.ValuesResource.UpdateRequest updateRequest;
+
+                                if (response.Values[0].Count < 27)
+                                {
+                                    updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:{strAlpha[response.Values[0].Count - 1]}{response.Values.Count}");
+                                }
+                                else
+                                {
+                                    updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:A{strAlpha[response.Values[0].Count % 26 - 1]}{response.Values.Count}");
+                                }
+                                updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+                                var update = await updateRequest.ExecuteAsync();
+
+                                if (j == 0)
+                                {
+                                    embed = new DiscordEmbedBuilder
+                                    {
+                                        Color = new DiscordColor("#FF0000"),
+                                        Title = "__**Error:**__",
+                                        Description = $"*{track} could not be found.*" +
+                                           "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
+                                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                                        {
+                                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                        }
+                                    };
+                                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    embed = new DiscordEmbedBuilder
+                                    {
+                                        Color = new DiscordColor("#FF0000"),
+                                        Title = "__**Success:**__",
+                                        Description = $"*Homework for {track} has been submitted successfully.*",
+                                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                                        {
+                                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                        }
+                                    };
+                                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{ex.Message}*" +
+                               "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
+                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                    Console.WriteLine(ex.ToString());
+                }
+            }
+        }
+
+        [Command("gethw")]
+        [RequireRoles(RoleCheckMode.Any, "Track Council", "Admin")]
+        public async Task GetSpecificHomework(CommandContext ctx, string track = "", string member = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176)
+            {
+                var embed = new DiscordEmbedBuilder { };
+                try
+                {
+                    if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                    {
+                        string json;
+                        using (var fs = File.OpenRead("council.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        int j = 0;
+                        foreach (var role in ctx.Member.Roles)
+                        {
+                            if (role.Name == "Admin")
+                            {
+                                j++;
+                                break;
+                            }
+                        }
+                        int ix = -1;
+
+                        if (j == 0)
+                        {
+                            ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
+                        }
+                        else
+                        {
+                            if (member == "")
+                            {
+                                ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
+                            }
+                            else
+                            {
+                                ix = councilJson.FindIndex(x => CompareIncompleteStrings(x.SheetName, member) || CompareStringsLevenshteinDistance(x.SheetName, member));
+                            }
+                        }
+
+                        string description = string.Empty;
+
+                        if (track == "")
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Error:**__",
+                                Description = $"*Track was not inputted.*" +
+                                       "\n**c!gethw track/all mention/name**",
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            await ctx.TriggerTypingAsync();
+
+                            string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                            ServiceAccountCredential credential = new ServiceAccountCredential(
+                               new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                            var service = new SheetsService(new BaseClientService.Initializer()
+                            {
+                                HttpClientInitializer = credential,
+                                ApplicationName = "Custom Track Testing Bot",
+                            });
+
+                            var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                            request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                            var response = await request.ExecuteAsync();
+
+                            for (int i = 0; i < response.Values.Count; i++)
+                            {
+                                while (response.Values[i].Count < response.Values[0].Count)
+                                {
+                                    response.Values[i].Add("");
+                                }
+                            }
+
+                            int sheetIx = -1;
+
+                            if (CompareStrings(member, "all"))
+                            {
+                                for (int i = 1; i < response.Values.Count; i++)
+                                {
+                                    if (CompareStringAbbreviation(track, response.Values[i][0].ToString()) || CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                                    {
+                                        sheetIx = i;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for (int i = 12; i < response.Values[0].Count; i++)
+                                {
+                                    if (CompareStringAbbreviation(member, response.Values[0][i].ToString()) || CompareStringsLevenshteinDistance(member, response.Values[0][i].ToString()))
+                                    {
+                                        sheetIx = i;
+                                    }
+                                }
+                            }
+
+                            j = 0;
+                            int k = 0;
+                            int l = 0;
+                            string trackDisplay = string.Empty;
+
+                            foreach (var m in response.Values[0])
+                            {
+                                if (m.ToString() == member)
+                                {
+                                    k++;
+                                }
+                            }
+
+                            List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+
+                            if (sheetIx > 0)
+                            {
+                                if (track.ToLowerInvariant() != "all")
+                                {
+                                    if (CompareStrings(member, "all"))
+                                    {
+                                        for (int i = 12; i < response.Values[sheetIx].Count; i++)
+                                        {
+                                            if (response.Values[sheetIx][i].ToString() == "")
+                                            {
+                                                description = $"*{response.Values[0][i]} has not done their homework yet.*";
+                                            }
+                                            else
+                                            {
+                                                if (response.Values[sheetIx][i].ToString().ToCharArray().Length > 3500)
+                                                {
+                                                    description = $"**Homework of {response.Values[0][i]}:**\n{response.Values[sheetIx][i].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
+                                                }
+                                                else
+                                                {
+                                                    description = $"**Homework of {response.Values[0][i]}:**\n{response.Values[sheetIx][i]}";
+                                                }
+                                            }
+                                            trackDisplay = response.Values[sheetIx][i].ToString();
+
+                                            embed = new DiscordEmbedBuilder
+                                            {
+                                                Color = new DiscordColor("#FF0000"),
+                                                Title = $"__**{response.Values[sheetIx][0]}**__",
+                                                Description = description,
+                                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                                {
+                                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                                }
+                                            };
+
+                                            embeds.Add(embed);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        foreach (var t in response.Values)
+                                        {
+                                            while (t.Count < response.Values[0].Count)
+                                            {
+                                                t.Add("");
+                                            }
+                                            if (j < 1)
+                                            {
+                                                j++;
+                                            }
+                                            else if (CompareStrings(t[0].ToString(), track))
+                                            {
+                                                if (t[sheetIx].ToString() == "")
+                                                {
+                                                    description = $"*<@{councilJson[ix].DiscordId}> has not done their homework yet.*";
+                                                }
+                                                else
+                                                {
+                                                    if (t[sheetIx].ToString().ToCharArray().Length > 3500)
+                                                    {
+                                                        description = $"**Homework of <@{councilJson[ix].DiscordId}>:**\n{t[sheetIx].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
+                                                    }
+                                                    else
+                                                    {
+                                                        description = $"**Homework of <@{councilJson[ix].DiscordId}>:**\n{t[sheetIx]}";
+                                                    }
+                                                }
+                                                trackDisplay = t[0].ToString();
+                                                l++;
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    foreach (var t in response.Values)
+                                    {
+                                        if (j < 1)
+                                        {
+                                            j++;
+                                        }
+                                        else
+                                        {
+                                            if (t[sheetIx].ToString() == "")
+                                            {
+                                                description = $"*{councilJson[ix].SheetName} has not done their homework yet.*";
+                                            }
+                                            else
+                                            {
+                                                if (t.ToString().ToCharArray().Length > 3500)
+                                                {
+                                                    description = $"**Homework of <@{councilJson[ix].DiscordId}>:**\n{t[sheetIx].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
+                                                }
+                                                else
+                                                {
+                                                    description = $"**Homework of <@{councilJson[ix].DiscordId}>:**\n{t[sheetIx]}";
+                                                }
+                                            }
+                                            trackDisplay = t[0].ToString();
+
+                                            embed = new DiscordEmbedBuilder
+                                            {
+                                                Color = new DiscordColor("#FF0000"),
+                                                Title = $"__**{trackDisplay}**__",
+                                                Description = description,
+                                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                                {
+                                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                                }
+                                            };
+                                            embeds.Add(embed);
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (sheetIx < 0)
+                            {
+                                embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = $"__**Error:**__",
+                                    Description = $"*{member} could not be found on council.*" +
+                                       "\n**c!gethw track/all mention/name**",
+                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+
+                            else if (CompareStrings(member, "all"))
+                            {
+                                List<Page> pages = new List<Page>();
+
+                                foreach (var e in embeds)
+                                {
+                                    pages.Add(new Page("", e));
+                                }
+
+                                await ctx.Channel.SendPaginatedMessageAsync(ctx.User, pages);
+                            }
+
+                            else if (CompareStrings(track, "all"))
+                            {
+                                List<Page> pages = new List<Page>();
+
+                                foreach (var e in embeds)
+                                {
+                                    pages.Add(new Page("", e));
+                                }
+
+                                await ctx.Channel.SendPaginatedMessageAsync(ctx.User, pages);
+                            }
+
+                            else if (l == 0)
+                            {
+                                embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = $"__**Error:**__",
+                                    Description = $"*{track} could not be found.*" +
+                                       "\n**c!gethw track/all mention/name**",
+                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
                             else
                             {
                                 embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
-                                    Title = "__**Success:**__",
-                                    Description = $"*Homework for {track} has been submitted successfully.*",
+                                    Title = $"__**{trackDisplay}**__",
+                                    Description = description,
                                     Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
@@ -2272,118 +3633,39 @@ namespace CTTB.Commands
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                embed = new DiscordEmbedBuilder
+                catch (Exception ex)
                 {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*An exception has occured.*" +
-                           "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    embed = new DiscordEmbedBuilder
                     {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{ex.Message}*" +
+                               "\n**c!gethw track/all mention/name**",
+                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
-                Console.WriteLine(ex.ToString());
+                    Console.WriteLine(ex.ToString());
+                }
             }
         }
 
-        [Command("gethw")]
+        [Command("hw")]
         [RequireRoles(RoleCheckMode.Any, "Track Council", "Admin")]
-        public async Task GetHomework(CommandContext ctx, string track = "", string mention = "")
+        public async Task GetHomework(CommandContext ctx, [RemainingText] string placeholder)
         {
-            var embed = new DiscordEmbedBuilder { };
-            try
+            if (ctx.Guild.Id == 180306609233330176)
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                var embed = new DiscordEmbedBuilder { };
+                try
                 {
-                    string description = string.Empty;
-                    string json = string.Empty;
-                    string member = string.Empty;
-
-                    int j = 0;
-                    foreach (var role in ctx.Member.Roles)
+                    if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                     {
-                        if (role.Name == "Admin" || role.Name == "Pack & Bot Dev")
-                        {
-                            j++;
-                            break;
-                        }
-                    }
-
-                    if (j == 0)
-                    {
-                        mention = $"<@{ctx.Member.Id}>";
-                    }
-
-                    if (track == "")
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Error:**__",
-                            Description = $"*Track was not inputted.*" +
-                                   "\n**c!gethw track/all mention/name**",
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        using (var fs = File.OpenRead("council.json"))
-                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-
-                        int l = 0;
-
-                        if (mention == "")
-                        {
-                            mention = $"<@{ctx.Member.Id}>";
-                            l++;
-                        }
-                        else if (!mention.Contains("<") || !mention.Contains(">") || !mention.Contains("@"))
-                        {
-                            foreach (var m in councilJson)
-                            {
-                                if (CompareStrings(m.SheetName, mention))
-                                {
-                                    mention = $"<@{m.DiscordId}>";
-                                    l++;
-                                }
-                            }
-                        }
-                        foreach (var m in councilJson)
-                        {
-                            if ($"<@{m.DiscordId}>" == mention)
-                            {
-                                l++;
-                            }
-                        }
-
-                        ulong parsedMention = 0;
-
-                        if (l > 0)
-                        {
-                            parsedMention = ulong.Parse(mention.Replace("<", "").Replace(">", "").Replace("@", "").Replace("!", "").Replace("&", ""));
-                            foreach (var m in councilJson)
-                            {
-                                if (m.DiscordId == parsedMention)
-                                {
-                                    member = m.SheetName;
-                                }
-                            }
-                        }
-
+                        string description = string.Empty;
                         await ctx.TriggerTypingAsync();
 
                         string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
@@ -2399,347 +3681,74 @@ namespace CTTB.Commands
                             ApplicationName = "Custom Track Testing Bot",
                         });
 
+                        var temp = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluation Log'");
+                        var tempResponse = await temp.ExecuteAsync();
+                        var today = int.Parse(tempResponse.Values[tempResponse.Values.Count - 1][tempResponse.Values[tempResponse.Values.Count - 1].Count - 1].ToString());
+
                         var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                        var responseRaw = await request.ExecuteAsync();
+
                         request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
                         var response = await request.ExecuteAsync();
-
-                        for (int i = 0; i < response.Values.Count; i++)
+                        foreach (var t in response.Values)
                         {
-                            while (response.Values[i].Count < response.Values[0].Count)
+                            while (t.Count < response.Values[0].Count)
                             {
-                                response.Values[i].Add("");
+                                t.Add("");
                             }
                         }
 
-                        int ix = -1;
+                        int j = 0;
 
-                        if (CompareStrings(mention, "all"))
+                        for (int i = 1; i < response.Values.Count; i++)
                         {
-                            for (int i = 1; i < response.Values.Count; i++)
+                            var t = response.Values[i];
+                            var tRaw = responseRaw.Values[i];
+                            string tally = "*Unreviewed*";
+                            if (today >= int.Parse(t[1].ToString()))
                             {
-                                if (CompareStrings(response.Values[i][0].ToString(), track))
+                                var emote = string.Empty;
+                                if ((double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString())) / (double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString()) + double.Parse(tRaw[11].ToString())) >= 2.0 / 3.0)
                                 {
-                                    ix = i;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            for (int i = 12; i < response.Values[0].Count; i++)
-                            {
-                                if (CompareStrings(response.Values[0][i].ToString(), member))
-                                {
-                                    ix = i;
-                                }
-                            }
-                        }
-
-                        j = 0;
-                        int k = 0;
-                        l = 0;
-                        string trackDisplay = string.Empty;
-
-                        foreach (var m in response.Values[0])
-                        {
-                            if (m.ToString() == member)
-                            {
-                                k++;
-                            }
-                        }
-
-                        List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
-
-                        if (ix > 0)
-                        {
-                            if (track.ToLowerInvariant() != "all")
-                            {
-                                if (CompareStrings(mention, "all"))
-                                {
-                                    for (int i = 12; i < response.Values[ix].Count; i++)
-                                    {
-                                        if (response.Values[ix][i].ToString() == "")
-                                        {
-                                            description = $"*{response.Values[0][i]} has not done their homework yet.*";
-                                        }
-                                        else
-                                        {
-                                            if (response.Values[ix][i].ToString().ToCharArray().Length > 3500)
-                                            {
-                                                description = $"**Homework of {response.Values[0][i]}:**\n{response.Values[ix][i].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
-                                            }
-                                            else
-                                            {
-                                                description = $"**Homework of {response.Values[0][i]}:**\n{response.Values[ix][i]}";
-                                            }
-                                        }
-                                        trackDisplay = response.Values[ix][i].ToString();
-
-                                        embed = new DiscordEmbedBuilder
-                                        {
-                                            Color = new DiscordColor("#FF0000"),
-                                            Title = $"__**{response.Values[ix][0]}**__",
-                                            Description = description,
-                                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                                            {
-                                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                                            }
-                                        };
-
-                                        embeds.Add(embed);
-                                    }
+                                    emote = DiscordEmoji.FromName(ctx.Client, ":Yes:");
                                 }
                                 else
                                 {
-                                    foreach (var t in response.Values)
-                                    {
-                                        while (t.Count < response.Values[0].Count)
-                                        {
-                                            t.Add("");
-                                        }
-                                        if (j < 1)
-                                        {
-                                            j++;
-                                        }
-                                        else if (CompareStrings(t[0].ToString(), track))
-                                        {
-                                            if (t[ix].ToString() == "")
-                                            {
-                                                description = $"*{mention} has not done their homework yet.*";
-                                            }
-                                            else
-                                            {
-                                                if (t[ix].ToString().ToCharArray().Length > 3500)
-                                                {
-                                                    description = $"**Homework of {mention}:**\n{t[ix].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
-                                                }
-                                                else
-                                                {
-                                                    description = $"**Homework of {mention}:**\n{t[ix]}";
-                                                }
-                                            }
-                                            trackDisplay = t[0].ToString();
-                                            l++;
-                                        }
-                                    }
+                                    emote = DiscordEmoji.FromName(ctx.Client, ":No:");
                                 }
+                                tally = $"{tRaw[8]}/{tRaw[9]}/{tRaw[10]}/{tRaw[11]} {emote}";
                             }
-                            else
+                            try
                             {
-                                foreach (var t in response.Values)
-                                {
-                                    if (j < 1)
-                                    {
-                                        j++;
-                                    }
-                                    else
-                                    {
-                                        if (t[ix].ToString() == "")
-                                        {
-                                            description = $"*{mention} has not done their homework yet.*";
-                                        }
-                                        else
-                                        {
-                                            if (t.ToString().ToCharArray().Length > 3500)
-                                            {
-                                                description = $"**Homework of {mention}:**\n{t[ix].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
-                                            }
-                                            else
-                                            {
-                                                description = $"**Homework of {mention}:**\n{t[ix]}";
-                                            }
-                                        }
-                                        trackDisplay = t[0].ToString();
-
-                                        embed = new DiscordEmbedBuilder
-                                        {
-                                            Color = new DiscordColor("#FF0000"),
-                                            Title = $"__**{trackDisplay}**__",
-                                            Description = description,
-                                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                                            {
-                                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                                            }
-                                        };
-                                        l++;
-                                        embeds.Add(embed);
-                                    }
-                                }
+                                description += $"{t[0]} | {tRaw[1]} | [Download]({t[4].ToString().Split('"')[1]}) | {tally}\n";
+                            }
+                            catch
+                            {
+                                description += $"{t[0]} | {tRaw[1]} | *Check spreadsheet for download* | {tally}\n";
                             }
                         }
-
-                        if (ix < 0)
+                        embed = new DiscordEmbedBuilder
                         {
-                            embed = new DiscordEmbedBuilder
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Council Homework:**__",
+                            Description = description,
+                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
-                                Color = new DiscordColor("#FF0000"),
-                                Title = $"__**Error:**__",
-                                Description = $"*{mention} could not be found on council.*" +
-                                   "\n**c!gethw track/all mention/name**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                                Footer = new DiscordEmbedBuilder.EmbedFooter
-                                {
-                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                                }
-                            };
-                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                        }
-
-                        else if (CompareStrings(mention, "all"))
-                        {
-                            List<Page> pages = new List<Page>();
-
-                            foreach (var e in embeds)
-                            {
-                                pages.Add(new Page("", e));
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
-
-                            await ctx.Channel.SendPaginatedMessageAsync(ctx.User, pages);
-                        }
-
-                        else if (CompareStrings(track, "all"))
-                        {
-                            List<Page> pages = new List<Page>();
-
-                            foreach (var e in embeds)
-                            {
-                                pages.Add(new Page("", e));
-                            }
-
-                            await ctx.Channel.SendPaginatedMessageAsync(ctx.User, pages);
-                        }
-
-                        else if (l == 0)
-                        {
-                            embed = new DiscordEmbedBuilder
-                            {
-                                Color = new DiscordColor("#FF0000"),
-                                Title = $"__**Error:**__",
-                                Description = $"*{track} could not be found.*" +
-                                   "\n**c!gethw track/all mention/name**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                                Footer = new DiscordEmbedBuilder.EmbedFooter
-                                {
-                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                                }
-                            };
-                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            embed = new DiscordEmbedBuilder
-                            {
-                                Color = new DiscordColor("#FF0000"),
-                                Title = $"__**{trackDisplay}**__",
-                                Description = description,
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                                Footer = new DiscordEmbedBuilder.EmbedFooter
-                                {
-                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                                }
-                            };
-                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                        }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                embed = new DiscordEmbedBuilder
+                catch (Exception ex)
                 {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*An exception has occured.*" +
-                           "\n**c!gethw track/all mention/name**",
-                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-
-                Console.WriteLine(ex.ToString());
-            }
-        }
-
-        [Command("hw")]
-        [RequireRoles(RoleCheckMode.Any, "Track Council", "Admin")]
-        public async Task GetHomework(CommandContext ctx, [RemainingText] string placeholder)
-        {
-            var embed = new DiscordEmbedBuilder { };
-            try
-            {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
-                {
-                    string description = string.Empty;
-                    await ctx.TriggerTypingAsync();
-
-                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                    ServiceAccountCredential credential = new ServiceAccountCredential(
-                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                    var service = new SheetsService(new BaseClientService.Initializer()
-                    {
-                        HttpClientInitializer = credential,
-                        ApplicationName = "Custom Track Testing Bot",
-                    });
-
-                    var temp = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluation Log'");
-                    var tempResponse = await temp.ExecuteAsync();
-                    var today = int.Parse(tempResponse.Values[tempResponse.Values.Count - 1][tempResponse.Values[tempResponse.Values.Count - 1].Count - 1].ToString());
-
-                    var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
-                    var responseRaw = await request.ExecuteAsync();
-
-                    request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                    var response = await request.ExecuteAsync();
-                    foreach (var t in response.Values)
-                    {
-                        while (t.Count < response.Values[0].Count)
-                        {
-                            t.Add("");
-                        }
-                    }
-
-                    int j = 0;
-
-                    for (int i = 1; i < response.Values.Count; i++)
-                    {
-                        var t = response.Values[i];
-                        var tRaw = responseRaw.Values[i];
-                        string tally = "*Unreviewed*";
-                        if (today >= int.Parse(t[1].ToString()))
-                        {
-                            var emote = string.Empty;
-                            if ((double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString())) / (double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString()) + double.Parse(tRaw[11].ToString())) >= 2.0 / 3.0)
-                            {
-                                emote = DiscordEmoji.FromName(ctx.Client, ":Yes:");
-                            }
-                            else
-                            {
-                                emote = DiscordEmoji.FromName(ctx.Client, ":No:");
-                            }
-                            tally = $"{tRaw[8]}/{tRaw[9]}/{tRaw[10]}/{tRaw[11]} {emote}";
-                        }
-                        try
-                        {
-                            description += $"{t[0]} | {tRaw[1]} | [Download]({t[4].ToString().Split('"')[1]}) | {tally}\n";
-                        }
-                        catch
-                        {
-                            description += $"{t[0]} | {tRaw[1]} | *Check spreadsheet for download* | {tally}\n";
-                        }
-                    }
                     embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Council Homework:**__",
-                        Description = description,
+                        Title = "__**Error:**__",
+                        Description = $"*{ex.Message}*" +
+                               "\n**c!hw**",
                         Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
@@ -2747,25 +3756,9 @@ namespace CTTB.Commands
                         }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                }
-            }
-            catch (Exception ex)
-            {
-                embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*An exception has occured.*" +
-                           "\n**c!hw**",
-                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
-                Console.WriteLine(ex.ToString());
+                    Console.WriteLine(ex.ToString());
+                }
             }
         }
 
@@ -2812,13 +3805,13 @@ namespace CTTB.Commands
                 {
                     if (j < 1)
                     {
-                        if (CompareIncompleteStrings(trackList[i].Name, track))
+                        if (CompareIncompleteStrings(trackList[i].Name, track) || CompareStringAbbreviation(track, trackList[i].Name) || CompareStringsLevenshteinDistance(track, trackList[i].Name))
                         {
                             for (int h = 0; i < response.Values.Count; h++)
                             {
                                 if (h != 0)
                                 {
-                                    if (CompareIncompleteStrings(response.Values[h][0].ToString(), track))
+                                    if (CompareIncompleteStrings(response.Values[h][0].ToString(), track) || CompareStringAbbreviation(track, response.Values[h][0].ToString()) || CompareStringsLevenshteinDistance(track, response.Values[h][0].ToString()))
                                     {
                                         description = $"**Easy:**\n*[{response.Values[h][1]}](https://chadsoft.co.uk/time-trials/rkgd/{response.Values[h + 251][1].ToString().Substring(0, 2)}/{response.Values[h + 251][1].ToString().Substring(2, 2)}/{response.Values[h + 251][1].ToString().Substring(4)}.html)*\n**Expert:**\n*[{response.Values[h][2]}](https://chadsoft.co.uk/time-trials/rkgd/{response.Values[h + 251][2].ToString().Substring(0, 2)}/{response.Values[h + 251][2].ToString().Substring(2, 2)}/{response.Values[h + 251][2].ToString().Substring(4)}.html)*";
                                         trackDisplay = trackList[i];
@@ -2872,7 +3865,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
-                    Description = $"*An exception has occured.*" +
+                    Description = $"*{ex.Message}*" +
                            "\n**c!staff track**",
                     Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1188255728",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -2930,11 +3923,11 @@ namespace CTTB.Commands
                 {
                     if (j < 1)
                     {
-                        if (CompareIncompleteStrings(trackList[i].Name, track))
+                        if (CompareIncompleteStrings(trackList[i].Name, track) || CompareStringAbbreviation(track, trackList[i].Name) || CompareStringsLevenshteinDistance(track, trackList[i].Name))
                         {
                             foreach (var t in response.Values)
                             {
-                                if (CompareIncompleteStrings(t[0].ToString(), track))
+                                if (CompareIncompleteStrings(t[0].ToString(), track) || CompareStringAbbreviation(track, t[0].ToString()) || CompareStringsLevenshteinDistance(track, t[0].ToString()))
                                 {
                                     description = $"**Author:**\n*{t[1]}*\n**Version:**\n*{t[2]}*\n**Track/Music Slots:**\n*{t[3]}*\n**Speed/Lap Count:**\n*{t[4]}*";
                                     trackDisplay = trackList[i];
@@ -3005,7 +3998,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
-                    Description = $"*An exception has occured.*" +
+                    Description = $"*{ex.Message}*" +
                            "\n**c!info track**",
                     Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -3141,11 +4134,11 @@ namespace CTTB.Commands
                     {
                         if (j < 1)
                         {
-                            if (CompareIncompleteStrings(trackList[i].Name.ToLowerInvariant(), track.ToLowerInvariant()))
+                            if (CompareIncompleteStrings(trackList[i].Name, track) || CompareStringAbbreviation(track, trackList[i].Name) || CompareStringsLevenshteinDistance(track, trackList[i].Name))
                             {
                                 foreach (var t in response.Values)
                                 {
-                                    if (CompareIncompleteStrings(t[0].ToString(), track))
+                                    if (CompareIncompleteStrings(t[0].ToString(), track) || CompareStringAbbreviation(track, t[0].ToString()) || CompareStringsLevenshteinDistance(track, t[0].ToString()))
                                     {
                                         if (t[5].ToString() == "")
                                         {
@@ -3216,7 +4209,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
-                    Description = $"*An exception has occured.*" +
+                    Description = $"*{ex.Message}*" +
                            "\n**c!issues track**",
                     Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -3231,223 +4224,18 @@ namespace CTTB.Commands
         }
 
         [Command("reportissue")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
         public async Task ReportIssue(CommandContext ctx, string issueType = "", string track = "", [RemainingText] string issue = "")
         {
-            await ctx.TriggerTypingAsync();
-
-            var embed = new DiscordEmbedBuilder { };
-            string json = string.Empty;
-            string maj = string.Empty;
-            string min = string.Empty;
-
-            string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-            ServiceAccountCredential credential = new ServiceAccountCredential(
-               new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-            var service = new SheetsService(new BaseClientService.Initializer()
+            if (ctx.Guild.Id == 180306609233330176)
             {
-                HttpClientInitializer = credential,
-                ApplicationName = "Custom Track Testing Bot",
-            });
+                await ctx.TriggerTypingAsync();
 
-            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
-            var response = await request.ExecuteAsync();
-            foreach (var t in response.Values)
-            {
-                while (t.Count < 7)
-                {
-                    t.Add("");
-                }
-            }
+                var embed = new DiscordEmbedBuilder { };
+                string json = string.Empty;
+                string maj = string.Empty;
+                string min = string.Empty;
 
-            int k = 0;
-
-            if (CompareStrings(issueType, "major"))
-            {
-                k = 5;
-            }
-
-            else if (CompareStrings(issueType, "minor"))
-            {
-                k = 6;
-            }
-
-            try
-            {
-                json = File.ReadAllText("cts.json");
-                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
-
-                int j = 0;
-
-                if (k != 0 && issue != "")
-                {
-                    for (int i = 0; i < trackList.Count; i++)
-                    {
-                        if (j < 1)
-                        {
-                            if (CompareStrings(trackList[i].Name, track))
-                            {
-                                foreach (var t in response.Values)
-                                {
-                                    if (CompareStrings(t[0].ToString(), track))
-                                    {
-                                        if (t[k].ToString() != "")
-                                        {
-                                            t[k] = $"{t[k]}\n{issue}";
-                                        }
-                                        else
-                                        {
-                                            t[k] = issue;
-                                        }
-                                        if (t[5].ToString() == "")
-                                        {
-                                            maj = "-No reported bugs";
-                                        }
-                                        else
-                                        {
-                                            maj = t[5].ToString();
-                                        }
-                                        if (t[6].ToString() == "")
-                                        {
-                                            min = "-No reported bugs";
-                                        }
-                                        else
-                                        {
-                                            min = t[6].ToString();
-                                        }
-                                        j++;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                }
-                if (issue == "")
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = $"*No issue was inputted.*" +
-                               "\n**c!reportissue major/minor \"track\" -Issue**",
-                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                }
-
-                else if (j < 1)
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = $"*{track} could not be found.*" +
-                                  "\n**c!reportissue major/minor \"track\" -Issue**",
-                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                }
-
-                else if (k != 0 && issue != "")
-                {
-                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
-                    updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
-                    var update = await updateRequest.ExecuteAsync();
-
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Issues Updated:**__",
-                        Description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*",
-                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                }
-
-                else
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = $"*{issueType} is not a valid issue category.*" +
-                               "\n**c!reportissue major/minor \"track\" -Issue**",
-                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                }
-            }
-            catch (Exception ex)
-            {
-                embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*An exception has occured.*" +
-                               "\n**c!reportissue major/minor \"track\" -Issue**",
-                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-
-                Console.WriteLine(ex.ToString());
-            }
-        }
-
-        [Command("clearissues")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
-        public async Task ClearTrackIssues(CommandContext ctx, [RemainingText] string track = "")
-        {
-            await ctx.TriggerTypingAsync();
-
-            var embed = new DiscordEmbedBuilder { };
-            string json = string.Empty;
-            if (track == "")
-            {
-                embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*No track was inputted*" +
-                                  "\n**c!clearissues track**",
-                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-            }
-            else
-            {
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
                 var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
@@ -3470,6 +4258,19 @@ namespace CTTB.Commands
                         t.Add("");
                     }
                 }
+
+                int k = 0;
+
+                if (CompareStrings(issueType, "major"))
+                {
+                    k = 5;
+                }
+
+                else if (CompareStrings(issueType, "minor"))
+                {
+                    k = 6;
+                }
+
                 try
                 {
                     json = File.ReadAllText("cts.json");
@@ -3477,46 +4278,124 @@ namespace CTTB.Commands
 
                     int j = 0;
 
-                    for (int i = 0; i < trackList.Count; i++)
+                    if (k != 0 && issue != "")
                     {
-                        if (j < 1)
+                        for (int i = 0; i < trackList.Count; i++)
                         {
-                            if (CompareStrings(trackList[i].Name, track))
+                            if (j < 1)
                             {
-                                foreach (var t in response.Values)
+                                if (CompareStrings(trackList[i].Name, track))
                                 {
-                                    if (CompareStrings(t[0].ToString(), track))
+                                    foreach (var t in response.Values)
                                     {
-                                        t[5] = "";
-                                        t[6] = "";
-                                        j++;
-                                        break;
+                                        if (CompareStrings(t[0].ToString(), track))
+                                        {
+                                            if (t[k].ToString() != "")
+                                            {
+                                                t[k] = $"{t[k]}\n{issue}";
+                                            }
+                                            else
+                                            {
+                                                t[k] = issue;
+                                            }
+                                            if (t[5].ToString() == "")
+                                            {
+                                                maj = "-No reported bugs";
+                                            }
+                                            else
+                                            {
+                                                maj = t[5].ToString();
+                                            }
+                                            if (t[6].ToString() == "")
+                                            {
+                                                min = "-No reported bugs";
+                                            }
+                                            else
+                                            {
+                                                min = t[6].ToString();
+                                            }
+                                            j++;
+                                            break;
+                                        }
                                     }
                                 }
                             }
-                        }
-                        else
-                        {
-                            break;
+                            else
+                            {
+                                break;
+                            }
                         }
                     }
-
-                    var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
-                    updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
-                    var update = await updateRequest.ExecuteAsync();
-
-                    embed = new DiscordEmbedBuilder
+                    if (issue == "")
                     {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Success:**__",
-                        Description = $"*{track} issues have been cleared*",
-                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        embed = new DiscordEmbedBuilder
                         {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*No issue was inputted.*" +
+                                   "\n**c!reportissue major/minor \"track\" -Issue**",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+
+                    else if (j < 1)
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{track} could not be found.*" +
+                                      "\n**c!reportissue major/minor \"track\" -Issue**",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+
+                    else if (k != 0 && issue != "")
+                    {
+                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+                        updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                        var update = await updateRequest.ExecuteAsync();
+
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Issues Updated:**__",
+                            Description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+
+                    else
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{issueType} is not a valid issue category.*" +
+                                   "\n**c!reportissue major/minor \"track\" -Issue**",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -3524,8 +4403,8 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
-                        Description = $"*An exception has occured.*" +
-                                  "\n**c!clearissues track**",
+                        Description = $"*{ex.Message}*" +
+                                   "\n**c!reportissue major/minor \"track\" -Issue**",
                         Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
@@ -3539,24 +4418,208 @@ namespace CTTB.Commands
             }
         }
 
-        [Command("replaceissues")]
-        [RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
-        public async Task ReplaceTrackIssues(CommandContext ctx, string track = "", string newTrack = "", string author = "", string version = "", string slot = "", string laps = "")
+        [Command("subissues")]
+        public async Task GetSubmittedTrackIssues(CommandContext ctx, [RemainingText] string track = "")
         {
             await ctx.TriggerTypingAsync();
 
             var embed = new DiscordEmbedBuilder { };
-            string json = string.Empty;
-            string description = string.Empty;
 
-            if (track == "" || newTrack == "" || author == "" || version == "" || slot == "" || laps == "")
+            string trackDisplay = string.Empty;
+
+            string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+            ServiceAccountCredential credential = new ServiceAccountCredential(
+               new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+            var service = new SheetsService(new BaseClientService.Initializer()
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "Custom Track Testing Bot",
+            });
+
+            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Backlog'");
+            var response = await request.ExecuteAsync();
+            foreach (var t in response.Values)
+            {
+                while (t.Count < 11)
+                {
+                    t.Add("");
+                }
+            }
+
+            try
+            {
+
+                int j = 0;
+                string maj = string.Empty;
+                string min = string.Empty;
+                string sub = string.Empty;
+
+                if (track == "")
+                {
+                    Dictionary<string, int> issueCount = new Dictionary<string, int>();
+
+                    for (int i = 5; i < response.Values.Count; i++)
+                    {
+                        if (response.Values[i][2].ToString() != "Track Name" && response.Values[i][2].ToString() != "delimiter" && response.Values[i][2].ToString() != "")
+                        {
+                            int count = response.Values[i][10].ToString().Count(c => c == '\n');
+                            if (response.Values[i][10].ToString().ToCharArray().Length != 0 && response.Values[i][10].ToString().ToCharArray()[0] == '-')
+                            {
+                                count++;
+                            }
+                            issueCount.Add(response.Values[i][2].ToString(), count);
+                        }
+                    }
+                    issueCount = issueCount.OrderByDescending(a => a.Value).ToDictionary(a => a.Key, a => a.Value);
+
+                    List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+
+                    foreach (var t in issueCount.Keys.ToList())
+                    {
+                        for (int i = 5; i < response.Values.Count; i++)
+                        {
+                            if (response.Values[i][2].ToString() != "Track Name" && response.Values[i][2].ToString() != "delimiter" && response.Values[i][2].ToString() != "")
+                            {
+                                if (CompareIncompleteStrings(t, response.Values[i][2].ToString()))
+                                {
+                                    if (response.Values[i][8].ToString() == "")
+                                    {
+                                        maj = "-No reported bugs";
+                                    }
+                                    else
+                                    {
+                                        maj = response.Values[i][8].ToString();
+                                    }
+                                    if (response.Values[i][9].ToString() == "")
+                                    {
+                                        min = "-No reported bugs";
+                                    }
+                                    else
+                                    {
+                                        min = response.Values[i][9].ToString();
+                                    }
+                                    if (response.Values[i][10].ToString() == "")
+                                    {
+                                        sub = "-No reported bugs";
+                                    }
+                                    else
+                                    {
+                                        sub = response.Values[i][10].ToString();
+                                    }
+                                    j++;
+                                    embed = new DiscordEmbedBuilder
+                                    {
+                                        Color = new DiscordColor("#FF0000"),
+                                        Title = $"__**Known issues on {response.Values[i][2]}:**__",
+                                        Description = $"**Major Issues:**\n*{maj}*\n**Minor Issues:**\n*{min}*\n**Submitted Issues:**\n*{sub}*",
+                                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                                        {
+                                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                        }
+                                    };
+                                    embeds.Add(embed);
+                                }
+                            }
+                        }
+                    }
+
+                    List<Page> pages = new List<Page>();
+
+                    foreach (var e in embeds)
+                    {
+                        pages.Add(new Page("", e));
+                    }
+
+                    await ctx.Channel.SendPaginatedMessageAsync(ctx.User, pages);
+                }
+                else
+                {
+                    if (j < 1)
+                    {
+                        foreach (var t in response.Values)
+                        {
+                            if (t[2].ToString() != "Track Name" && t[2].ToString() != "delimiter" && t[2].ToString() != "")
+                            {
+                                if (CompareIncompleteStrings(t[2].ToString(), track) || CompareStringAbbreviation(track, t[2].ToString()) || CompareStringsLevenshteinDistance(track, t[2].ToString()))
+                                {
+                                    if (t[8].ToString() == "")
+                                    {
+                                        maj = "-No reported bugs";
+                                    }
+                                    else
+                                    {
+                                        maj = t[8].ToString();
+                                    }
+                                    if (t[9].ToString() == "")
+                                    {
+                                        min = "-No reported bugs";
+                                    }
+                                    else
+                                    {
+                                        min = t[9].ToString();
+                                    }
+                                    if (t[10].ToString() == "")
+                                    {
+                                        sub = "-No reported bugs";
+                                    }
+                                    else
+                                    {
+                                        sub = t[10].ToString();
+                                    }
+                                    trackDisplay = t[2].ToString();
+                                    j++;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (j < 1)
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{track} could not be found*" +
+                            "\n**c!subissues track**",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else if (j == 1)
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Known issues on {trackDisplay} *(First result)*:**__",
+                            Description = $"**Major Issues:**\n*{maj}*\n**Minor Issues:**\n*{min}*\n**Submitted Issues:**\n*{sub}*",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
             {
                 embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
-                    Description = $"*One of your arguments is missing data.*" +
-                                  "\n**c!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps**",
+                    Description = $"*{ex.Message}*" +
+                           "\n**c!subissues track**",
                     Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
@@ -3564,9 +4627,22 @@ namespace CTTB.Commands
                     }
                 };
                 await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
             }
-            else
+        }
+
+        [Command("subreportissue")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task SubmissionReportIssue(CommandContext ctx, string track = "", [RemainingText] string issue = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176)
             {
+                await ctx.TriggerTypingAsync();
+
+                var embed = new DiscordEmbedBuilder { };
+                string text = string.Empty;
+
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
                 var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
@@ -3580,92 +4656,115 @@ namespace CTTB.Commands
                     ApplicationName = "Custom Track Testing Bot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A2:G219");
-                var response = await request.ExecuteAsync();
-                foreach (var t in response.Values)
+                var tmprequest = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Backlog'");
+                tmprequest.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                var tmpresponse = await tmprequest.ExecuteAsync();
+                foreach (var t in tmpresponse.Values)
                 {
-                    while (t.Count < 7)
+                    while (t.Count < 12)
                     {
                         t.Add("");
                     }
                 }
+
+                string strAlpha = "";
+
+                for (int i = 65; i <= 90; i++)
+                {
+                    strAlpha += ((char)i).ToString() + "";
+                }
+
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Backlog'!A5:{strAlpha[tmpresponse.Values[0].Count - 1]}{tmpresponse.Values.Count}");
+                request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                var response = await request.ExecuteAsync();
+                foreach (var t in response.Values)
+                {
+                    while (t.Count < 12)
+                    {
+                        t.Add("");
+                    }
+                }
+
                 try
                 {
-                    json = File.ReadAllText("cts.json");
-                    List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
-
                     int j = 0;
 
-                    for (int i = 0; i < trackList.Count; i++)
+                    if (issue != "")
                     {
-                        if (j < 1)
+                        foreach (var t in response.Values)
                         {
-                            if (CompareStrings(trackList[i].Name, track))
+                            if (t[2].ToString() != "Track Name" && t[2].ToString() != "delimiter" && t[2].ToString() != "")
                             {
-                                foreach (var t in response.Values)
+                                if (CompareStrings(t[2].ToString(), track))
                                 {
-                                    if (CompareStrings(t[0].ToString(), track))
+                                    if (t[10].ToString() != "")
                                     {
-                                        t[0] = newTrack;
-                                        t[1] = author;
-                                        t[2] = version;
-                                        t[3] = slot;
-                                        t[4] = laps;
-                                        t[5] = "";
-                                        t[6] = "";
-                                        description = $"**{newTrack}:**\nAuthor: *{author}*\nVersion: *{version}*\nSlots: *{slot}*\nSpeed/Laps: *{laps}*";
-                                        j++;
-                                        break;
+                                        t[10] = $"{t[10]}\n{issue}";
                                     }
+                                    else
+                                    {
+                                        t[10] = issue;
+                                    }
+                                    text = t[10].ToString();
+                                    j++;
+                                    break;
                                 }
                             }
                         }
+                        if (issue == "")
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Error:**__",
+                                Description = $"*No issue was inputted.*" +
+                                       "\n**c!subreportissue \"track\" -Issue**",
+                                Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+
+                        else if (j < 1)
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Error:**__",
+                                Description = $"*{track} could not be found.*" +
+                                          "\n**c!subreportissue \"track\" -Issue**",
+                                Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+
                         else
                         {
-                            break;
-                        }
-                    }
 
-                    if (j < 1)
-                    {
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = "__**Error:**__",
-                            Description = $"*{track} could not be found.*" +
-                                      "\n**c!replaceissues [track] [new track] [author] [version] [slot] [speed/laps]**",
-                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"Backlog!A5:{strAlpha[response.Values[0].Count - 1]}{response.Values.Count + 4}");
+                            updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+                            var update = await updateRequest.ExecuteAsync();
+
+                            embed = new DiscordEmbedBuilder
                             {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        var orderedResponse = response.Values.OrderBy(x => x[0].ToString()).ToList();
-                        for (int i = 0; i < response.Values.Count; i++)
-                        {
-                            response.Values[i] = orderedResponse[i];
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Issues Updated:**__",
+                                Description = $"*{text}*",
+                                Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         }
-
-                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A2:G219");
-                        updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
-                        var update = await updateRequest.ExecuteAsync();
-
-                        embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**{newTrack} has now replaced {track}:**__",
-                            Description = description,
-                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
                 }
                 catch (Exception ex)
@@ -3674,8 +4773,8 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
-                        Description = $"*An exception has occured.*" +
-                                  "\n**c!replaceissues [track] [new track] [author] [version] [slot] [speed/laps]**",
+                        Description = $"*{ex.Message}*" +
+                                   "\n**c!subreportissue major/minor \"track\" -Issue**",
                         Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
@@ -3685,6 +4784,279 @@ namespace CTTB.Commands
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
 
                     Console.WriteLine(ex.ToString());
+                }
+            }
+        }
+
+        [Command("clearissues")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task ClearTrackIssues(CommandContext ctx, [RemainingText] string track = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176)
+            {
+                await ctx.TriggerTypingAsync();
+
+                var embed = new DiscordEmbedBuilder { };
+                string json = string.Empty;
+                if (track == "")
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*No track was inputted*" +
+                                      "\n**c!clearissues track**",
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+                else
+                {
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                    var service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Custom Track Testing Bot",
+                    });
+
+                    var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+                    var response = await request.ExecuteAsync();
+                    foreach (var t in response.Values)
+                    {
+                        while (t.Count < 7)
+                        {
+                            t.Add("");
+                        }
+                    }
+                    try
+                    {
+                        json = File.ReadAllText("cts.json");
+                        List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
+
+                        int j = 0;
+
+                        for (int i = 0; i < trackList.Count; i++)
+                        {
+                            if (j < 1)
+                            {
+                                if (CompareStrings(trackList[i].Name, track))
+                                {
+                                    foreach (var t in response.Values)
+                                    {
+                                        if (CompareStrings(t[0].ToString(), track))
+                                        {
+                                            t[5] = "";
+                                            t[6] = "";
+                                            j++;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A1:G219");
+                        updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                        var update = await updateRequest.ExecuteAsync();
+
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Success:**__",
+                            Description = $"*{track} issues have been cleared*",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{ex.Message}*" +
+                                      "\n**c!clearissues track**",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                        Console.WriteLine(ex.ToString());
+                    }
+                }
+            }
+        }
+
+        [Command("replaceissues")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task ReplaceTrackIssues(CommandContext ctx, string track = "", string newTrack = "", string author = "", string version = "", string slot = "", string laps = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176)
+            {
+                await ctx.TriggerTypingAsync();
+
+                var embed = new DiscordEmbedBuilder { };
+                string json = string.Empty;
+                string description = string.Empty;
+
+                if (track == "" || newTrack == "" || author == "" || version == "" || slot == "" || laps == "")
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*One of your arguments is missing data.*" +
+                                      "\n**c!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps**",
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+                else
+                {
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                    var service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Custom Track Testing Bot",
+                    });
+
+                    var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A2:H219");
+                    var response = await request.ExecuteAsync();
+                    foreach (var t in response.Values)
+                    {
+                        while (t.Count < 7)
+                        {
+                            t.Add("");
+                        }
+                    }
+                    try
+                    {
+                        json = File.ReadAllText("cts.json");
+                        List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
+
+                        int j = 0;
+
+                        for (int i = 0; i < trackList.Count; i++)
+                        {
+                            if (j < 1)
+                            {
+                                if (CompareStrings(trackList[i].Name, track))
+                                {
+                                    foreach (var t in response.Values)
+                                    {
+                                        if (CompareStrings(t[0].ToString(), track))
+                                        {
+                                            t[0] = newTrack;
+                                            t[1] = author;
+                                            t[2] = version;
+                                            t[3] = slot;
+                                            t[4] = laps;
+                                            t[5] = "";
+                                            t[6] = "";
+                                            description = $"**{newTrack}:**\nAuthor: *{author}*\nVersion: *{version}*\nSlots: *{slot}*\nSpeed/Laps: *{laps}*";
+                                            j++;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                        if (j < 1)
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Error:**__",
+                                Description = $"*{track} could not be found.*" +
+                                          "\n**c!replaceissues [track] [new track] [author] [version] [slot] [speed/laps]**",
+                                Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            var orderedResponse = response.Values.OrderBy(x => x[0].ToString()).ToList();
+                            for (int i = 0; i < response.Values.Count; i++)
+                            {
+                                response.Values[i] = orderedResponse[i];
+                            }
+
+                            var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A2:H219");
+                            updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                            var update = await updateRequest.ExecuteAsync();
+
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**{newTrack} has now replaced {track}:**__",
+                                Description = description,
+                                Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{ex.Message}*" +
+                                      "\n**c!replaceissues [track] [new track] [author] [version] [slot] [speed/laps]**",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                        Console.WriteLine(ex.ToString());
+                    }
                 }
             }
         }
@@ -3731,7 +5103,7 @@ namespace CTTB.Commands
                             j++;
                         }
                     }
-                    else if (CompareIncompleteStrings(trackList[i].Name, track.ToLowerInvariant()))
+                    else if (CompareIncompleteStrings(trackList[i].Name, track) || CompareStringAbbreviation(track, trackList[i].Name) || CompareStringsLevenshteinDistance(track, trackList[i].Name))
                     {
                         trackDisplay.Add(trackList[i]);
                         j++;
@@ -3748,7 +5120,7 @@ namespace CTTB.Commands
                             j++;
                         }
                     }
-                    else if (CompareIncompleteStrings(trackList200[i].Name, track.ToLowerInvariant()))
+                    else if (CompareIncompleteStrings(trackList200[i].Name, track) || CompareStringAbbreviation(track, trackList200[i].Name) || CompareStringsLevenshteinDistance(track, trackList200[i].Name))
                     {
                         trackDisplay200.Add(trackList200[i]);
                         j++;
@@ -3812,7 +5184,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
-                    Description = "*An exception has occured.*" +
+                    Description = $"*{ex.Message}*" +
                        "\n**c!bkt track**",
                     Url = "https://chadsoft.co.uk/time-trials/",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -4109,7 +5481,7 @@ namespace CTTB.Commands
                     description1 = $"__**Nintendo Tracks**__:\n";
                     for (int i = 0; i < trackListRts.Count; i++)
                     {
-                        if (CompareIncompleteStrings(trackListRts[i].Name, arg))
+                        if (CompareIncompleteStrings(trackListRts[i].Name, arg) || CompareStringAbbreviation(arg, trackListRts[i].Name) || CompareStringsLevenshteinDistance(arg, trackListRts[i].Name))
                         {
                             description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].WiimmfiScore})*\n";
                         }
@@ -4126,7 +5498,7 @@ namespace CTTB.Commands
                     }
                     for (int i = 0; i < trackListCts.Count; i++)
                     {
-                        if (CompareIncompleteStrings(trackListCts[i].Name, arg))
+                        if (CompareIncompleteStrings(trackListCts[i].Name, arg) || CompareStringAbbreviation(arg, trackListCts[i].Name) || CompareStringsLevenshteinDistance(arg, trackListCts[i].Name))
                         {
                             description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
                             c++;
@@ -4151,7 +5523,7 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
-                        Description = "*Please provide a category (and range) or a track name.*" +
+                        Description = "*Please provide a category or a track name.*" +
                            "\n**c!pop rts/cts/track**",
                         Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -4223,7 +5595,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
-                    Description = "*An exception has occured.*" +
+                    Description = $"*{ex.Message}*" +
                         "\n**c!pop rts/cts/track**",
                     Url = "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c1,0",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -4551,7 +5923,7 @@ namespace CTTB.Commands
                     description1 = $"__**Nintendo Tracks**__:\n";
                     for (int i = 0; i < trackListRts.Count; i++)
                     {
-                        if (CompareIncompleteStrings(trackListRts[i].Name, arg))
+                        if (CompareIncompleteStrings(trackListRts[i].Name, arg) || CompareStringAbbreviation(arg, trackListRts[i].Name) || CompareStringsLevenshteinDistance(arg, trackListRts[i].Name))
                         {
                             description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].TimeTrialScore})*\n";
                         }
@@ -4568,7 +5940,7 @@ namespace CTTB.Commands
                     }
                     for (int i = 0; i < trackListCts.Count; i++)
                     {
-                        if (CompareIncompleteStrings(trackListCts[i].Name, arg))
+                        if (CompareIncompleteStrings(trackListCts[i].Name, arg) || CompareStringAbbreviation(arg, trackListCts[i].Name) || CompareStringsLevenshteinDistance(arg, trackListCts[i].Name))
                         {
                             description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
                             c++;
@@ -4593,7 +5965,7 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
-                        Description = "*Please provide a category (and range) or a track name.*" +
+                        Description = "*Please provide a category or a track name.*" +
                            "\n**c!pop rts/cts/track**",
                         Url = "https://chadsoft.co.uk/time-trials/",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -4666,7 +6038,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
-                    Description = "*An exception has occured.*" +
+                    Description = $"*{ex.Message}*" +
                         "\n**c!pop rts/cts/track**",
                     Url = "https://chadsoft.co.uk/time-trials/",
                     Footer = new DiscordEmbedBuilder.EmbedFooter

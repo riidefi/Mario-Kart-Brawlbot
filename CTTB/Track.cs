@@ -32,6 +32,7 @@ namespace CTTB.Commands
         [JsonProperty("fastestTimeLastChange")]
         public string BKTUploadTime { get; set; }
         public string CategoryName { get; set; }
+        public string SlotID { get; set; }
     }
 
     public class Link

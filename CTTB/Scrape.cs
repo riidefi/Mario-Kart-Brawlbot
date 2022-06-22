@@ -7,6 +7,7 @@ using HtmlAgilityPack;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -456,6 +457,34 @@ namespace CTTB
                 Console.WriteLine(ex.ToString());
             }
 
+            await Task.CompletedTask;
+        }
+
+        public async Task GetSlotIds(List<Track> trackListRt, List<Track> trackListRt200, List<Track> trackList, List<Track> trackList200)
+        {
+            Task.WaitAll(ScrapeWikiPage(trackList),
+                ScrapeWikiPage(trackListRt),
+                ScrapeWikiPage(trackListRt200),
+                ScrapeWikiPage(trackList200));
+            await Task.CompletedTask;
+        }
+        public async Task ScrapeWikiPage(List<Track> trackList)
+        {
+            WebClient webClient = new WebClient();
+            HtmlDocument document = new HtmlDocument();
+            document.LoadHtml(await webClient.DownloadStringTaskAsync("https://wiki.tockdom.com/wiki/CTGP_Revolution"));
+            var tds = document.DocumentNode.SelectNodes("//table[@class='textbox grid sortable center'][1]/tbody/tr/td");
+            for (int i = 0; i < tds.Count; i++)
+            {
+                foreach (var track in trackList)
+                {
+                    if (tds[i].InnerText.Contains(track.Name))
+                    {
+                        track.SlotID = tds[i + 6].InnerText.Replace("\n", string.Empty);
+                        Console.WriteLine($"{track.Name} Slot ID: {track.SlotID.Replace("\n", string.Empty)}");
+                    }
+                }
+            }
             await Task.CompletedTask;
         }
     }

@@ -55,7 +55,8 @@ namespace CTTB
             Client.UseInteractivity(new InteractivityConfiguration
             {
                 PollBehaviour = PollBehaviour.KeepEmojis,
-                AckPaginationButtons = true
+                AckPaginationButtons = true,
+                Timeout = TimeSpan.FromSeconds(60)
             });
 
             var commandsConfig = new CommandsNextConfiguration
