@@ -19,6 +19,7 @@ namespace CTTB.Commands
                 "\nc!source" +
                 "\nc!staff track" +
                 "\nc!issues track" +
+                "\nc!subissues track" +
                 "\nc!info track" +
                 "\nc!bkt track" +
                 "\nc!pop rts/cts/track" +
@@ -49,7 +50,9 @@ namespace CTTB.Commands
                             "\nc!update" +
                             "\nc!lastupdated" +
                             "\nc!reportissue major/minor \"track\" -Issue" +
+                            "\nc!reportsubissue \"track\" -Issue" +
                             "\nc!clearissues track" +
+                            "\nc!clearsubissues track" +
                             "\nc!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps" +
                             "\nc!gethw \"track\"/all member" +
                             "\nc!addhw \"track\" \"author\" \"version\" \"download link\" \"slot-filename\" \"speed/lap modifiers\" notes" +
@@ -62,7 +65,9 @@ namespace CTTB.Commands
                             "\nc!checkmissedhw" +
                             "\nc!removemissedhw member" +
                             "\nc!addmissedhw member" +
-                            "\nc!assignedthreads member";
+                            "\nc!assignedthreads member" +
+                            "\nc!removeassignedthread thread id/all" +
+                            "\nc!dmrole role message";
                     }
                 }
             }
@@ -136,7 +141,6 @@ namespace CTTB.Commands
         }
 
         [Command("source")]
-        //[RequireRoles(RoleCheckMode.Any, "Pack & Bot Dev", "Admin")]
         public async Task SourceCode(CommandContext ctx)
         {
             var embed = new DiscordEmbedBuilder

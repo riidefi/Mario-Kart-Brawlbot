@@ -438,6 +438,146 @@ namespace CTTB.Commands
             }
         }
 
+        [Command("removeassignedthread")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task RemoveThreadAssignment(CommandContext ctx, [RemainingText] string threadId = "")
+        {
+            if (ulong.Parse(threadId) == 0)
+            {
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Error:**__",
+                    Description = $"*Thread ID was not inputted.*" +
+                            "\n**c!removeassignedthread thread id/all**",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+            }
+            else
+            {
+                try
+                {
+                    if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                    {
+                        string json;
+                        using (var fs = File.OpenRead("council.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        if (threadId == "all")
+                        {
+                            foreach (var m in councilJson)
+                            {
+                                m.AssignedThreadIds.Clear();
+                            }
+
+                            string council = JsonConvert.SerializeObject(councilJson);
+                            File.WriteAllText("council.json", council);
+
+                            var embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Success:**__",
+                                Description = "The council json has been reset.",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            string tName = "";
+                            for (int i = 0; i < councilJson.Count; i++)
+                            {
+                                int ix = councilJson.FindIndex(x => x.AssignedThreadIds.Contains(ulong.Parse(threadId)));
+                                if (ix == -1)
+                                {
+                                    break;
+                                }
+                                else
+                                {
+                                    int idIx = councilJson[ix].AssignedThreadIds.FindIndex(x => x == ulong.Parse(threadId));
+
+                                    DiscordChannel wipFeedbackChannel;
+                                    ctx.Guild.Channels.TryGetValue(369281592407097345, out wipFeedbackChannel);
+                                    List<DiscordChannel> threads = new List<DiscordChannel>((await wipFeedbackChannel.ListPublicArchivedThreadsAsync()).Threads);
+                                    foreach (var thread in wipFeedbackChannel.Threads)
+                                    {
+                                        threads.Add(thread);
+                                    }
+                                    foreach (var thread in threads)
+                                    {
+                                        if (idIx != -1 && thread.Id == councilJson[ix].AssignedThreadIds[idIx])
+                                        {
+                                            tName = thread.Name;
+                                            break;
+                                        }
+                                    }
+
+                                    councilJson[ix].AssignedThreadIds.RemoveAt(idIx);
+                                }
+                            }
+                            if (tName == "")
+                            {
+                                var embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Error:**__",
+                                    Description = $"*The thread ID {threadId} could not be found.*" +
+                                    $"\n**c!removeassignedthread thread id/all**",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                string council = JsonConvert.SerializeObject(councilJson);
+                                File.WriteAllText("council.json", council);
+                                var embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Success:**__",
+                                    Description = $"*[{tName}](https://discord.com/channels/180306609233330176/{threadId}) has been unassigned from all council members.*",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{ex.Message}*" +
+                            "\n**c!removeassignedthread thread id/all**",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                    Console.WriteLine(ex.ToString());
+                }
+            }
+        }
+
         [Command("assignedthreads")]
         [RequireRoles(RoleCheckMode.Any, "Track Council", "Admin")]
         public async Task CheckAssignedThreads(CommandContext ctx, [RemainingText] string member = "")
@@ -446,33 +586,10 @@ namespace CTTB.Commands
             {
                 if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                 {
+                    await ctx.TriggerTypingAsync();
                     string json;
                     if (member == "reset" && ctx.Member.Roles.Select(x => x.Name == "Admin").Count() > 0)
                     {
-                        using (var fs = File.OpenRead("council.json"))
-                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-
-                        foreach (var m in councilJson)
-                        {
-                            m.AssignedThreadIds.Clear();
-                        }
-
-                        string council = JsonConvert.SerializeObject(councilJson);
-                        File.WriteAllText("council.json", council);
-
-                        var embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = "__**Success:**__",
-                            Description = "The council json has been reset.",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
                     else
                     {
@@ -619,6 +736,11 @@ namespace CTTB.Commands
                             json = await sr.ReadToEndAsync().ConfigureAwait(false);
                         List<CouncilMember> recentlyAssigned = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
 
+                        using (var fs = File.OpenRead("council.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> defaultCouncil = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
                         for (int i = 0; i < councilJson.Count; i++)
                         {
                             if (councilJson[i].CompPlayer)
@@ -640,6 +762,35 @@ namespace CTTB.Commands
                             }
                         }
 
+                        for (int i = 0; i < recentlyAssigned.Count; i++)
+                        {
+                            int ix = councilJson.FindIndex(x => x.DiscordId == recentlyAssigned[i].DiscordId);
+                            if (ix != -1)
+                            {
+                                councilJson.RemoveAt(ix);
+                            }
+                        }
+
+                        if (councilJson.Count < 5)
+                        {
+                            for (int i = 0; i < councilJson.Count; i++)
+                            {
+                                assignedMembers.Add(councilJson[i]);
+                                int ix = defaultCouncil.FindIndex(x => x.DiscordId == assignedMembers[assignedMembers.Count - 1].DiscordId);
+                                if (defaultCouncil[ix].AssignedThreadIds.Count == 3)
+                                {
+                                    defaultCouncil[ix].AssignedThreadIds.RemoveAt(0);
+                                }
+                                defaultCouncil[ix].AssignedThreadIds.Add(ctx.Channel.Id);
+                            }
+
+                            using (var fs = File.OpenRead("council.json"))
+                            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                            councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+                            recentlyAssigned = new List<CouncilMember>();
+                        }
+
                         int[] randomNums = new int[councilJson.Count];
 
                         for (int i = 0; i < councilJson.Count; i++)
@@ -649,24 +800,6 @@ namespace CTTB.Commands
 
                         randomNums = randomNums.OrderBy(x => rng.Next()).ToArray();
 
-                        if (councilJson.Count < 3)
-                        {
-                            for (int i = 0; i < councilJson.Count; i++)
-                            {
-                                assignedMembers.Add(councilJson[i]);
-                                if (councilJson[i].AssignedThreadIds.Count == 3)
-                                {
-                                    councilJson[i].AssignedThreadIds.RemoveAt(0);
-                                }
-                                councilJson[i].AssignedThreadIds.Add(ctx.Channel.Id);
-                            }
-                            using (var fs = File.OpenRead("council.json"))
-                            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                                json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                            councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-                            recentlyAssigned = new List<CouncilMember>();
-                        }
-
                         for (int i = 0; i < 3; i++)
                         {
                             if (assignedMembers.Count == 3)
@@ -674,53 +807,84 @@ namespace CTTB.Commands
                                 break;
                             }
                             assignedMembers.Add(councilJson[randomNums[i]]);
-                            if (councilJson[randomNums[i]].AssignedThreadIds.Count == 3)
+                            int ix = defaultCouncil.FindIndex(x => x.DiscordId == assignedMembers[assignedMembers.Count - 1].DiscordId);
+                            if (defaultCouncil[ix].AssignedThreadIds.Count == 3)
                             {
-                                councilJson[randomNums[i]].AssignedThreadIds.RemoveAt(0);
+                                defaultCouncil[ix].AssignedThreadIds.RemoveAt(0);
                             }
-                            councilJson[randomNums[i]].AssignedThreadIds.Add(ctx.Channel.Id);
+                            defaultCouncil[ix].AssignedThreadIds.Add(ctx.Channel.Id);
                         }
 
-                        if (assignedMembers.Count(x => x.CompPlayer == true) == 3)
+                        if (assignedMembers.Count(x => x.CompPlayer == true) > 1)
                         {
-                            for (int i = 2; i < councilJson.Count; i++)
+                            for (int i = 4; i < councilJson.Count; i++)
                             {
-                                if (!councilJson[i].CompPlayer)
+                                if (assignedMembers.Count > 4)
                                 {
-                                    assignedMembers.Add(councilJson[i]);
-                                    if (councilJson[i].AssignedThreadIds.Count == 3)
-                                    {
-                                        councilJson[i].AssignedThreadIds.RemoveAt(0);
-                                    }
-                                    councilJson[i].AssignedThreadIds.Add(ctx.Channel.Id);
                                     break;
+                                }
+                                if (!councilJson[randomNums[i]].CompPlayer)
+                                {
+                                    assignedMembers.Add(councilJson[randomNums[i]]);
+                                    int ix = defaultCouncil.FindIndex(x => x.DiscordId == assignedMembers[assignedMembers.Count - 1].DiscordId);
+                                    if (defaultCouncil[ix].AssignedThreadIds.Count == 3)
+                                    {
+                                        defaultCouncil[ix].AssignedThreadIds.RemoveAt(0);
+                                    }
+                                    defaultCouncil[ix].AssignedThreadIds.Add(ctx.Channel.Id);
                                 }
                             }
                         }
-                        else if (assignedMembers.Count(x => x.CompPlayer == false) == 3)
+                        else if (assignedMembers.Count(x => x.CompPlayer == false) > 1)
                         {
-                            for (int i = 2; i < councilJson.Count; i++)
+                            for (int i = 4; i < councilJson.Count; i++)
                             {
+                                if (assignedMembers.Count > 4)
+                                {
+                                    break;
+                                }
                                 if (councilJson[randomNums[i]].CompPlayer)
                                 {
                                     assignedMembers.Add(councilJson[randomNums[i]]);
-                                    if (councilJson[randomNums[i]].AssignedThreadIds.Count == 3)
+                                    int ix = defaultCouncil.FindIndex(x => x.DiscordId == assignedMembers[assignedMembers.Count - 1].DiscordId);
+                                    if (defaultCouncil[ix].AssignedThreadIds.Count == 3)
                                     {
-                                        councilJson[randomNums[i]].AssignedThreadIds.RemoveAt(0);
+                                        defaultCouncil[ix].AssignedThreadIds.RemoveAt(0);
                                     }
-                                    councilJson[randomNums[i]].AssignedThreadIds.Add(ctx.Channel.Id);
-                                    break;
+                                    defaultCouncil[ix].AssignedThreadIds.Add(ctx.Channel.Id);
                                 }
                             }
                         }
                         else
                         {
-                            assignedMembers.Add(councilJson[randomNums[2]]);
+                            assignedMembers.Add(councilJson[randomNums[4]]);
+                            int ix = defaultCouncil.FindIndex(x => x.DiscordId == assignedMembers[assignedMembers.Count - 1].DiscordId);
+                            if (defaultCouncil[ix].AssignedThreadIds.Count == 3)
+                            {
+                                defaultCouncil[ix].AssignedThreadIds.RemoveAt(0);
+                            }
+                            defaultCouncil[ix].AssignedThreadIds.Add(ctx.Channel.Id);
                         }
 
-                        while (assignedMembers.Count < 5)
+                        for (int i = 5; i < randomNums.Count(); i++)
                         {
-                            assignedMembers.Add(councilJson[randomNums[2]]);
+                            if (assignedMembers.Count < 5)
+                            {
+                                if (!assignedMembers.Select(x => x.DiscordId == councilJson[randomNums[i]].DiscordId).Any())
+                                {
+                                    assignedMembers.Add(councilJson[randomNums[i]]);
+                                    int ix = defaultCouncil.FindIndex(x => x.DiscordId == assignedMembers[assignedMembers.Count - 1].DiscordId);
+                                    if (defaultCouncil[ix].AssignedThreadIds.Count == 3)
+                                    {
+                                        defaultCouncil[ix].AssignedThreadIds.RemoveAt(0);
+                                    }
+                                    defaultCouncil[ix].AssignedThreadIds.Add(ctx.Channel.Id);
+                                }
+                            }
+                            else
+                            {
+                                break;
+                            }
                         }
 
                         foreach (var m in assignedMembers)
@@ -737,7 +901,7 @@ namespace CTTB.Commands
 
                         string assigned = JsonConvert.SerializeObject(recentlyAssigned);
                         File.WriteAllText("assigned.json", assigned);
-                        string council = JsonConvert.SerializeObject(councilJson);
+                        string council = JsonConvert.SerializeObject(defaultCouncil);
                         File.WriteAllText("council.json", council);
                     }
                 }
@@ -1344,7 +1508,7 @@ namespace CTTB.Commands
             "Grumble Volcano",
             "Dry Dry Ruins",
             "Moonview Highway",
-            "Bowser Castle",
+            "Bowser's Castle",
             "Rainbow Road",
             "GCN Peach Beach",
             "DS Yoshi Falls",
@@ -1966,12 +2130,27 @@ namespace CTTB.Commands
         {
             if (ctx.Guild.Id == 180306609233330176)
             {
-                if (ctx.Channel.Id == 751534710068477953)
+                if (ctx.Channel.Id == 751534710068477953 || ctx.Channel.Id == 935200150710808626)
                 {
                     try
                     {
-                        DiscordRole discordRole = null;
                         var embed = new DiscordEmbedBuilder() { };
+                        if (role == "")
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Error:**__",
+                                Description = "*Role was not inputted.*" +
+                                "\n**c!dmrole role message**",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        DiscordRole discordRole = null;
                         foreach (var r in ctx.Guild.Roles.Values)
                         {
                             if (r.Id.ToString() == role.Replace("<@&", string.Empty).Replace(">", string.Empty))
@@ -2289,7 +2468,7 @@ namespace CTTB.Commands
 
                 for (int i = 0; i < response.Values.Count; i++)
                 {
-                    if (CompareIncompleteStrings(response.Values[i][0].ToString(), track))
+                    if (CompareIncompleteStrings(response.Values[i][0].ToString(), track) || CompareStringAbbreviation(track, response.Values[i][0].ToString()) || CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
                     {
                         trackDisplay.Add(response.Values[i][0].ToString());
                         j++;
@@ -2447,7 +2626,8 @@ namespace CTTB.Commands
                     }
                     else
                     {
-                        description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | [{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})";
+                        string dl = response.Values[k][5].ToString().Contains("=HYPERLINK") ? $"[{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})" : "-";
+                        description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | {dl}";
                     }
                     k++;
                 }
@@ -2463,7 +2643,8 @@ namespace CTTB.Commands
                         }
                         else
                         {
-                            description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | [{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})";
+                            string dl = response.Values[k][5].ToString().Contains("=HYPERLINK") ? $"[{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})" : "-";
+                            description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | {dl}";
                         }
                         k++;
                     }
@@ -2480,7 +2661,8 @@ namespace CTTB.Commands
                         }
                         else
                         {
-                            description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | [{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})";
+                            string dl = response.Values[k][5].ToString().Contains("=HYPERLINK") ? $"[{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})" : "-";
+                            description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | {dl}";
                         }
                         k++;
                     }
@@ -3347,10 +3529,12 @@ namespace CTTB.Commands
                             if (member == "")
                             {
                                 ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
+                                member = councilJson[ix].SheetName;
                             }
                             else
                             {
                                 ix = councilJson.FindIndex(x => CompareIncompleteStrings(x.SheetName, member) || CompareStringsLevenshteinDistance(x.SheetName, member));
+                                member = councilJson[ix].SheetName;
                             }
                         }
 
@@ -4632,7 +4816,7 @@ namespace CTTB.Commands
             }
         }
 
-        [Command("subreportissue")]
+        [Command("reportsubissue")]
         [RequireRoles(RoleCheckMode.Any, "Admin")]
         public async Task SubmissionReportIssue(CommandContext ctx, string track = "", [RemainingText] string issue = "")
         {
@@ -4641,129 +4825,166 @@ namespace CTTB.Commands
                 await ctx.TriggerTypingAsync();
 
                 var embed = new DiscordEmbedBuilder { };
-                string text = string.Empty;
-
-                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                ServiceAccountCredential credential = new ServiceAccountCredential(
-                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                var service = new SheetsService(new BaseClientService.Initializer()
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "Custom Track Testing Bot",
-                });
-
-                var tmprequest = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Backlog'");
-                tmprequest.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                var tmpresponse = await tmprequest.ExecuteAsync();
-                foreach (var t in tmpresponse.Values)
-                {
-                    while (t.Count < 12)
-                    {
-                        t.Add("");
-                    }
-                }
-
-                string strAlpha = "";
-
-                for (int i = 65; i <= 90; i++)
-                {
-                    strAlpha += ((char)i).ToString() + "";
-                }
-
-                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Backlog'!A5:{strAlpha[tmpresponse.Values[0].Count - 1]}{tmpresponse.Values.Count}");
-                request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                var response = await request.ExecuteAsync();
-                foreach (var t in response.Values)
-                {
-                    while (t.Count < 12)
-                    {
-                        t.Add("");
-                    }
-                }
 
                 try
                 {
-                    int j = 0;
-
-                    if (issue != "")
+                    if (track == "")
                     {
-                        foreach (var t in response.Values)
+                        embed = new DiscordEmbedBuilder
                         {
-                            if (t[2].ToString() != "Track Name" && t[2].ToString() != "delimiter" && t[2].ToString() != "")
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*Track was not imputted.*" +
+                                              "\n**c!subreportissue \"track\" -Issue**",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
-                                if (CompareStrings(t[2].ToString(), track))
-                                {
-                                    if (t[10].ToString() != "")
-                                    {
-                                        t[10] = $"{t[10]}\n{issue}";
-                                    }
-                                    else
-                                    {
-                                        t[10] = issue;
-                                    }
-                                    text = t[10].ToString();
-                                    j++;
-                                    break;
-                                }
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+
+                    else if (issue == "")
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*Issue was not inputted.*" +
+                                              "\n**c!subreportissue \"track\" -Issue**",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+
+                    else
+                    {
+                        string text = string.Empty;
+
+                        string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                        var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                        ServiceAccountCredential credential = new ServiceAccountCredential(
+                           new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                        var service = new SheetsService(new BaseClientService.Initializer()
+                        {
+                            HttpClientInitializer = credential,
+                            ApplicationName = "Custom Track Testing Bot",
+                        });
+
+                        var tmprequest = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Backlog'");
+                        tmprequest.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                        var tmpresponse = await tmprequest.ExecuteAsync();
+                        foreach (var t in tmpresponse.Values)
+                        {
+                            while (t.Count < 12)
+                            {
+                                t.Add("");
                             }
                         }
-                        if (issue == "")
+
+                        string strAlpha = "";
+
+                        for (int i = 65; i <= 90; i++)
                         {
-                            embed = new DiscordEmbedBuilder
-                            {
-                                Color = new DiscordColor("#FF0000"),
-                                Title = "__**Error:**__",
-                                Description = $"*No issue was inputted.*" +
-                                       "\n**c!subreportissue \"track\" -Issue**",
-                                Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                                Footer = new DiscordEmbedBuilder.EmbedFooter
-                                {
-                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                                }
-                            };
-                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            strAlpha += ((char)i).ToString() + "";
                         }
 
-                        else if (j < 1)
+                        var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Backlog'!A5:{strAlpha[tmpresponse.Values[0].Count - 1]}{tmpresponse.Values.Count}");
+                        request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                        var response = await request.ExecuteAsync();
+                        foreach (var t in response.Values)
                         {
-                            embed = new DiscordEmbedBuilder
+                            while (t.Count < 12)
                             {
-                                Color = new DiscordColor("#FF0000"),
-                                Title = "__**Error:**__",
-                                Description = $"*{track} could not be found.*" +
-                                          "\n**c!subreportissue \"track\" -Issue**",
-                                Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                                Footer = new DiscordEmbedBuilder.EmbedFooter
-                                {
-                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                                }
-                            };
-                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                                t.Add("");
+                            }
                         }
+                        int j = 0;
 
-                        else
+                        if (issue != "")
                         {
-
-                            var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"Backlog!A5:{strAlpha[response.Values[0].Count - 1]}{response.Values.Count + 4}");
-                            updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-                            var update = await updateRequest.ExecuteAsync();
-
-                            embed = new DiscordEmbedBuilder
+                            foreach (var t in response.Values)
                             {
-                                Color = new DiscordColor("#FF0000"),
-                                Title = "__**Issues Updated:**__",
-                                Description = $"*{text}*",
-                                Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                if (t[2].ToString() != "Track Name" && t[2].ToString() != "delimiter" && t[2].ToString() != "")
                                 {
-                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    if (CompareStrings(t[2].ToString(), track))
+                                    {
+                                        if (t[10].ToString() != "")
+                                        {
+                                            t[10] = $"{t[10]}\n{issue}";
+                                        }
+                                        else
+                                        {
+                                            t[10] = issue;
+                                        }
+                                        text = t[10].ToString();
+                                        j++;
+                                        break;
+                                    }
                                 }
-                            };
-                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                            if (issue == "")
+                            {
+                                embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Error:**__",
+                                    Description = $"*No issue was inputted.*" +
+                                           "\n**c!subreportissue \"track\" -Issue**",
+                                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+
+                            else if (j < 1)
+                            {
+                                embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Error:**__",
+                                    Description = $"*{track} could not be found.*" +
+                                              "\n**c!subreportissue \"track\" -Issue**",
+                                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+
+                            else
+                            {
+
+                                var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"Backlog!A5:{strAlpha[response.Values[0].Count - 1]}{response.Values.Count + 4}");
+                                updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+                                var update = await updateRequest.ExecuteAsync();
+
+                                embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Issues Updated:**__",
+                                    Description = $"*{text}*",
+                                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
                         }
                     }
                 }
@@ -4804,7 +5025,7 @@ namespace CTTB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
-                        Description = $"*No track was inputted*" +
+                        Description = $"*No track was inputted.*" +
                                       "\n**c!clearissues track**",
                         Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -4877,7 +5098,7 @@ namespace CTTB.Commands
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Success:**__",
-                            Description = $"*{track} issues have been cleared*",
+                            Description = $"*{track} issues have been cleared.*",
                             Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
@@ -4894,6 +5115,149 @@ namespace CTTB.Commands
                             Title = "__**Error:**__",
                             Description = $"*{ex.Message}*" +
                                       "\n**c!clearissues track**",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                        Console.WriteLine(ex.ToString());
+                    }
+                }
+            }
+        }
+
+        [Command("clearsubissues")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task ClearSubmittedTrackIssues(CommandContext ctx, [RemainingText] string track = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176)
+            {
+                await ctx.TriggerTypingAsync();
+
+                var embed = new DiscordEmbedBuilder { };
+                string json = string.Empty;
+                if (track == "")
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*No track was inputted.*" +
+                                      "\n**c!clearsubissues track**",
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+                else
+                {
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                    var service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Custom Track Testing Bot",
+                    });
+
+                    var tmprequest = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Backlog'");
+                    tmprequest.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                    var tmpresponse = await tmprequest.ExecuteAsync();
+                    foreach (var t in tmpresponse.Values)
+                    {
+                        while (t.Count < 12)
+                        {
+                            t.Add("");
+                        }
+                    }
+
+                    string strAlpha = "";
+
+                    for (int i = 65; i <= 90; i++)
+                    {
+                        strAlpha += ((char)i).ToString() + "";
+                    }
+
+                    var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Backlog'!A5:{strAlpha[tmpresponse.Values[0].Count - 1]}{tmpresponse.Values.Count}");
+                    request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                    var response = await request.ExecuteAsync();
+
+                    foreach (var t in response.Values)
+                    {
+                        while (t.Count < 12)
+                        {
+                            t.Add("");
+                        }
+                    }
+                    try
+                    {
+                        int j = 0;
+
+                        foreach (var t in response.Values)
+                        {
+                            if (CompareStrings(t[2].ToString(), track))
+                            {
+                                t[10] = "";
+                                j++;
+                                break;
+                            }
+                        }
+
+                        if (j == 0)
+                        {
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Error:**__",
+                                Description = $"*{track} could not be found.*" +
+                                         "\n**c!clearsubissues track**",
+                                Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+
+                        else
+                        {
+                            var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"Backlog!A5:{strAlpha[response.Values[0].Count - 1]}{response.Values.Count + 4}");
+                            updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+                            var update = await updateRequest.ExecuteAsync();
+
+                            embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Success:**__",
+                                Description = $"*{track} issues have been cleared.*",
+                                Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{ex.Message}*" +
+                                      "\n**c!clearsubissues track**",
                             Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
