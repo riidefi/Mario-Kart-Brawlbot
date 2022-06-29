@@ -71,7 +71,12 @@ namespace CTTB
 
             Commands.RegisterCommands<TextCommands>();
 
-            Commands.RegisterCommands<FunctionalCommands>();
+            Commands.RegisterCommands<Homework>();
+            Commands.RegisterCommands<Info>();
+            Commands.RegisterCommands<Issues>();
+            Commands.RegisterCommands<Misc>();
+            Commands.RegisterCommands<Threads>();
+            Commands.RegisterCommands<Update>();
 
             await Client.ConnectAsync();
 
