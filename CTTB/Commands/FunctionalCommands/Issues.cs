@@ -708,14 +708,7 @@ namespace CTTB.Commands
                             }
                         }
 
-                        string strAlpha = "";
-
-                        for (int i = 65; i <= 90; i++)
-                        {
-                            strAlpha += ((char)i).ToString() + "";
-                        }
-
-                        var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Backlog'!A5:{strAlpha[tmpresponse.Values[0].Count - 1]}{tmpresponse.Values.Count}");
+                        var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Backlog'!A5:{Utility.strAlpha[tmpresponse.Values[0].Count - 1]}{tmpresponse.Values.Count}");
                         request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
                         var response = await request.ExecuteAsync();
                         foreach (var t in response.Values)
@@ -786,7 +779,7 @@ namespace CTTB.Commands
                             else
                             {
 
-                                var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"Backlog!A5:{strAlpha[response.Values[0].Count - 1]}{response.Values.Count + 4}");
+                                var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"Backlog!A5:{Utility.strAlpha[response.Values[0].Count - 1]}{response.Values.Count + 4}");
                                 updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                                 var update = await updateRequest.ExecuteAsync();
 
@@ -997,14 +990,7 @@ namespace CTTB.Commands
                         }
                     }
 
-                    string strAlpha = "";
-
-                    for (int i = 65; i <= 90; i++)
-                    {
-                        strAlpha += ((char)i).ToString() + "";
-                    }
-
-                    var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Backlog'!A5:{strAlpha[tmpresponse.Values[0].Count - 1]}{tmpresponse.Values.Count}");
+                    var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Backlog'!A5:{Utility.strAlpha[tmpresponse.Values[0].Count - 1]}{tmpresponse.Values.Count}");
                     request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
                     var response = await request.ExecuteAsync();
 
@@ -1048,7 +1034,7 @@ namespace CTTB.Commands
 
                         else
                         {
-                            var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"Backlog!A5:{strAlpha[response.Values[0].Count - 1]}{response.Values.Count + 4}");
+                            var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"Backlog!A5:{Utility.strAlpha[response.Values[0].Count - 1]}{response.Values.Count + 4}");
                             updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                             var update = await updateRequest.ExecuteAsync();
 

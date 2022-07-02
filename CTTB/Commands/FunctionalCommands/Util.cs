@@ -6,6 +6,35 @@ namespace CTTB.Commands
 {
     public class Util : BaseCommandModule
     {
+        public char[] strAlpha = {
+            (char)65,
+            (char)66,
+            (char)67,
+            (char)68,
+            (char)69,
+            (char)70,
+            (char)71,
+            (char)72,
+            (char)73,
+            (char)74,
+            (char)75,
+            (char)76,
+            (char)77,
+            (char)78,
+            (char)79,
+            (char)80,
+            (char)81,
+            (char)82,
+            (char)83,
+            (char)84,
+            (char)85,
+            (char)86,
+            (char)87,
+            (char)88,
+            (char)89,
+            (char)90
+        };
+
         public Scrape Scraper = new Scrape();
 
         public Registry ScheduleRegister = new Registry();

@@ -217,13 +217,6 @@ namespace CTTB.Commands
                             IList<IList<object>> values = new List<IList<object>>();
                             values.Add(obj);
 
-                            string strAlpha = "";
-
-                            for (int i = 65; i <= 90; i++)
-                            {
-                                strAlpha += ((char)i).ToString() + "";
-                            }
-
                             var appendRequest = service.Spreadsheets.Values.Append(new ValueRange() { Values = values }, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
                             appendRequest.InsertDataOption = SpreadsheetsResource.ValuesResource.AppendRequest.InsertDataOptionEnum.INSERTROWS;
                             appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
@@ -437,12 +430,6 @@ namespace CTTB.Commands
                 {
                     if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                     {
-                        string strAlpha = "";
-
-                        for (int i = 65; i <= 90; i++)
-                        {
-                            strAlpha += ((char)i).ToString() + "";
-                        }
 
                         string description = string.Empty;
                         string json = string.Empty;
@@ -587,11 +574,11 @@ namespace CTTB.Commands
 
                                 if (response.Values[0].Count < 27)
                                 {
-                                    updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:{strAlpha[response.Values[0].Count - 1]}{response.Values.Count}");
+                                    updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:{Utility.strAlpha[response.Values[0].Count - 1]}{response.Values.Count}");
                                 }
                                 else
                                 {
-                                    updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:A{strAlpha[response.Values[0].Count % 26 - 1]}{response.Values.Count}");
+                                    updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:A{Utility.strAlpha[response.Values[0].Count % 26 - 1]}{response.Values.Count}");
                                 }
                                 updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                                 var update = await updateRequest.ExecuteAsync();
