@@ -16,6 +16,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentScheduler;
+using System.Globalization;
 
 namespace CTTB.Commands
 {
@@ -29,7 +30,7 @@ namespace CTTB.Commands
         {
             if (ctx.Guild.Id == 180306609233330176)
             {
-                
+
                 await ctx.TriggerTypingAsync();
 
                 Utility.ScheduleRegister.Schedule(async () => await UpdateJsons(ctx, "all")).ToRunEvery(1).Days().At(13, 0);
@@ -423,9 +424,9 @@ namespace CTTB.Commands
                         {
                             trackDisplay.Add(response.Values[i][0].ToString());
                         }
-                        if (Utility.lastHwDateChecked != int.Parse(response.Values[i][1].ToString()) && today > int.Parse(response.Values[i][1].ToString()))
+                        int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("30/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
+                        if (lastChecked != int.Parse(response.Values[i][1].ToString()) && today == int.Parse(response.Values[i][1].ToString() + 1))
                         {
-                            Utility.lastHwDateChecked = int.Parse(response.Values[i][1].ToString());
                             for (int j = 12; j < response.Values[0].Count; j++)
                             {
                                 bool check = false;

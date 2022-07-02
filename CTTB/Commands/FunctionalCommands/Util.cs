@@ -10,8 +10,6 @@ namespace CTTB.Commands
 
         public Registry ScheduleRegister = new Registry();
 
-        public int lastHwDateChecked;
-
         public bool CompareStrings(string arg1, string arg2)
         {
             if (arg1.Replace(".", string.Empty).Replace("_", " ").Replace("`", string.Empty).Replace("'", string.Empty).ToLowerInvariant() == arg2.Replace(".", string.Empty).Replace("_", " ").Replace("'", string.Empty).ToLowerInvariant())
