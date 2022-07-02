@@ -1,26 +1,17 @@
 ﻿using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
-using DSharpPlus.Interactivity;
-using DSharpPlus.Interactivity.Extensions;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
-using Google.Apis.Sheets.v4.Data;
-using IronPython.Runtime.Operations;
-using Newtonsoft.Json;
 using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace CTTB.Commands
@@ -703,10 +694,10 @@ namespace CTTB.Commands
                 {
                     try
                     {
-                        var embed = new DiscordEmbedBuilder() { };
+                        await ctx.TriggerTypingAsync();
                         if (role == "")
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
@@ -729,7 +720,7 @@ namespace CTTB.Commands
                         }
                         if (discordRole == null)
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
@@ -744,7 +735,7 @@ namespace CTTB.Commands
                         }
                         else if (message == "")
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
@@ -779,7 +770,7 @@ namespace CTTB.Commands
                                 }
                             }
 
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Success:**__",

@@ -6,21 +6,14 @@ using DSharpPlus.Interactivity.Extensions;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
-using Google.Apis.Sheets.v4.Data;
 using IronPython.Runtime.Operations;
 using Newtonsoft.Json;
 using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Net;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace CTTB.Commands
@@ -32,13 +25,10 @@ namespace CTTB.Commands
         [Command("rating")]
         public async Task GetTrackRating(CommandContext ctx, [RemainingText] string track = "")
         {
-            await ctx.TriggerTypingAsync();
-            string description = "";
-
-            var embed = new DiscordEmbedBuilder { };
-
             try
             {
+                await ctx.TriggerTypingAsync();
+                string description = "";
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
                 var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
@@ -75,7 +65,7 @@ namespace CTTB.Commands
 
                     description += $"__**Average**__:\n{Math.Round((double.Parse(response.Values[4][12].ToString()) / (double.Parse(response.Values[4][12].ToString()) + double.Parse(response.Values[4][13].ToString()) + double.Parse(response.Values[4][14].ToString()))) * 100)}/{Math.Round((double.Parse(response.Values[4][13].ToString()) / (double.Parse(response.Values[4][12].ToString()) + double.Parse(response.Values[4][13].ToString()) + double.Parse(response.Values[4][14].ToString()))) * 100)}/{Math.Round((double.Parse(response.Values[4][14].ToString()) / (double.Parse(response.Values[4][12].ToString()) + double.Parse(response.Values[4][13].ToString()) + double.Parse(response.Values[4][14].ToString()))) * 100)}%\n";
 
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Early 2022 Track Rating Average (Remove/Indifferent/Keep):**__",
@@ -90,7 +80,7 @@ namespace CTTB.Commands
                 }
                 else if (j < 1)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -122,7 +112,7 @@ namespace CTTB.Commands
 
                     if (description.ToCharArray().Length > 800)
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
@@ -134,10 +124,11 @@ namespace CTTB.Commands
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
                     else
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Early 2022 Track Ratings for {track} (Remove/Indifferent/Keep):**__",
@@ -148,14 +139,14 @@ namespace CTTB.Commands
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
             }
 
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
@@ -176,10 +167,9 @@ namespace CTTB.Commands
         [Command("nextupdate")]
         public async Task GetNextUpdate(CommandContext ctx, [RemainingText] string placeholder)
         {
-            var embed = new DiscordEmbedBuilder { };
-
             try
             {
+                await ctx.TriggerTypingAsync();
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
                 var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
@@ -192,8 +182,6 @@ namespace CTTB.Commands
                     HttpClientInitializer = credential,
                     ApplicationName = "Custom Track Testing Bot",
                 });
-
-                await ctx.TriggerTypingAsync();
 
                 var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Update Queue'");
                 request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
@@ -260,7 +248,7 @@ namespace CTTB.Commands
                     }
                 }
 
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**{response.Values[1][1]}:**__",
@@ -275,7 +263,7 @@ namespace CTTB.Commands
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
@@ -296,15 +284,14 @@ namespace CTTB.Commands
         [Command("summary")]
         public async Task GetSummary(CommandContext ctx, [RemainingText] string track = "")
         {
-            var embed = new DiscordEmbedBuilder { };
-
             try
             {
+                await ctx.TriggerTypingAsync();
                 string description = string.Empty;
 
                 if (track == "")
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -400,7 +387,7 @@ namespace CTTB.Commands
                     }
                     if (j < 1)
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -416,7 +403,7 @@ namespace CTTB.Commands
                     }
                     else
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Summary for {trackDisplay} (First result):**__",
@@ -433,7 +420,7 @@ namespace CTTB.Commands
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
@@ -458,7 +445,6 @@ namespace CTTB.Commands
 
             var json = string.Empty;
             var description = string.Empty;
-            var embed = new DiscordEmbedBuilder { };
 
             string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
@@ -518,7 +504,7 @@ namespace CTTB.Commands
                 }
                 if (j < 1)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -534,7 +520,7 @@ namespace CTTB.Commands
                 }
                 else if (j == 1)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Staff ghosts for {trackDisplay.Name} *(First result)*:**__",
@@ -550,7 +536,7 @@ namespace CTTB.Commands
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
@@ -575,7 +561,6 @@ namespace CTTB.Commands
 
             var json = string.Empty;
             var description = string.Empty;
-            var embed = new DiscordEmbedBuilder { };
 
             string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
@@ -634,7 +619,7 @@ namespace CTTB.Commands
 
                 if (track == "")
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -651,7 +636,7 @@ namespace CTTB.Commands
 
                 else if (j < 1)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -667,7 +652,7 @@ namespace CTTB.Commands
                 }
                 else if (j == 1)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**{trackDisplay.Name} *(First result)*:**__",
@@ -683,7 +668,7 @@ namespace CTTB.Commands
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
@@ -704,16 +689,12 @@ namespace CTTB.Commands
         [Command("bkt")]
         public async Task GetBestTimes(CommandContext ctx, [RemainingText] string track = "")
         {
-            await ctx.TriggerTypingAsync();
-
-            string json = "";
-            string description = "";
-
-            var embed = new DiscordEmbedBuilder { };
 
             try
             {
-                json = File.ReadAllText($"rts.json");
+                await ctx.TriggerTypingAsync();
+                string description = "";
+                string json = File.ReadAllText($"rts.json");
                 List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
                 json = File.ReadAllText($"cts.json");
                 foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
@@ -769,7 +750,7 @@ namespace CTTB.Commands
 
                 if (j < 1)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -803,7 +784,7 @@ namespace CTTB.Commands
                         }
                     }
 
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Best Times on {trackDisplay[0].Name} *(First result)*:**__",
@@ -820,7 +801,7 @@ namespace CTTB.Commands
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
@@ -843,7 +824,6 @@ namespace CTTB.Commands
         {
             await ctx.TriggerTypingAsync();
 
-            var embed = new DiscordEmbedBuilder { };
             string json = string.Empty;
             string description1 = string.Empty;
             string description2 = string.Empty;
@@ -1159,7 +1139,7 @@ namespace CTTB.Commands
 
                 if (arg == "")
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -1176,7 +1156,7 @@ namespace CTTB.Commands
 
                 else if (description1 == "")
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -1193,7 +1173,7 @@ namespace CTTB.Commands
 
                 else if (description1.ToCharArray().Length > 800)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -1215,7 +1195,7 @@ namespace CTTB.Commands
 
                 else
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying tracks containing *{arg}*:**__",
@@ -1231,7 +1211,7 @@ namespace CTTB.Commands
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
@@ -1254,7 +1234,6 @@ namespace CTTB.Commands
         {
             await ctx.TriggerTypingAsync();
 
-            var embed = new DiscordEmbedBuilder { };
             string json = string.Empty;
             string description1 = string.Empty;
             string description2 = string.Empty;
@@ -1601,7 +1580,7 @@ namespace CTTB.Commands
 
                 if (arg == "")
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -1618,7 +1597,7 @@ namespace CTTB.Commands
 
                 else if (description1 == "")
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -1635,8 +1614,7 @@ namespace CTTB.Commands
 
                 else if (description1.ToCharArray().Length > 800)
                 {
-
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -1658,7 +1636,7 @@ namespace CTTB.Commands
 
                 else
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying tracks containing *{arg}*:**__",
@@ -1674,7 +1652,7 @@ namespace CTTB.Commands
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",

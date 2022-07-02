@@ -1,5 +1,6 @@
 ﻿using DSharpPlus.CommandsNext;
 using System;
+using FluentScheduler;
 
 namespace CTTB.Commands
 {
@@ -7,7 +8,7 @@ namespace CTTB.Commands
     {
         public Scrape Scraper = new Scrape();
 
-        public System.Timers.Timer dailyTimer;
+        public Registry ScheduleRegister = new Registry();
 
         public int lastHwDateChecked;
 

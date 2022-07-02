@@ -7,20 +7,14 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
-using IronPython.Runtime.Operations;
 using Newtonsoft.Json;
 using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace CTTB.Commands
@@ -35,8 +29,6 @@ namespace CTTB.Commands
         {
             if (ctx.Guild.Id == 180306609233330176)
             {
-                var embed = new DiscordEmbedBuilder { };
-
                 try
                 {
                     if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
@@ -45,7 +37,7 @@ namespace CTTB.Commands
 
                         if (track == "")
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
@@ -61,7 +53,7 @@ namespace CTTB.Commands
                         }
                         else if (author == "")
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
@@ -77,7 +69,7 @@ namespace CTTB.Commands
                         }
                         else if (version == "")
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
@@ -93,7 +85,7 @@ namespace CTTB.Commands
                         }
                         else if (slot == "")
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
@@ -238,7 +230,7 @@ namespace CTTB.Commands
                             appendRequest.ResponseValueRenderOption = SpreadsheetsResource.ValuesResource.AppendRequest.ResponseValueRenderOptionEnum.FORMULA;
                             var appendResponse = await appendRequest.ExecuteAsync();
 
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Success:**__",
@@ -267,7 +259,7 @@ namespace CTTB.Commands
                 }
                 catch (Exception ex)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -293,14 +285,13 @@ namespace CTTB.Commands
         {
             if (ctx.Guild.Id == 180306609233330176)
             {
-                var embed = new DiscordEmbedBuilder { };
                 try
                 {
                     if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                     {
                         if (track == "")
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
@@ -365,7 +356,7 @@ namespace CTTB.Commands
                             }
                             if (ix < 0)
                             {
-                                embed = new DiscordEmbedBuilder
+                                var embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = "__**Error:**__",
@@ -399,7 +390,7 @@ namespace CTTB.Commands
                                 var deleteResponse = service.Spreadsheets.BatchUpdate(deleteRequest, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss").Execute();
 
 
-                                embed = new DiscordEmbedBuilder
+                                var embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = "__**Success:**__",
@@ -417,7 +408,7 @@ namespace CTTB.Commands
                 }
                 catch (Exception ex)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -442,7 +433,6 @@ namespace CTTB.Commands
         {
             if (ctx.Guild.Id == 180306609233330176)
             {
-                var embed = new DiscordEmbedBuilder { };
                 try
                 {
                     if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
@@ -460,7 +450,7 @@ namespace CTTB.Commands
 
                         if (vote == "")
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
@@ -476,7 +466,7 @@ namespace CTTB.Commands
                         }
                         else if (track == "")
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
@@ -492,7 +482,7 @@ namespace CTTB.Commands
                         }
                         else if (vote.ToLowerInvariant() != "no" && vote.ToLowerInvariant() != "yes" && vote.ToLowerInvariant() != "neutral" && vote.ToLowerInvariant() != "fixes")
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
@@ -556,7 +546,7 @@ namespace CTTB.Commands
 
                             if (ix < 0)
                             {
-                                embed = new DiscordEmbedBuilder
+                                var embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = "__**Error:**__",
@@ -608,7 +598,7 @@ namespace CTTB.Commands
 
                                 if (j == 0)
                                 {
-                                    embed = new DiscordEmbedBuilder
+                                    var embed = new DiscordEmbedBuilder
                                     {
                                         Color = new DiscordColor("#FF0000"),
                                         Title = "__**Error:**__",
@@ -624,7 +614,7 @@ namespace CTTB.Commands
                                 }
                                 else
                                 {
-                                    embed = new DiscordEmbedBuilder
+                                    var embed = new DiscordEmbedBuilder
                                     {
                                         Color = new DiscordColor("#FF0000"),
                                         Title = "__**Success:**__",
@@ -643,7 +633,7 @@ namespace CTTB.Commands
                 }
                 catch (Exception ex)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -668,7 +658,6 @@ namespace CTTB.Commands
         {
             if (ctx.Guild.Id == 180306609233330176)
             {
-                var embed = new DiscordEmbedBuilder { };
                 try
                 {
                     if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
@@ -703,7 +692,11 @@ namespace CTTB.Commands
                             }
                             else
                             {
-                                ix = councilJson.FindIndex(x => Utility.CompareIncompleteStrings(x.SheetName, member) || Utility.CompareStringsLevenshteinDistance(x.SheetName, member));
+                                ix = councilJson.FindIndex(x => Utility.CompareStrings(x.SheetName, member));
+                                if (ix == -1)
+                                {
+                                    ix = councilJson.FindIndex(x => Utility.CompareIncompleteStrings(x.SheetName, member) || Utility.CompareStringsLevenshteinDistance(x.SheetName, member));
+                                }
                                 member = councilJson[ix].SheetName;
                             }
                         }
@@ -712,7 +705,7 @@ namespace CTTB.Commands
 
                         if (track == "")
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
@@ -818,7 +811,7 @@ namespace CTTB.Commands
                                             }
                                             trackDisplay = response.Values[sheetIx][i].ToString();
 
-                                            embed = new DiscordEmbedBuilder
+                                            var embed = new DiscordEmbedBuilder
                                             {
                                                 Color = new DiscordColor("#FF0000"),
                                                 Title = $"__**{response.Values[sheetIx][0]}**__",
@@ -895,7 +888,7 @@ namespace CTTB.Commands
                                             }
                                             trackDisplay = t[0].ToString();
 
-                                            embed = new DiscordEmbedBuilder
+                                            var embed = new DiscordEmbedBuilder
                                             {
                                                 Color = new DiscordColor("#FF0000"),
                                                 Title = $"__**{trackDisplay}**__",
@@ -914,7 +907,7 @@ namespace CTTB.Commands
 
                             if (sheetIx < 0)
                             {
-                                embed = new DiscordEmbedBuilder
+                                var embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = $"__**Error:**__",
@@ -955,7 +948,7 @@ namespace CTTB.Commands
 
                             else if (l == 0)
                             {
-                                embed = new DiscordEmbedBuilder
+                                var embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = $"__**Error:**__",
@@ -971,7 +964,7 @@ namespace CTTB.Commands
                             }
                             else
                             {
-                                embed = new DiscordEmbedBuilder
+                                var embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = $"__**{trackDisplay}**__",
@@ -989,7 +982,7 @@ namespace CTTB.Commands
                 }
                 catch (Exception ex)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -1014,7 +1007,6 @@ namespace CTTB.Commands
         {
             if (ctx.Guild.Id == 180306609233330176)
             {
-                var embed = new DiscordEmbedBuilder { };
                 try
                 {
                     if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
@@ -1079,7 +1071,7 @@ namespace CTTB.Commands
                                 description += $"{t[0]} | {tRaw[1]} | *Check spreadsheet for download* | {tally}\n";
                             }
                         }
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Council Homework:**__",
@@ -1095,7 +1087,7 @@ namespace CTTB.Commands
                 }
                 catch (Exception ex)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -1118,12 +1110,11 @@ namespace CTTB.Commands
         [RequireRoles(RoleCheckMode.Any, "Admin")]
         public async Task IncrementMissedHw(CommandContext ctx, [RemainingText] string member = "")
         {
-            await ctx.TriggerTypingAsync();
-            var embed = new DiscordEmbedBuilder() { };
             try
             {
                 if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                 {
+                    await ctx.TriggerTypingAsync();
                     string json;
                     using (var fs = File.OpenRead("council.json"))
                     using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
@@ -1134,7 +1125,7 @@ namespace CTTB.Commands
 
                     if (member == "")
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -1142,29 +1133,31 @@ namespace CTTB.Commands
                                 "\n**c!addmissedhw member**",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
-                                Text = $"Server Time: {DateTime.Now}"
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
                     else if (ix != -1)
                     {
                         councilJson[ix].TimesMissedHw++;
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Notice:**__",
                             Description = $"*Missed homework count for {councilJson[ix].SheetName} has been incremented.*",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
-                                Text = $"Server Time: {DateTime.Now}"
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         string council = JsonConvert.SerializeObject(councilJson);
                         File.WriteAllText("council.json", council);
                     }
                     else
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -1172,16 +1165,16 @@ namespace CTTB.Commands
                                 "\n**c!addmissedhw member**",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
-                                Text = $"Server Time: {DateTime.Now}"
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
@@ -1227,7 +1220,7 @@ namespace CTTB.Commands
                                 "\n**c!removemissedhw member**",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
-                                Text = $"Server Time: {DateTime.Now}"
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
                     }
@@ -1241,7 +1234,7 @@ namespace CTTB.Commands
                             Description = $"*Missed homework count for {councilJson[ix].SheetName} has been decremented.*",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
-                                Text = $"Server Time: {DateTime.Now}"
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
                         string council = JsonConvert.SerializeObject(councilJson);
@@ -1257,7 +1250,7 @@ namespace CTTB.Commands
                                 "\n**c!removemissedhw member**",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
-                                Text = $"Server Time: {DateTime.Now}"
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
                     }
@@ -1288,12 +1281,11 @@ namespace CTTB.Commands
         [RequireRoles(RoleCheckMode.Any, "Admin")]
         public async Task ResetMissedHw(CommandContext ctx, [RemainingText] string member = "")
         {
-            await ctx.TriggerTypingAsync();
-            var embed = new DiscordEmbedBuilder() { };
             try
             {
                 if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                 {
+                    await ctx.TriggerTypingAsync();
                     string json;
                     using (var fs = File.OpenRead("council.json"))
                     using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
@@ -1305,16 +1297,17 @@ namespace CTTB.Commands
                     if (ix != -1)
                     {
                         councilJson[ix].TimesMissedHw = 0;
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Notice:**__",
                             Description = $"*Missed homework count for {councilJson[ix].SheetName} has been reset.*",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
-                                Text = $"Server Time: {DateTime.Now}"
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         string council = JsonConvert.SerializeObject(councilJson);
                         File.WriteAllText("council.json", council);
                     }
@@ -1324,38 +1317,39 @@ namespace CTTB.Commands
                         {
                             m.TimesMissedHw = 0;
                         }
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Notice:**__",
                             Description = "*Missed homework count for all members has been reset.*",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
-                                Text = $"Server Time: {DateTime.Now}"
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                         string council = JsonConvert.SerializeObject(councilJson);
                         File.WriteAllText("council.json", council);
                     }
                     else
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
                             Description = $"*{member} could not be found.*",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
-                                Text = $"Server Time: {DateTime.Now}"
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",
@@ -1377,11 +1371,11 @@ namespace CTTB.Commands
         [RequireRoles(RoleCheckMode.Any, "Admin")]
         public async Task DisplayMissedHw(CommandContext ctx, [RemainingText] string placeholder)
         {
-            await ctx.TriggerTypingAsync();
             try
             {
                 if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
                 {
+                    await ctx.TriggerTypingAsync();
                     string json;
                     using (var fs = File.OpenRead("council.json"))
                     using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
@@ -1401,7 +1395,7 @@ namespace CTTB.Commands
                         Description = description,
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
-                            Text = $"Server Time: {DateTime.Now}"
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                         }
                     };
                     await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);

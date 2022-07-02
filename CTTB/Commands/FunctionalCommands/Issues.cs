@@ -6,21 +6,13 @@ using DSharpPlus.Interactivity.Extensions;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
-using Google.Apis.Sheets.v4.Data;
-using IronPython.Runtime.Operations;
 using Newtonsoft.Json;
 using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Net;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace CTTB.Commands
@@ -36,7 +28,6 @@ namespace CTTB.Commands
 
             var json = string.Empty;
             var description = string.Empty;
-            var embed = new DiscordEmbedBuilder { };
 
             string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
@@ -119,7 +110,7 @@ namespace CTTB.Commands
                                 }
                                 description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*";
                                 j++;
-                                embed = new DiscordEmbedBuilder
+                                var embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = $"__**Known issues on {response.Values[i][0]}:**__",
@@ -189,7 +180,7 @@ namespace CTTB.Commands
 
                     if (j < 1)
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -205,7 +196,7 @@ namespace CTTB.Commands
                     }
                     else if (j == 1)
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Known issues on {trackDisplay.Name} *(First result)*:**__",
@@ -222,7 +213,7 @@ namespace CTTB.Commands
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
@@ -248,7 +239,6 @@ namespace CTTB.Commands
             {
                 await ctx.TriggerTypingAsync();
 
-                var embed = new DiscordEmbedBuilder { };
                 string json = string.Empty;
                 string maj = string.Empty;
                 string min = string.Empty;
@@ -345,7 +335,7 @@ namespace CTTB.Commands
                     }
                     if (issue == "")
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -362,7 +352,7 @@ namespace CTTB.Commands
 
                     else if (j < 1)
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -383,7 +373,7 @@ namespace CTTB.Commands
                         updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                         var update = await updateRequest.ExecuteAsync();
 
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Issues Updated:**__",
@@ -399,7 +389,7 @@ namespace CTTB.Commands
 
                     else
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -416,7 +406,7 @@ namespace CTTB.Commands
                 }
                 catch (Exception ex)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -439,8 +429,6 @@ namespace CTTB.Commands
         public async Task GetSubmittedTrackIssues(CommandContext ctx, [RemainingText] string track = "")
         {
             await ctx.TriggerTypingAsync();
-
-            var embed = new DiscordEmbedBuilder { };
 
             string trackDisplay = string.Empty;
 
@@ -528,7 +516,7 @@ namespace CTTB.Commands
                                         sub = response.Values[i][10].ToString();
                                     }
                                     j++;
-                                    embed = new DiscordEmbedBuilder
+                                    var embed = new DiscordEmbedBuilder
                                     {
                                         Color = new DiscordColor("#FF0000"),
                                         Title = $"__**Known issues on {response.Values[i][2]}:**__",
@@ -598,7 +586,7 @@ namespace CTTB.Commands
 
                     if (j < 1)
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -614,7 +602,7 @@ namespace CTTB.Commands
                     }
                     else if (j == 1)
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Known issues on {trackDisplay} *(First result)*:**__",
@@ -631,7 +619,7 @@ namespace CTTB.Commands
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Error:**__",
@@ -655,15 +643,12 @@ namespace CTTB.Commands
         {
             if (ctx.Guild.Id == 180306609233330176)
             {
-                await ctx.TriggerTypingAsync();
-
-                var embed = new DiscordEmbedBuilder { };
-
                 try
                 {
+                    await ctx.TriggerTypingAsync();
                     if (track == "")
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -680,7 +665,7 @@ namespace CTTB.Commands
 
                     else if (issue == "")
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -766,7 +751,7 @@ namespace CTTB.Commands
                             }
                             if (issue == "")
                             {
-                                embed = new DiscordEmbedBuilder
+                                var embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = "__**Error:**__",
@@ -783,7 +768,7 @@ namespace CTTB.Commands
 
                             else if (j < 1)
                             {
-                                embed = new DiscordEmbedBuilder
+                                var embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = "__**Error:**__",
@@ -805,7 +790,7 @@ namespace CTTB.Commands
                                 updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                                 var update = await updateRequest.ExecuteAsync();
 
-                                embed = new DiscordEmbedBuilder
+                                var embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = "__**Issues Updated:**__",
@@ -823,7 +808,7 @@ namespace CTTB.Commands
                 }
                 catch (Exception ex)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -850,11 +835,10 @@ namespace CTTB.Commands
             {
                 await ctx.TriggerTypingAsync();
 
-                var embed = new DiscordEmbedBuilder { };
                 string json = string.Empty;
                 if (track == "")
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -927,7 +911,7 @@ namespace CTTB.Commands
                         updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                         var update = await updateRequest.ExecuteAsync();
 
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Success:**__",
@@ -942,7 +926,7 @@ namespace CTTB.Commands
                     }
                     catch (Exception ex)
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -970,11 +954,10 @@ namespace CTTB.Commands
             {
                 await ctx.TriggerTypingAsync();
 
-                var embed = new DiscordEmbedBuilder { };
                 string json = string.Empty;
                 if (track == "")
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -1048,7 +1031,7 @@ namespace CTTB.Commands
 
                         if (j == 0)
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
@@ -1069,7 +1052,7 @@ namespace CTTB.Commands
                             updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                             var update = await updateRequest.ExecuteAsync();
 
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Success:**__",
@@ -1085,7 +1068,7 @@ namespace CTTB.Commands
                     }
                     catch (Exception ex)
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -1113,13 +1096,12 @@ namespace CTTB.Commands
             {
                 await ctx.TriggerTypingAsync();
 
-                var embed = new DiscordEmbedBuilder { };
                 string json = string.Empty;
                 string description = string.Empty;
 
                 if (track == "" || newTrack == "" || author == "" || version == "" || slot == "" || laps == "")
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -1196,7 +1178,7 @@ namespace CTTB.Commands
 
                         if (j < 1)
                         {
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
@@ -1222,7 +1204,7 @@ namespace CTTB.Commands
                             updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                             var update = await updateRequest.ExecuteAsync();
 
-                            embed = new DiscordEmbedBuilder
+                            var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**{newTrack} has now replaced {track}:**__",
@@ -1238,7 +1220,7 @@ namespace CTTB.Commands
                     }
                     catch (Exception ex)
                     {
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",

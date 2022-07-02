@@ -1,27 +1,21 @@
 ﻿using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
-using DSharpPlus.Interactivity;
-using DSharpPlus.Interactivity.Extensions;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
-using Google.Apis.Sheets.v4.Data;
-using IronPython.Runtime.Operations;
 using Newtonsoft.Json;
 using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.IO.Compression;
-using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentScheduler;
 
 namespace CTTB.Commands
 {
@@ -35,19 +29,15 @@ namespace CTTB.Commands
         {
             if (ctx.Guild.Id == 180306609233330176)
             {
+                
                 await ctx.TriggerTypingAsync();
-                var embed = new DiscordEmbedBuilder() { };
 
-                if (Utility.dailyTimer != null)
-                {
-                    Utility.dailyTimer.Stop();
-                }
-                Utility.dailyTimer = new System.Timers.Timer(86400000);
-                Utility.dailyTimer.AutoReset = true;
-                Utility.dailyTimer.Elapsed += async (s, e) => await UpdateJsons(ctx, "all");
-                Utility.dailyTimer.Elapsed += async (s, e) => await CheckHw(ctx, "");
-                Utility.dailyTimer.Start();
-                embed = new DiscordEmbedBuilder
+                Utility.ScheduleRegister.Schedule(async () => await UpdateJsons(ctx, "all")).ToRunEvery(1).Days().At(13, 0);
+                Utility.ScheduleRegister.Schedule(async () => await CheckHw(ctx, "")).ToRunEvery(1).Days().At(13, 0);
+
+                JobManager.Initialize(Utility.ScheduleRegister);
+
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Notice:**__",
@@ -74,7 +64,7 @@ namespace CTTB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Notice:**__",
-                    Description = "Database has been updated.",
+                    Description = "*Database has been updated.*",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
                         Text = $"Server Time: {DateTime.Now}"
@@ -337,6 +327,11 @@ namespace CTTB.Commands
                 process.StartInfo = processInfo;
                 process.Start();
                 process.WaitForExit();
+
+                DiscordActivity activity = new DiscordActivity();
+                activity.Name = $"Last Updated: {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}" +
+                    $" | c!help";
+                await ctx.Client.UpdateStatusAsync(activity);
             }
 
             catch (Exception ex)
@@ -385,7 +380,6 @@ namespace CTTB.Commands
         public async Task CheckHw(CommandContext ctx, [RemainingText] string placeholder)
         {
             await ctx.TriggerTypingAsync();
-            var embed = new DiscordEmbedBuilder() { };
             try
             {
                 if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
@@ -435,21 +429,18 @@ namespace CTTB.Commands
                             for (int j = 12; j < response.Values[0].Count; j++)
                             {
                                 bool check = false;
-                                for (int k = 1; k < response.Values.Count; k++)
+                                if ((response.Values[i][j].ToString() == "" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "neutral" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "fixes" ||
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("yes") &&
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("no") &&
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("neutral") &&
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes")) &&
+                                        response.Values[i][j].ToString() != "This member is the author thus cannot vote")
                                 {
-                                    if ((response.Values[k][j].ToString() == "" ||
-                                        response.Values[k][j].ToString().ToLowerInvariant() == "yes" ||
-                                        response.Values[k][j].ToString().ToLowerInvariant() == "no" ||
-                                        response.Values[k][j].ToString().ToLowerInvariant() == "neutral" ||
-                                        response.Values[k][j].ToString().ToLowerInvariant() == "fixes" ||
-                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("yes") ||
-                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("no") ||
-                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("neutral") ||
-                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("fixes")) &&
-                                        response.Values[k][j].ToString() != "This member is the author thus cannot vote")
-                                    {
-                                        check = true;
-                                    }
+                                    check = true;
                                 }
                                 int ix = councilJson.FindIndex(x => x.SheetName == response.Values[0][j].ToString());
                                 if (check)
@@ -480,21 +471,18 @@ namespace CTTB.Commands
                                     }
                                 }
                                 bool completed = true;
-                                for (int k = 1; k < response.Values.Count; k++)
+                                if ((response.Values[i][j].ToString() == "" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "neutral" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "fixes" ||
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("yes") &&
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("no") &&
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("neutral") &&
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes")) &&
+                                        response.Values[i][j].ToString() != "This member is the author thus cannot vote")
                                 {
-                                    if ((response.Values[k][j].ToString() == "" ||
-                                        response.Values[k][j].ToString().ToLowerInvariant() == "yes" ||
-                                        response.Values[k][j].ToString().ToLowerInvariant() == "no" ||
-                                        response.Values[k][j].ToString().ToLowerInvariant() == "neutral" ||
-                                        response.Values[k][j].ToString().ToLowerInvariant() == "fixes" ||
-                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("yes") ||
-                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("no") ||
-                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("neutral") ||
-                                        !response.Values[k][j].ToString().ToLowerInvariant().Contains("fixes")) &&
-                                        response.Values[k][j].ToString() != "This member is the author thus cannot vote")
-                                    {
-                                        completed = false;
-                                    }
+                                    completed = false;
                                 }
                                 if (completed)
                                 {
@@ -543,7 +531,7 @@ namespace CTTB.Commands
             }
             catch (Exception ex)
             {
-                embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Error:**__",

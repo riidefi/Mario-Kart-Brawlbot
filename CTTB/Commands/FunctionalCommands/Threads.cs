@@ -1,26 +1,13 @@
 ﻿using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
-using DSharpPlus.Interactivity;
-using DSharpPlus.Interactivity.Extensions;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Services;
-using Google.Apis.Sheets.v4;
-using Google.Apis.Sheets.v4.Data;
-using IronPython.Runtime.Operations;
 using Newtonsoft.Json;
 using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace CTTB.Commands
@@ -217,7 +204,11 @@ namespace CTTB.Commands
                             }
                             else
                             {
-                                ix = councilJson.FindIndex(x => Utility.CompareIncompleteStrings(x.SheetName, member) || Utility.CompareStringsLevenshteinDistance(x.SheetName, member));
+                                ix = councilJson.FindIndex(x => Utility.CompareStrings(x.SheetName, member));
+                                if (ix == -1)
+                                {
+                                    ix = councilJson.FindIndex(x => Utility.CompareIncompleteStrings(x.SheetName, member) || Utility.CompareStringsLevenshteinDistance(x.SheetName, member));
+                                }
                             }
                         }
 
@@ -285,11 +276,11 @@ namespace CTTB.Commands
         {
             if (ctx.Guild.Id == 180306609233330176 && ctx.Channel.IsThread && ctx.Channel.ParentId == 369281592407097345)
             {
-                var embed = new DiscordEmbedBuilder();
                 try
                 {
-                    string json = string.Empty;
                     await ctx.TriggerTypingAsync();
+
+                    string json = string.Empty;
 
                     if (arg == "reset")
                     {
@@ -300,7 +291,7 @@ namespace CTTB.Commands
                         string removals = JsonConvert.SerializeObject(remove);
                         File.WriteAllText("assigned.json", assigned);
 
-                        embed = new DiscordEmbedBuilder
+                        var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Success:**__",
@@ -502,7 +493,7 @@ namespace CTTB.Commands
                 }
                 catch (Exception ex)
                 {
-                    embed = new DiscordEmbedBuilder
+                    var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",

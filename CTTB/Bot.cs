@@ -21,6 +21,7 @@ using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.Lavalink;
 using DSharpPlus.VoiceNext;
 using Microsoft.Extensions.DependencyInjection;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace CTTB
 {

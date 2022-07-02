@@ -25,8 +25,7 @@ namespace CTTB.Commands
                 "\nc!ttpop rts/cts/track" +
                 "\nc!summary track" +
                 "\nc!nextupdate" +
-                "\nc!rating track" +
-                "\nc!dlbkt track/all";
+                "\nc!rating track";
 
             foreach (var role in ctx.Member.Roles)
             {
