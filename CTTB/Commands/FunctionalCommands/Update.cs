@@ -33,6 +33,10 @@ namespace CTTB.Commands
 
                 await ctx.TriggerTypingAsync();
 
+                JobManager.Stop();
+                JobManager.RemoveAllJobs();
+
+                Utility.ScheduleRegister = new Registry();
                 Utility.ScheduleRegister.Schedule(async () => await UpdateJsons(ctx, "all")).ToRunEvery(1).Days().At(13, 0);
                 Utility.ScheduleRegister.Schedule(async () => await CheckHw(ctx, "")).ToRunEvery(1).Days().At(13, 0);
 
