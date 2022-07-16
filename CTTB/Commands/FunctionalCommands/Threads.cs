@@ -162,93 +162,90 @@ namespace CTTB.Commands
         {
             try
             {
-                if (ctx.Channel.Id == 217126063803727872 || ctx.Channel.Id == 750123394237726847 || ctx.Channel.Id == 935200150710808626 || ctx.Channel.Id == 946835035372257320 || ctx.Channel.Id == 751534710068477953)
+                await ctx.TriggerTypingAsync();
+                string json;
+                using (var fs = File.OpenRead("council.json"))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+                if (member == "reset" && ctx.Member.Roles.Select(x => x.Name == "Admin").Count() > 0)
                 {
-                    await ctx.TriggerTypingAsync();
-                    string json;
-                    using (var fs = File.OpenRead("council.json"))
-                    using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                        json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                    List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-                    if (member == "reset" && ctx.Member.Roles.Select(x => x.Name == "Admin").Count() > 0)
+                    foreach (var councilMember in councilJson)
                     {
-                        foreach (var councilMember in councilJson)
+                        councilMember.AssignedThreadIds = new List<ulong>();
+                    }
+                }
+                else
+                {
+                    string description = string.Empty;
+
+                    int j = 0;
+                    foreach (var role in ctx.Member.Roles)
+                    {
+                        if (role.Name == "Admin")
                         {
-                            councilMember.AssignedThreadIds = new List<ulong>();
+                            j++;
+                            break;
                         }
+                    }
+                    int ix = -1;
+
+                    if (j == 0)
+                    {
+                        ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
                     }
                     else
                     {
-                        string description = string.Empty;
-
-                        int j = 0;
-                        foreach (var role in ctx.Member.Roles)
-                        {
-                            if (role.Name == "Admin")
-                            {
-                                j++;
-                                break;
-                            }
-                        }
-                        int ix = -1;
-
-                        if (j == 0)
+                        if (member == "")
                         {
                             ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
                         }
                         else
                         {
-                            if (member == "")
+                            ix = councilJson.FindIndex(x => Utility.CompareStrings(x.SheetName, member));
+                            if (ix == -1)
                             {
-                                ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
-                            }
-                            else
-                            {
-                                ix = councilJson.FindIndex(x => Utility.CompareStrings(x.SheetName, member));
-                                if (ix == -1)
-                                {
-                                    ix = councilJson.FindIndex(x => Utility.CompareIncompleteStrings(x.SheetName, member) || Utility.CompareStringsLevenshteinDistance(x.SheetName, member));
-                                }
+                                ix = councilJson.FindIndex(x => Utility.CompareIncompleteStrings(x.SheetName, member) || Utility.CompareStringsLevenshteinDistance(x.SheetName, member));
                             }
                         }
-
-                        for (int i = 0; i < councilJson[ix].AssignedThreadIds.Count; i++)
-                        {
-                            string tName = string.Empty;
-                            DiscordChannel wipFeedbackChannel;
-                            ctx.Guild.Channels.TryGetValue(369281592407097345, out wipFeedbackChannel);
-                            List<DiscordChannel> threads = new List<DiscordChannel>((await wipFeedbackChannel.ListPublicArchivedThreadsAsync()).Threads);
-                            foreach (var thread in wipFeedbackChannel.Threads)
-                            {
-                                threads.Add(thread);
-                            }
-                            foreach (var thread in threads)
-                            {
-                                if (thread.Id == councilJson[ix].AssignedThreadIds[i])
-                                {
-                                    tName = thread.Name;
-                                }
-                            }
-                            description += $"*[{tName}](https://discord.com/channels/180306609233330176/{councilJson[ix].AssignedThreadIds[i]})*\n";
-                        }
-
-                        if (councilJson[ix].AssignedThreadIds.Count == 0)
-                        {
-                            description = "*No assigned threads.*";
-                        }
-
-                        var embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Assigned Threads of {councilJson[ix].SheetName}:**__",
-                            Description = description,
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                     }
+
+                    for (int i = 0; i < councilJson[ix].AssignedThreadIds.Count; i++)
+                    {
+                        string tName = string.Empty;
+                        DiscordChannel wipFeedbackChannel;
+                        ctx.Guild.Channels.TryGetValue(369281592407097345, out wipFeedbackChannel);
+                        List<DiscordChannel> threads = new List<DiscordChannel>((await wipFeedbackChannel.ListPublicArchivedThreadsAsync()).Threads);
+                        foreach (var thread in wipFeedbackChannel.Threads)
+                        {
+                            threads.Add(thread);
+                        }
+                        foreach (var thread in threads)
+                        {
+                            if (thread.Id == councilJson[ix].AssignedThreadIds[i])
+                            {
+                                tName = thread.Name;
+                            }
+                        }
+                        description += $"*[{tName}](https://discord.com/channels/180306609233330176/{councilJson[ix].AssignedThreadIds[i]})*\n";
+                    }
+
+                    if (councilJson[ix].AssignedThreadIds.Count == 0)
+                    {
+                        description = "*No assigned threads.*";
+                    }
+
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Assigned Threads of {councilJson[ix].SheetName}:**__",
+                        Description = description,
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -270,9 +267,9 @@ namespace CTTB.Commands
             }
         }
 
-        [Command("threadassign")]
+        [Command("randomassign")]
         [RequireRoles(RoleCheckMode.Any, "Admin")]
-        public async Task AssignCouncilMemberToThread(CommandContext ctx, [RemainingText] string arg = "")
+        public async Task AssignCouncilMembersToThread(CommandContext ctx, [RemainingText] string arg = "")
         {
             if (ctx.Guild.Id == 180306609233330176 && ctx.Channel.IsThread && ctx.Channel.ParentId == 369281592407097345)
             {
@@ -295,7 +292,7 @@ namespace CTTB.Commands
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Success:**__",
-                            Description = "The thread json has been reset.",
+                            Description = "*The thread json has been reset.*",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -499,6 +496,352 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{ex.Message}*" +
                             "\n**c!threadassign**",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                    Console.WriteLine(ex.ToString());
+                }
+            }
+        }
+
+        [Command("assign")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task AssignCouncilMemberToThread(CommandContext ctx, string member = "", [RemainingText] string threadId = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176 && ctx.Channel.IsThread && ctx.Channel.ParentId == 369281592407097345)
+            {
+                try
+                {
+                    await ctx.TriggerTypingAsync();
+
+                    string json = string.Empty;
+
+                    if (member == "")
+                    {
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = "*You are missing arguments.*" +
+                                "\n**c!unassign member thread id**",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+
+                    else
+                    {
+                        using (var fs = File.OpenRead("council.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        using (var fs = File.OpenRead("assigned.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> recentlyAssigned = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        int ix = -1;
+
+                        foreach (var m in councilJson)
+                        {
+                            ix = councilJson.FindIndex(x => Utility.CompareStrings(x.SheetName, member));
+                            if (ix == -1)
+                            {
+                                ix = councilJson.FindIndex(x => Utility.CompareIncompleteStrings(x.SheetName, member) || Utility.CompareStringsLevenshteinDistance(x.SheetName, member));
+                            }
+                        }
+
+                        if (ix == -1)
+                        {
+                            var embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Error:**__",
+                                Description = $"*{member} could not be found on council.*" +
+                                    "\n**c!assign member thread id**",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+
+                        else
+                        {
+                            bool duplicate = false;
+                            foreach (var thread in councilJson[ix].AssignedThreadIds)
+                            {
+                                if (thread == ulong.Parse(threadId))
+                                {
+                                    duplicate = true;
+                                    break;
+                                }
+                            }
+                            bool threadExists = false;
+                            DiscordChannel wipFeedbackChannel;
+                            ctx.Guild.Channels.TryGetValue(369281592407097345, out wipFeedbackChannel);
+                            List<DiscordChannel> threads = new List<DiscordChannel>((await wipFeedbackChannel.ListPublicArchivedThreadsAsync()).Threads);
+                            foreach (var thread in wipFeedbackChannel.Threads)
+                            {
+                                threads.Add(thread);
+                            }
+                            foreach (var assignedThread in councilJson[ix].AssignedThreadIds)
+                            {
+                                foreach (var thread in threads)
+                                {
+                                    if (thread.Id == assignedThread)
+                                    {
+                                        threadExists = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (duplicate)
+                            {
+                                var embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Error:**__",
+                                    Description = $"*Thread has already been assigned to council member.*" +
+                                        "\n**c!assign member thread id**",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                            else if (!threadExists)
+                            {
+                                var embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Error:**__",
+                                    Description = $"*No thread exists with id {threadId}.*" +
+                                        "\n**c!assign member thread id**",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                councilJson[ix].AssignedThreadIds.Add(ulong.Parse(threadId));
+
+                                recentlyAssigned.Add(councilJson[ix]);
+
+                                string assigned = JsonConvert.SerializeObject(recentlyAssigned);
+                                File.WriteAllText("assigned.json", assigned);
+                                string council = JsonConvert.SerializeObject(councilJson);
+                                File.WriteAllText("council.json", council);
+
+                                var embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Success:**__",
+                                    Description = $"*<#{threadId}> has been assigned to {councilJson[ix].SheetName}.*",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{ex.Message}*" +
+                            "\n**c!assign member threadid**",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                    Console.WriteLine(ex.ToString());
+                }
+            }
+        }
+
+        [Command("unassign")]
+        [RequireRoles(RoleCheckMode.Any, "Admin")]
+        public async Task UnassignCouncilMemberToThread(CommandContext ctx, string member = "", [RemainingText] string threadId = "")
+        {
+            if (ctx.Guild.Id == 180306609233330176 && ctx.Channel.IsThread && ctx.Channel.ParentId == 369281592407097345)
+            {
+                try
+                {
+                    await ctx.TriggerTypingAsync();
+
+                    string json = string.Empty;
+
+                    if (member == "")
+                    {
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = "*You are missing arguments.*" +
+                                "\n**c!unassign member thread id**",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+
+                    else
+                    {
+                        using (var fs = File.OpenRead("council.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        using (var fs = File.OpenRead("assigned.json"))
+                        using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                            json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                        List<CouncilMember> recentlyAssigned = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+                        int ix = -1;
+
+                        foreach (var m in councilJson)
+                        {
+                            ix = councilJson.FindIndex(x => Utility.CompareStrings(x.SheetName, member));
+                            if (ix == -1)
+                            {
+                                ix = councilJson.FindIndex(x => Utility.CompareIncompleteStrings(x.SheetName, member) || Utility.CompareStringsLevenshteinDistance(x.SheetName, member));
+                            }
+                        }
+
+                        if (ix == -1)
+                        {
+                            var embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = "__**Error:**__",
+                                Description = $"*{member} could not be found on council.*" +
+                                    "\n**c!unassign member thread id**",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+
+                        else
+                        {
+                            bool threadFound = false;
+                            foreach (var thread in councilJson[ix].AssignedThreadIds)
+                            {
+                                if (thread == ulong.Parse(threadId))
+                                {
+                                    threadFound = true;
+                                    break;
+                                }
+                            }
+                            bool threadExists = false;
+                            DiscordChannel wipFeedbackChannel;
+                            ctx.Guild.Channels.TryGetValue(369281592407097345, out wipFeedbackChannel);
+                            List<DiscordChannel> threads = new List<DiscordChannel>((await wipFeedbackChannel.ListPublicArchivedThreadsAsync()).Threads);
+                            foreach (var thread in wipFeedbackChannel.Threads)
+                            {
+                                threads.Add(thread);
+                            }
+                            foreach (var assignedThread in councilJson[ix].AssignedThreadIds)
+                            {
+                                foreach (var thread in threads)
+                                {
+                                    if (thread.Id == assignedThread)
+                                    {
+                                        threadExists = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!threadExists)
+                            {
+                                var embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Error:**__",
+                                    Description = $"*No thread exists with id {threadId}.*" +
+                                        "\n**c!unassign member thread id**",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                            else if (!threadFound)
+                            {
+                                var embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Error:**__",
+                                    Description = $"*Thread has not been assigned to council member.*" +
+                                        "\n**c!unassign member thread id**",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                recentlyAssigned.Remove(councilJson[ix]);
+
+                                councilJson[ix].AssignedThreadIds.Remove(ulong.Parse(threadId));
+
+                                string assigned = JsonConvert.SerializeObject(recentlyAssigned);
+                                File.WriteAllText("assigned.json", assigned);
+                                string council = JsonConvert.SerializeObject(councilJson);
+                                File.WriteAllText("council.json", council);
+
+                                var embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = "__**Success:**__",
+                                    Description = $"*<#{threadId}> has been unassigned from {councilJson[ix].SheetName}.*",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{ex.Message}*" +
+                            "\n**c!unassign member thread id**",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"

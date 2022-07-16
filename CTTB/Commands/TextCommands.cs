@@ -56,15 +56,17 @@ namespace CTTB.Commands
                             "\nc!addhw \"track\" \"author\" \"version\" \"download link\" \"slot-filename\" \"speed/lap modifiers\" notes" +
                             "\nc!delhw track" +
                             "\nc!createtest" +
-                            "\nc!threadassign" +
                             "\nc!starttimers" +
                             "\nc!missedhw" +
                             "\nc!resetmissedhw member" +
                             "\nc!checkmissedhw" +
                             "\nc!removemissedhw member" +
                             "\nc!addmissedhw member" +
+                            "\nc!randomassign (reset)" +
                             "\nc!assignedthreads member" +
                             "\nc!removeassignedthread thread id/all" +
+                            "\nc!assign member thread id" +
+                            "\nc!unassign member thread id" +
                             "\nc!dmrole role message";
                     }
                 }

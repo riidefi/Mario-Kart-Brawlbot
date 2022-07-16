@@ -429,7 +429,7 @@ namespace CTTB.Commands
                             trackDisplay.Add(response.Values[i][0].ToString());
                         }
                         int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("30/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
-                        if (lastChecked != int.Parse(response.Values[i][1].ToString()) && today == int.Parse(response.Values[i][1].ToString() + 1))
+                        if (lastChecked != int.Parse(response.Values[i][1].ToString()) && today == int.Parse(response.Values[i][1].ToString()) + 1)
                         {
                             for (int j = 12; j < response.Values[0].Count; j++)
                             {

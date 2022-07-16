@@ -8,7 +8,6 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 using Newtonsoft.Json;
-using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -670,7 +669,7 @@ namespace CTTB.Commands
                         {
                             ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
                         }
-                        else
+                        else if (member != "all")
                         {
                             if (member == "")
                             {
@@ -697,7 +696,23 @@ namespace CTTB.Commands
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Error:**__",
                                 Description = $"*Track was not inputted.*" +
-                                       "\n**c!gethw track/all mention/name**",
+                                       "\n**c!gethw track/all name**",
+                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        else if (ix < 0)
+                        {
+                            var embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**Error:**__",
+                                Description = $"*{member} could not be found on council.*" +
+                                   "\n**c!gethw track/all name**",
                                 Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
@@ -751,7 +766,7 @@ namespace CTTB.Commands
                             {
                                 for (int i = 12; i < response.Values[0].Count; i++)
                                 {
-                                    if (Utility.CompareStringAbbreviation(member, response.Values[0][i].ToString()) || Utility.CompareStringsLevenshteinDistance(member, response.Values[0][i].ToString()))
+                                    if (Utility.CompareStringAbbreviation(member, response.Values[0][i].ToString()) || Utility.CompareStrings(member, response.Values[0][i].ToString()))
                                     {
                                         sheetIx = i;
                                     }
@@ -899,7 +914,7 @@ namespace CTTB.Commands
                                     Color = new DiscordColor("#FF0000"),
                                     Title = $"__**Error:**__",
                                     Description = $"*{member} could not be found on council.*" +
-                                       "\n**c!gethw track/all mention/name**",
+                                       "\n**c!gethw track/all name**",
                                     Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
@@ -940,7 +955,7 @@ namespace CTTB.Commands
                                     Color = new DiscordColor("#FF0000"),
                                     Title = $"__**Error:**__",
                                     Description = $"*{track} could not be found.*" +
-                                       "\n**c!gethw track/all mention/name**",
+                                       "\n**c!gethw track/all name**",
                                     Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
@@ -974,7 +989,7 @@ namespace CTTB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{ex.Message}*" +
-                               "\n**c!gethw track/all mention/name**",
+                               "\n**c!gethw track/all name**",
                         Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
