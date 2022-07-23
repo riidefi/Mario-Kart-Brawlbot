@@ -42,7 +42,7 @@ namespace CTTB.Commands
                                 Title = $"__**Error:**__",
                                 Description = $"*Track was not inputted.*" +
                                        "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Url = Utility.GetCouncilUrl(),
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -58,7 +58,7 @@ namespace CTTB.Commands
                                 Title = $"__**Error:**__",
                                 Description = $"*Author was not inputted.*" +
                                        "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Url = Utility.GetCouncilUrl(),
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -74,7 +74,7 @@ namespace CTTB.Commands
                                 Title = $"__**Error:**__",
                                 Description = $"*Version was not inputted.*" +
                                        "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Url = Utility.GetCouncilUrl(),
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -90,7 +90,7 @@ namespace CTTB.Commands
                                 Title = $"__**Error:**__",
                                 Description = $"*Slot was not inputted.*" +
                                        "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Url = Utility.GetCouncilUrl(),
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -227,7 +227,7 @@ namespace CTTB.Commands
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**Success:**__",
                                 Description = $"*{track} has been added as homework.*",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Url = Utility.GetCouncilUrl(),
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -257,7 +257,7 @@ namespace CTTB.Commands
                         Title = $"__**Error:**__",
                         Description = $"*{ex.Message}*" +
                                "\n**c!addhw \"track\" \"author\" \"version\" \"download link\" \"slot (e.g. Luigi Circuit - beginner_course)\" \"speed/lap modifiers\" notes**",
-                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                        Url = Utility.GetCouncilUrl(),
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -289,7 +289,7 @@ namespace CTTB.Commands
                                 Title = $"__**Error:**__",
                                 Description = $"*Track was not inputted.*" +
                                        "\n**c!delhw track**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Url = Utility.GetCouncilUrl(),
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -354,7 +354,7 @@ namespace CTTB.Commands
                                     Title = "__**Error:**__",
                                     Description = $"*{track} could not be found.*" +
                                            "\n**c!delhw track**",
-                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Url = Utility.GetCouncilUrl(),
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
                                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -387,7 +387,7 @@ namespace CTTB.Commands
                                     Color = new DiscordColor("#FF0000"),
                                     Title = "__**Success:**__",
                                     Description = $"*{trackDisplay} has been deleted from homework.*",
-                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Url = Utility.GetCouncilUrl(),
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
                                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -406,7 +406,7 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{ex.Message}*" +
                                "\n**c!delhw track**",
-                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                        Url = Utility.GetCouncilUrl(),
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -442,7 +442,7 @@ namespace CTTB.Commands
                                 Title = $"__**Error:**__",
                                 Description = $"*Track was not inputted.*" +
                                        "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Url = Utility.GetCouncilUrl(),
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -458,7 +458,7 @@ namespace CTTB.Commands
                                 Title = $"__**Error:**__",
                                 Description = $"*Author was not inputted.*" +
                                        "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Url = Utility.GetCouncilUrl(),
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -474,7 +474,7 @@ namespace CTTB.Commands
                                 Title = $"__**Error:**__",
                                 Description = $"*{vote} is not a valid vote.*" +
                                           "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Url = Utility.GetCouncilUrl(),
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -538,7 +538,7 @@ namespace CTTB.Commands
                                     Title = "__**Error:**__",
                                     Description = $"*<@{ctx.Member.Id}> is not able to submit feedback.*" +
                                        "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Url = Utility.GetCouncilUrl(),
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
                                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -590,7 +590,7 @@ namespace CTTB.Commands
                                         Title = "__**Error:**__",
                                         Description = $"*{track} could not be found.*" +
                                            "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                        Url = Utility.GetCouncilUrl(),
                                         Footer = new DiscordEmbedBuilder.EmbedFooter
                                         {
                                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -605,7 +605,7 @@ namespace CTTB.Commands
                                         Color = new DiscordColor("#FF0000"),
                                         Title = "__**Success:**__",
                                         Description = $"*Homework for {track} has been submitted successfully.*",
-                                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                        Url = Utility.GetCouncilUrl(),
                                         Footer = new DiscordEmbedBuilder.EmbedFooter
                                         {
                                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -625,7 +625,7 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{ex.Message}*" +
                                "\n**c!submithw yes/fixes/neutral/no \"track\" feedback**",
-                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                        Url = Utility.GetCouncilUrl(),
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -703,7 +703,7 @@ namespace CTTB.Commands
                                 Title = $"__**Error:**__",
                                 Description = $"*Track was not inputted.*" +
                                        "\n**c!gethw track/all name**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                Url = Utility.GetCouncilUrl(),
                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                 {
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -721,7 +721,7 @@ namespace CTTB.Commands
                                     Title = $"__**Error:**__",
                                     Description = $"*<@{ctx.Message.Author.Id}> could not be found on council.*" +
                                        "\n**c!gethw track/all name**",
-                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Url = Utility.GetCouncilUrl(),
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
                                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -737,7 +737,7 @@ namespace CTTB.Commands
                                     Title = $"__**Error:**__",
                                     Description = $"*{member} could not be found on council.*" +
                                        "\n**c!gethw track/all name**",
-                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Url = Utility.GetCouncilUrl(),
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
                                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -843,7 +843,7 @@ namespace CTTB.Commands
                                                 Color = new DiscordColor("#FF0000"),
                                                 Title = $"__**{response.Values[sheetIx][0]}**__",
                                                 Description = description,
-                                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                                Url = Utility.GetCouncilUrl(),
                                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                                 {
                                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -920,7 +920,7 @@ namespace CTTB.Commands
                                                 Color = new DiscordColor("#FF0000"),
                                                 Title = $"__**{trackDisplay}**__",
                                                 Description = description,
-                                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                                Url = Utility.GetCouncilUrl(),
                                                 Footer = new DiscordEmbedBuilder.EmbedFooter
                                                 {
                                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -940,7 +940,7 @@ namespace CTTB.Commands
                                     Title = $"__**Error:**__",
                                     Description = $"*{member} could not be found on council.*" +
                                        "\n**c!gethw track/all name**",
-                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Url = Utility.GetCouncilUrl(),
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
                                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -981,7 +981,7 @@ namespace CTTB.Commands
                                     Title = $"__**Error:**__",
                                     Description = $"*{track} could not be found.*" +
                                        "\n**c!gethw track/all name**",
-                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Url = Utility.GetCouncilUrl(),
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
                                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -996,7 +996,7 @@ namespace CTTB.Commands
                                     Color = new DiscordColor("#FF0000"),
                                     Title = $"__**{trackDisplay}**__",
                                     Description = description,
-                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Url = Utility.GetCouncilUrl(),
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
                                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -1015,7 +1015,7 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{ex.Message}*" +
                                "\n**c!gethw track/all name**",
-                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                        Url = Utility.GetCouncilUrl(),
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -1103,7 +1103,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Council Homework:**__",
                             Description = description,
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                            Url = Utility.GetCouncilUrl(),
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -1120,7 +1120,7 @@ namespace CTTB.Commands
                         Title = "__**Error:**__",
                         Description = $"*{ex.Message}*" +
                                "\n**c!hw**",
-                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                        Url = Utility.GetCouncilUrl(),
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"

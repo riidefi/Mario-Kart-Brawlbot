@@ -48,7 +48,7 @@ namespace CTTB
                 AutoReconnect = true,
                 MinimumLogLevel = LogLevel.Debug
             };
-            
+
             Client = new DiscordClient(config);
 
             Client.Ready += OnClientReady;

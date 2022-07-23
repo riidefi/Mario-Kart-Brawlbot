@@ -1,11 +1,16 @@
 ﻿using DSharpPlus.CommandsNext;
 using System;
 using FluentScheduler;
+using System.IO;
+using Newtonsoft.Json;
+using System.Text;
 
 namespace CTTB.Commands
 {
     public class Util : BaseCommandModule
     {
+        public string councilUrl;
+
         public char[] strAlpha = {
             (char)65,
             (char)66,
@@ -135,6 +140,13 @@ namespace CTTB.Commands
             }
 
             return false;
+        }
+
+        public string GetCouncilUrl()
+        {
+            using (var fs = File.OpenRead("config.json"))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                return JsonConvert.DeserializeObject<ConfigJson>(sr.ReadToEnd()).CouncilUrl;
         }
     }
 }
