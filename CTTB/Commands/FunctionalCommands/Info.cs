@@ -51,7 +51,7 @@ namespace CTTB.Commands
 
                 for (int i = 0; i < response.Values.Count; i++)
                 {
-                    if (Utility.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Utility.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                    if (Utility.CompareStrings(response.Values[i][0].ToString(), track) || Utility.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Utility.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
                     {
                         earlyTrackDisplay.Add(response.Values[i][0].ToString());
                         e++;
@@ -68,7 +68,7 @@ namespace CTTB.Commands
 
                     for (int i = 0; i < response.Values.Count; i++)
                     {
-                        if (Utility.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Utility.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                        if (Utility.CompareStrings(response.Values[i][0].ToString(), track) || Utility.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Utility.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
                         {
                             midTrackDisplay.Add(response.Values[i][0].ToString());
                             m++;
@@ -387,7 +387,7 @@ namespace CTTB.Commands
                         Title = $"__**Error:**__",
                         Description = $"*Track was not inputted.*" +
                                "\n**c!summary track**",
-                        Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=798417105",
+                        Url = "https://wiki.tockdom.com/wiki/CTGP_Revolution/Track_Wishlist",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -431,7 +431,8 @@ namespace CTTB.Commands
                     {
                         if (j < 1)
                         {
-                            if ((Utility.CompareIncompleteStrings(response.Values[i][2].ToString(), track) ||
+                            if ((Utility.CompareStrings(response.Values[i][2].ToString(), track) ||
+                                Utility.CompareIncompleteStrings(response.Values[i][2].ToString(), track) ||
                                 Utility.CompareStringAbbreviation(track, response.Values[i][2].ToString()) ||
                                 Utility.CompareStringsLevenshteinDistance(response.Values[i][2].ToString(), track)) &&
                                 !Utility.CompareIncompleteStrings(response.Values[i][0].ToString(), "ignore"))
@@ -483,7 +484,7 @@ namespace CTTB.Commands
                             Title = "__**Error:**__",
                             Description = $"*{track} could not be found.*" +
                                    "\n**c!summary track**",
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=798417105",
+                            Url = "https://wiki.tockdom.com/wiki/CTGP_Revolution/Track_Wishlist",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -498,7 +499,7 @@ namespace CTTB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Summary for {trackDisplay} (First result):**__",
                             Description = description,
-                            Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=798417105",
+                            Url = "https://wiki.tockdom.com/wiki/CTGP_Revolution/Track_Wishlist",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -516,7 +517,7 @@ namespace CTTB.Commands
                     Title = $"__**Error:**__",
                     Description = $"*{ex.Message}*" +
                            "\n**c!summary track**",
-                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=798417105",
+                    Url = "https://wiki.tockdom.com/wiki/CTGP_Revolution/Track_Wishlist",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -570,13 +571,13 @@ namespace CTTB.Commands
                 {
                     if (j < 1)
                     {
-                        if (Utility.CompareIncompleteStrings(trackList[i].Name, track) || Utility.CompareStringAbbreviation(track, trackList[i].Name) || Utility.CompareStringsLevenshteinDistance(track, trackList[i].Name))
+                        if (Utility.CompareStrings(trackList[i].Name, track) || Utility.CompareIncompleteStrings(trackList[i].Name, track) || Utility.CompareStringAbbreviation(track, trackList[i].Name) || Utility.CompareStringsLevenshteinDistance(track, trackList[i].Name))
                         {
                             for (int h = 0; i < response.Values.Count; h++)
                             {
                                 if (h != 0)
                                 {
-                                    if (Utility.CompareIncompleteStrings(response.Values[h][0].ToString(), track) || Utility.CompareStringAbbreviation(track, response.Values[h][0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, response.Values[h][0].ToString()))
+                                    if (Utility.CompareStrings(response.Values[h][0].ToString(), track) || Utility.CompareIncompleteStrings(response.Values[h][0].ToString(), track) || Utility.CompareStringAbbreviation(track, response.Values[h][0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, response.Values[h][0].ToString()))
                                     {
                                         description = $"**Easy:**\n*[{response.Values[h][1]}](https://chadsoft.co.uk/time-trials/rkgd/{response.Values[h + 251][1].ToString().Substring(0, 2)}/{response.Values[h + 251][1].ToString().Substring(2, 2)}/{response.Values[h + 251][1].ToString().Substring(4)}.html)*\n**Expert:**\n*[{response.Values[h][2]}](https://chadsoft.co.uk/time-trials/rkgd/{response.Values[h + 251][2].ToString().Substring(0, 2)}/{response.Values[h + 251][2].ToString().Substring(2, 2)}/{response.Values[h + 251][2].ToString().Substring(4)}.html)*";
                                         trackDisplay = trackList[i];
@@ -687,11 +688,11 @@ namespace CTTB.Commands
                 {
                     if (j < 1)
                     {
-                        if (Utility.CompareIncompleteStrings(trackList[i].Name, track) || Utility.CompareStringAbbreviation(track, trackList[i].Name) || Utility.CompareStringsLevenshteinDistance(track, trackList[i].Name))
+                        if (Utility.CompareStrings(trackList[i].Name, track) || Utility.CompareIncompleteStrings(trackList[i].Name, track) || Utility.CompareStringAbbreviation(track, trackList[i].Name) || Utility.CompareStringsLevenshteinDistance(track, trackList[i].Name))
                         {
                             foreach (var t in response.Values)
                             {
-                                if (Utility.CompareIncompleteStrings(t[0].ToString(), track) || Utility.CompareStringAbbreviation(track, t[0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, t[0].ToString()))
+                                if (Utility.CompareStrings(t[0].ToString(), track) || Utility.CompareIncompleteStrings(t[0].ToString(), track) || Utility.CompareStringAbbreviation(track, t[0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, t[0].ToString()))
                                 {
                                     description = $"**Author:**\n*{t[1]}*\n**Version:**\n*{t[2]}*\n**Track/Music Slots:**\n*{t[3]}*\n**Speed/Lap Count:**\n*{t[4]}*";
                                     trackDisplay = trackList[i];
@@ -814,7 +815,7 @@ namespace CTTB.Commands
                             j++;
                         }
                     }
-                    else if (Utility.CompareIncompleteStrings(trackList[i].Name, track) || Utility.CompareStringAbbreviation(track, trackList[i].Name) || Utility.CompareStringsLevenshteinDistance(track, trackList[i].Name))
+                    else if (Utility.CompareStrings(trackList[i].Name, track) || Utility.CompareIncompleteStrings(trackList[i].Name, track) || Utility.CompareStringAbbreviation(track, trackList[i].Name) || Utility.CompareStringsLevenshteinDistance(track, trackList[i].Name))
                     {
                         trackDisplay.Add(trackList[i]);
                         j++;
@@ -831,7 +832,7 @@ namespace CTTB.Commands
                             j++;
                         }
                     }
-                    else if (Utility.CompareIncompleteStrings(trackList200[i].Name, track) || Utility.CompareStringAbbreviation(track, trackList200[i].Name) || Utility.CompareStringsLevenshteinDistance(track, trackList200[i].Name))
+                    else if (Utility.CompareStrings(trackList200[i].Name, track) || Utility.CompareIncompleteStrings(trackList200[i].Name, track) || Utility.CompareStringAbbreviation(track, trackList200[i].Name) || Utility.CompareStringsLevenshteinDistance(track, trackList200[i].Name))
                     {
                         trackDisplay200.Add(trackList200[i]);
                         j++;
@@ -1191,7 +1192,7 @@ namespace CTTB.Commands
                     description1 = $"__**Nintendo Tracks**__:\n";
                     for (int i = 0; i < trackListRts.Count; i++)
                     {
-                        if (Utility.CompareIncompleteStrings(trackListRts[i].Name, arg) || Utility.CompareStringAbbreviation(arg, trackListRts[i].Name) || Utility.CompareStringsLevenshteinDistance(arg, trackListRts[i].Name))
+                        if (Utility.CompareStrings(trackListRts[i].Name, arg) || Utility.CompareIncompleteStrings(trackListRts[i].Name, arg) || Utility.CompareStringAbbreviation(arg, trackListRts[i].Name) || Utility.CompareStringsLevenshteinDistance(arg, trackListRts[i].Name))
                         {
                             description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].WiimmfiScore})*\n";
                         }
@@ -1208,7 +1209,7 @@ namespace CTTB.Commands
                     }
                     for (int i = 0; i < trackListCts.Count; i++)
                     {
-                        if (Utility.CompareIncompleteStrings(trackListCts[i].Name, arg) || Utility.CompareStringAbbreviation(arg, trackListCts[i].Name) || Utility.CompareStringsLevenshteinDistance(arg, trackListCts[i].Name))
+                        if (Utility.CompareStrings(trackListCts[i].Name, arg) || Utility.CompareIncompleteStrings(trackListCts[i].Name, arg) || Utility.CompareStringAbbreviation(arg, trackListCts[i].Name) || Utility.CompareStringsLevenshteinDistance(arg, trackListCts[i].Name))
                         {
                             description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].WiimmfiScore})*\n";
                             c++;
@@ -1632,7 +1633,7 @@ namespace CTTB.Commands
                     description1 = $"__**Nintendo Tracks**__:\n";
                     for (int i = 0; i < trackListRts.Count; i++)
                     {
-                        if (Utility.CompareIncompleteStrings(trackListRts[i].Name, arg) || Utility.CompareStringAbbreviation(arg, trackListRts[i].Name) || Utility.CompareStringsLevenshteinDistance(arg, trackListRts[i].Name))
+                        if (Utility.CompareStrings(trackListRts[i].Name, arg) || Utility.CompareIncompleteStrings(trackListRts[i].Name, arg) || Utility.CompareStringAbbreviation(arg, trackListRts[i].Name) || Utility.CompareStringsLevenshteinDistance(arg, trackListRts[i].Name))
                         {
                             description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({trackListRts[i].TimeTrialScore})*\n";
                         }
@@ -1649,7 +1650,7 @@ namespace CTTB.Commands
                     }
                     for (int i = 0; i < trackListCts.Count; i++)
                     {
-                        if (Utility.CompareIncompleteStrings(trackListCts[i].Name, arg) || Utility.CompareStringAbbreviation(arg, trackListCts[i].Name) || Utility.CompareStringsLevenshteinDistance(arg, trackListCts[i].Name))
+                        if (Utility.CompareStrings(trackListCts[i].Name, arg) || Utility.CompareIncompleteStrings(trackListCts[i].Name, arg) || Utility.CompareStringAbbreviation(arg, trackListCts[i].Name) || Utility.CompareStringsLevenshteinDistance(arg, trackListCts[i].Name))
                         {
                             description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({trackListCts[i].TimeTrialScore})*\n";
                             c++;

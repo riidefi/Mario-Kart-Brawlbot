@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentScheduler;
 using System.Globalization;
+using System.Linq;
 
 namespace CTTB.Commands
 {
@@ -159,49 +160,65 @@ namespace CTTB.Commands
                 string oldRtJson = File.ReadAllText("rts.json");
                 List<Track> oldRtTrackList = JsonConvert.DeserializeObject<List<Track>>(oldRtJson);
 
-                for (int i = 0; i < oldRtTrackList.Count; i++)
+                for (int i = 0; i < trackListRt.Count; i++)
                 {
-                    trackListRt[i].WiimmfiName = oldRtTrackList[i].WiimmfiName;
-                    trackListRt[i].WiimmfiScore = oldRtTrackList[i].WiimmfiScore;
-                    trackListRt[i].BKTLink = oldRtTrackList[i].BKTLink;
-                    trackListRt[i].BKTHolder = oldRtTrackList[i].BKTHolder;
-                    trackListRt[i].CategoryName = oldRtTrackList[i].CategoryName;
+                    int ix = oldRtTrackList.FindIndex(t => t.Name == trackListRt[i].Name && t.Category == trackListRt[i].Category);
+                    if (ix != -1)
+                    {
+                        trackListRt[i].WiimmfiName = oldRtTrackList[ix].WiimmfiName;
+                        trackListRt[i].WiimmfiScore = oldRtTrackList[ix].WiimmfiScore;
+                        trackListRt[i].BKTLink = oldRtTrackList[ix].BKTLink;
+                        trackListRt[i].BKTHolder = oldRtTrackList[ix].BKTHolder;
+                        trackListRt[i].CategoryName = oldRtTrackList[ix].CategoryName;
+                    }
                 }
 
                 oldRtJson = File.ReadAllText("rts200.json");
                 oldRtTrackList = JsonConvert.DeserializeObject<List<Track>>(oldRtJson);
-
-                for (int i = 0; i < oldRtTrackList.Count; i++)
+                
+                for (int i = 0; i < trackListRt200.Count; i++)
                 {
-                    trackListRt200[i].WiimmfiName = oldRtTrackList[i].WiimmfiName;
-                    trackListRt200[i].WiimmfiScore = oldRtTrackList[i].WiimmfiScore;
-                    trackListRt200[i].BKTLink = oldRtTrackList[i].BKTLink;
-                    trackListRt200[i].BKTHolder = oldRtTrackList[i].BKTHolder;
-                    trackListRt200[i].CategoryName = oldRtTrackList[i].CategoryName;
+                    int ix = oldRtTrackList.FindIndex(t => t.Name == trackListRt200[i].Name && t.Category == trackListRt200[i].Category);
+                    if (ix != -1)
+                    {
+                        trackListRt200[i].WiimmfiName = oldRtTrackList[ix].WiimmfiName;
+                        trackListRt200[i].WiimmfiScore = oldRtTrackList[ix].WiimmfiScore;
+                        trackListRt200[i].BKTLink = oldRtTrackList[ix].BKTLink;
+                        trackListRt200[i].BKTHolder = oldRtTrackList[ix].BKTHolder;
+                        trackListRt200[i].CategoryName = oldRtTrackList[ix].CategoryName;
+                    }
                 }
 
                 string oldJson = File.ReadAllText("cts.json");
                 List<Track> oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
 
-                for (int i = 0; i < oldTrackList.Count; i++)
+                for (int i = 0; i < trackList.Count; i++)
                 {
-                    trackList[i].WiimmfiName = oldTrackList[i].WiimmfiName;
-                    trackList[i].WiimmfiScore = oldTrackList[i].WiimmfiScore;
-                    trackList[i].BKTLink = oldTrackList[i].BKTLink;
-                    trackList[i].BKTHolder = oldTrackList[i].BKTHolder;
-                    trackList[i].CategoryName = oldTrackList[i].CategoryName;
+                    int ix = oldTrackList.FindIndex(t => t.Name == trackList[i].Name && t.Category == trackList[i].Category);
+                    if (ix != -1)
+                    {
+                        trackList[i].WiimmfiName = oldTrackList[ix].WiimmfiName;
+                        trackList[i].WiimmfiScore = oldTrackList[ix].WiimmfiScore;
+                        trackList[i].BKTLink = oldTrackList[ix].BKTLink;
+                        trackList[i].BKTHolder = oldTrackList[ix].BKTHolder;
+                        trackList[i].CategoryName = oldTrackList[ix].CategoryName;
+                    }
                 }
 
                 oldJson = File.ReadAllText("cts200.json");
                 oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
 
-                for (int i = 0; i < oldTrackList.Count; i++)
+                for (int i = 0; i < trackList200.Count; i++)
                 {
-                    trackList200[i].WiimmfiName = oldTrackList[i].WiimmfiName;
-                    trackList200[i].WiimmfiScore = oldTrackList[i].WiimmfiScore;
-                    trackList200[i].BKTLink = oldTrackList[i].BKTLink;
-                    trackList200[i].BKTHolder = oldTrackList[i].BKTHolder;
-                    trackList200[i].CategoryName = oldTrackList[i].CategoryName;
+                    int ix = oldTrackList.FindIndex(t => t.Name == trackList200[i].Name && t.Category == trackList200[i].Category);
+                    if (ix != -1)
+                    {
+                        trackList200[i].WiimmfiName = oldTrackList[ix].WiimmfiName;
+                        trackList200[i].WiimmfiScore = oldTrackList[ix].WiimmfiScore;
+                        trackList200[i].BKTLink = oldTrackList[ix].BKTLink;
+                        trackList200[i].BKTHolder = oldTrackList[ix].BKTHolder;
+                        trackList200[i].CategoryName = oldTrackList[ix].CategoryName;
+                    }
                 }
 
                 try
@@ -278,9 +295,6 @@ namespace CTTB.Commands
                 File.WriteAllText("rts200.json", rt200Json);
                 File.WriteAllText("cts200.json", ct200Json);
 
-                var today = DateTime.Now;
-                File.WriteAllText("lastUpdated.txt", today.ToString());
-
                 var processInfo = new ProcessStartInfo();
                 processInfo.FileName = @"sudo";
                 processInfo.Arguments = $"cp rts.json /var/www/brawlbox/";
@@ -332,6 +346,9 @@ namespace CTTB.Commands
                 process.StartInfo = processInfo;
                 process.Start();
                 process.WaitForExit();
+
+                var today = DateTime.Now;
+                File.WriteAllText("lastUpdated.txt", today.ToString());
 
                 DiscordActivity activity = new DiscordActivity();
                 activity.Name = $"Last Updated: {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}" +
@@ -421,6 +438,12 @@ namespace CTTB.Commands
                     using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                         json = await sr.ReadToEndAsync().ConfigureAwait(false);
                     List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+                    var hwCompleted = new bool[councilJson.Count];
+
+                    for (int i = 0; i < hwCompleted.Length; i++)
+                    {
+                        hwCompleted[i] = true;
+                    }
 
                     for (int i = 1; i < response.Values.Count; i++)
                     {
@@ -428,54 +451,12 @@ namespace CTTB.Commands
                         {
                             trackDisplay.Add(response.Values[i][0].ToString());
                         }
-                        int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("30/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
+                        int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
                         if (lastChecked != int.Parse(response.Values[i][1].ToString()) && today == int.Parse(response.Values[i][1].ToString()) + 1)
                         {
                             for (int j = 12; j < response.Values[0].Count; j++)
                             {
-                                bool check = false;
-                                if ((response.Values[i][j].ToString() == "" ||
-                                        response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
-                                        response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
-                                        response.Values[i][j].ToString().ToLowerInvariant() == "neutral" ||
-                                        response.Values[i][j].ToString().ToLowerInvariant() == "fixes" ||
-                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("yes") &&
-                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("no") &&
-                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("neutral") &&
-                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes")) &&
-                                        response.Values[i][j].ToString() != "This member is the author thus cannot vote")
-                                {
-                                    check = true;
-                                }
                                 int ix = councilJson.FindIndex(x => x.SheetName == response.Values[0][j].ToString());
-                                if (check)
-                                {
-                                    councilJson[ix].TimesMissedHw++;
-                                    councilJson[ix].HwInARow = 0;
-                                    if (councilJson[ix].TimesMissedHw > 0 && councilJson[ix].TimesMissedHw % 3 == 0)
-                                    {
-                                        string message = $"Hello {councilJson[ix].SheetName}. Just to let you know, you appear to have not completed council homework in a while, have been inconsistent with your homework, or are not completing it sufficiently enough. Just to remind you, if you miss homework too many times, admins might have to remove you from council. If you have an issue which stops you from doing homework, please let an admin know.";
-
-                                        var members = ctx.Guild.GetAllMembersAsync();
-                                        foreach (var member in members.Result)
-                                        {
-                                            if (member.Id == councilJson[ix].DiscordId)
-                                            {
-                                                try
-                                                {
-                                                    Console.WriteLine($"DM'd Member: {councilJson[ix].SheetName}");
-                                                    await member.SendMessageAsync(message).ConfigureAwait(false);
-                                                }
-                                                catch (Exception ex)
-                                                {
-                                                    Console.WriteLine(ex.Message);
-                                                    Console.WriteLine("DMs are likely closed.");
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                bool completed = true;
                                 if ((response.Values[i][j].ToString() == "" ||
                                         response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
                                         response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
@@ -487,19 +468,50 @@ namespace CTTB.Commands
                                         !response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes")) &&
                                         response.Values[i][j].ToString() != "This member is the author thus cannot vote")
                                 {
-                                    completed = false;
+                                    hwCompleted[ix] = false;
                                 }
-                                if (completed)
+                            }
+                        }
+                    }
+                    for (int i = 0; i < hwCompleted.Length; i++)
+                    {
+                        if (hwCompleted[i])
+                        {
+                            councilJson[i].HwInARow++;
+                            if (councilJson[i].HwInARow > 4)
+                            {
+                                councilJson[i].TimesMissedHw = 0;
+                            }
+                        }
+                        else
+                        {
+                            councilJson[i].TimesMissedHw++;
+                            councilJson[i].HwInARow = 0;
+                            if (councilJson[i].TimesMissedHw > 0 && councilJson[i].TimesMissedHw % 3 == 0)
+                            {
+                                string message = $"Hello {councilJson[i].SheetName}. Just to let you know, you appear to have not completed council homework in a while, have been inconsistent with your homework, or are not completing it sufficiently enough. Just to remind you, if you miss homework too many times, admins might have to remove you from council. If you have an issue which stops you from doing homework, please let an admin know.";
+
+                                var members = ctx.Guild.GetAllMembersAsync();
+                                foreach (var member in members.Result)
                                 {
-                                    councilJson[ix].HwInARow++;
-                                    if (councilJson[ix].HwInARow > 4)
+                                    if (member.Id == councilJson[i].DiscordId)
                                     {
-                                        councilJson[ix].TimesMissedHw = 0;
+                                        try
+                                        {
+                                            Console.WriteLine($"DM'd Member: {councilJson[i].SheetName}");
+                                            await member.SendMessageAsync(message).ConfigureAwait(false);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine(ex.Message);
+                                            Console.WriteLine("DMs are likely closed.");
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+
                     string council = JsonConvert.SerializeObject(councilJson);
                     File.WriteAllText("council.json", council);
 
@@ -517,7 +529,7 @@ namespace CTTB.Commands
                     if (trackDisplay.Count > 0)
                     {
                         listOfTracks = trackDisplay[0];
-                        for (int i = 1; i < trackDisplay.Count - 1; i++)
+                        for (int i = 1; i < trackDisplay.Count; i++)
                         {
                             listOfTracks += $", {trackDisplay[i]}";
                         }
@@ -532,6 +544,14 @@ namespace CTTB.Commands
 
                         await channel.SendMessageAsync($"<@&608386209655554058> {listOfTracks} due for today.");
                     }
+
+                    var now = DateTime.Now;
+                    File.WriteAllText("lastUpdated.txt", now.ToString());
+
+                    DiscordActivity activity = new DiscordActivity();
+                    activity.Name = $"Last Updated: {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}" +
+                        $" | c!help";
+                    await ctx.Client.UpdateStatusAsync(activity);
                 }
             }
             catch (Exception ex)

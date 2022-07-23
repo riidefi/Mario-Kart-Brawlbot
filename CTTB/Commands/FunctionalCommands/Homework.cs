@@ -674,7 +674,10 @@ namespace CTTB.Commands
                             if (member == "")
                             {
                                 ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
-                                member = councilJson[ix].SheetName;
+                                if (ix != -1)
+                                {
+                                    member = councilJson[ix].SheetName;
+                                }
                             }
                             else
                             {
@@ -683,7 +686,10 @@ namespace CTTB.Commands
                                 {
                                     ix = councilJson.FindIndex(x => Utility.CompareIncompleteStrings(x.SheetName, member) || Utility.CompareStringsLevenshteinDistance(x.SheetName, member));
                                 }
-                                member = councilJson[ix].SheetName;
+                                if (ix != -1)
+                                {
+                                    member = councilJson[ix].SheetName;
+                                }
                             }
                         }
 
@@ -707,19 +713,38 @@ namespace CTTB.Commands
                         }
                         else if (ix < 0)
                         {
-                            var embed = new DiscordEmbedBuilder
+                            if (member == "")
                             {
-                                Color = new DiscordColor("#FF0000"),
-                                Title = $"__**Error:**__",
-                                Description = $"*{member} could not be found on council.*" +
-                                   "\n**c!gethw track/all name**",
-                                Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
-                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                var embed = new DiscordEmbedBuilder
                                 {
-                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                                }
-                            };
-                            await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = $"__**Error:**__",
+                                    Description = $"*<@{ctx.Message.Author.Id}> could not be found on council.*" +
+                                       "\n**c!gethw track/all name**",
+                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                var embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = $"__**Error:**__",
+                                    Description = $"*{member} could not be found on council.*" +
+                                       "\n**c!gethw track/all name**",
+                                    Url = "https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+                                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
                         }
                         else
                         {
