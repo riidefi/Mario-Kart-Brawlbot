@@ -200,27 +200,30 @@ namespace CTTB.Commands
                                 dl = $"=HYPERLINK(\"{download}\", \"Unregistered\")";
                             }
 
-                            IList<object> obj = new List<object>();
-                            obj.Add(track);
-                            obj.Add($"{dueMonth} {due.Day}, {due.Year}");
-                            obj.Add(author);
-                            obj.Add($"'{version}");
-                            obj.Add(dl);
-                            obj.Add(slot);
-                            obj.Add(lapSpeed);
-                            obj.Add(notes);
-                            obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"yes*\")");
-                            obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"fixes*\")");
-                            obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"neutral*\")");
-                            obj.Add($"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"no*\")");
-                            IList<IList<object>> values = new List<IList<object>>();
-                            values.Add(obj);
+                            IList<object> obj = new List<object>
+                            {
+                                track,
+                                $"{dueMonth} {due.Day}, {due.Year}",
+                                author,
+                                "'" + version,
+                                dl,
+                                slot,
+                                lapSpeed,
+                                notes,
+                                $"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"yes*\")",
+                                $"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"fixes*\")",
+                                $"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"neutral*\")",
+                                $"=COUNTIF($M{countResponse.Values.Count + 1}:{countResponse.Values.Count + 1}, \"no*\")"
+                            };
+                            IList<IList<object>> values = new List<IList<object>> { obj };
 
                             var appendRequest = service.Spreadsheets.Values.Append(new ValueRange() { Values = values }, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
                             appendRequest.InsertDataOption = SpreadsheetsResource.ValuesResource.AppendRequest.InsertDataOptionEnum.INSERTROWS;
                             appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
                             appendRequest.ResponseValueRenderOption = SpreadsheetsResource.ValuesResource.AppendRequest.ResponseValueRenderOptionEnum.FORMULA;
                             var appendResponse = await appendRequest.ExecuteAsync();
+
+                            notes = notes != "" ? $"*{notes}*" : notes;
 
                             var embed = new DiscordEmbedBuilder
                             {
@@ -245,7 +248,7 @@ namespace CTTB.Commands
                                 }
                             }
 
-                            await channel.SendMessageAsync($"<@&608386209655554058> {track} has been added as homework. It is due for {dueMonth} {due.Day}, {due.Year}.");
+                            await channel.SendMessageAsync($"<@&608386209655554058> {track} has been added as homework. It is due for {dueMonth} {due.Day}, {due.Year}.\n{notes}");
                         }
                     }
                 }
@@ -668,6 +671,10 @@ namespace CTTB.Commands
                         if (j == 0)
                         {
                             ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
+                            if (ix != -1)
+                            {
+                                member = councilJson[ix].SheetName;
+                            }
                         }
                         else if (member != "all")
                         {
@@ -691,6 +698,10 @@ namespace CTTB.Commands
                                     member = councilJson[ix].SheetName;
                                 }
                             }
+                        }
+                        else
+                        {
+                            ix = 0;
                         }
 
                         string description = string.Empty;
@@ -1395,8 +1406,8 @@ namespace CTTB.Commands
         }
 
         [Command("missedhw")]
-        [RequireRoles(RoleCheckMode.Any, "Admin")]
-        public async Task DisplayMissedHw(CommandContext ctx, [RemainingText] string placeholder)
+        [RequireRoles(RoleCheckMode.Any, "Track Council", "Admin")]
+        public async Task DisplayMissedHw(CommandContext ctx, [RemainingText] string member = "")
         {
             try
             {
@@ -1410,9 +1421,46 @@ namespace CTTB.Commands
                     List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
 
                     string description = string.Empty;
-                    foreach (var member in councilJson)
+
+                    int ix = -1;
+
+                    foreach (var role in ctx.Member.Roles)
                     {
-                        description += $"*{member.SheetName}: {member.TimesMissedHw}*\n";
+                        if (role.Name == "Admin")
+                        {
+                            if (member == "")
+                            {
+                                foreach (var m in councilJson)
+                                {
+                                    description += $"*{m.SheetName}: {m.TimesMissedHw}*\n";
+                                }
+                            }
+                            else
+                            {
+                                ix = councilJson.FindIndex(x => Utility.CompareStrings(x.SheetName, member));
+                                if (ix == -1)
+                                {
+                                    ix = councilJson.FindIndex(x => Utility.CompareIncompleteStrings(x.SheetName, member) || Utility.CompareStringsLevenshteinDistance(x.SheetName, member));
+                                }
+                                if (ix != -1)
+                                {
+                                    member = councilJson[ix].SheetName;
+                                }
+                                if (ix >= 0)
+                                {
+                                    description += $"*{councilJson[ix].SheetName}: {councilJson[ix].TimesMissedHw}*";
+                                }
+                            }
+                        }
+                    }
+
+                    if (description == string.Empty)
+                    {
+                        ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
+                        if (ix >= 0)
+                        {
+                            description += $"*{councilJson[ix].SheetName}: {councilJson[ix].TimesMissedHw}*";
+                        }
                     }
 
                     var embed = new DiscordEmbedBuilder

@@ -346,3 +346,4 @@ ASALocalRun/
 *.szs
 *.bin
 [Rr]esources/
+CTTB/Commands/FunctionalCommands/Testing.cs

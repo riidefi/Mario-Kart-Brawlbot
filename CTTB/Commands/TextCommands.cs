@@ -35,7 +35,8 @@ namespace CTTB.Commands
                         "\nc!hw" +
                         "\nc!gethw track/all" +
                         "\nc!submithw yes/fixes/neutral/no \"track\" feedback" +
-                        "\nc!assignedthreads";
+                        "\nc!assignedthreads" +
+                        "\nc!missedhw";
                 }
             }
 
@@ -51,13 +52,13 @@ namespace CTTB.Commands
                             "\nc!reportsubissue \"track\" -Issue" +
                             "\nc!clearissues track" +
                             "\nc!clearsubissues track" +
-                            "\nc!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" laps" +
+                            "\nc!replaceissues \"old track\" \"new track\" \"author\" \"version\" \"slot\" \"laps\"" +
                             "\nc!gethw \"track\"/all member" +
                             "\nc!addhw \"track\" \"author\" \"version\" \"download link\" \"slot-filename\" \"speed/lap modifiers\" notes" +
                             "\nc!delhw track" +
                             "\nc!createtest" +
                             "\nc!starttimers" +
-                            "\nc!missedhw" +
+                            "\nc!missedhw member" +
                             "\nc!resetmissedhw member" +
                             "\nc!checkmissedhw" +
                             "\nc!removemissedhw member" +

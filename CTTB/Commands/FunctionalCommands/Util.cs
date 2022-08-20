@@ -4,6 +4,7 @@ using FluentScheduler;
 using System.IO;
 using Newtonsoft.Json;
 using System.Text;
+using IronPython.Runtime;
 
 namespace CTTB.Commands
 {
@@ -142,11 +143,37 @@ namespace CTTB.Commands
             return false;
         }
 
+        public string RankNumber(string number)
+        {
+            if (number.Length > 1 && number[number.Length - 2] == '1')
+            {
+                return number + "th";
+            }
+            else if (number[number.Length - 1] == '1')
+            {
+                return number + "st";
+            }
+            else if (number[number.Length - 1] == '2')
+            {
+                return number + "nd";
+            }
+            else if (number[number.Length - 1] == '3')
+            {
+                return number + "rd";
+            }
+            return number + "th";
+        }
+
         public string GetCouncilUrl()
         {
             using (var fs = File.OpenRead("config.json"))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 return JsonConvert.DeserializeObject<ConfigJson>(sr.ReadToEnd()).CouncilUrl;
+        }
+
+        public bool CheckItemInList(string item1, string item2)
+        {
+            return true;
         }
     }
 }

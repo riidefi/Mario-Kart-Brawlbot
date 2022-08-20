@@ -38,8 +38,8 @@ namespace CTTB.Commands
                 JobManager.RemoveAllJobs();
 
                 Utility.ScheduleRegister = new Registry();
-                Utility.ScheduleRegister.Schedule(async () => await UpdateJsons(ctx, "all")).ToRunEvery(1).Days().At(13, 0);
                 Utility.ScheduleRegister.Schedule(async () => await CheckHw(ctx, "")).ToRunEvery(1).Days().At(13, 0);
+                Utility.ScheduleRegister.Schedule(async () => await UpdateJsons(ctx, "all")).ToRunEvery(1).Days().At(13, 0);
 
                 JobManager.Initialize(Utility.ScheduleRegister);
 
@@ -175,7 +175,7 @@ namespace CTTB.Commands
 
                 oldRtJson = File.ReadAllText("rts200.json");
                 oldRtTrackList = JsonConvert.DeserializeObject<List<Track>>(oldRtJson);
-                
+
                 for (int i = 0; i < trackListRt200.Count; i++)
                 {
                     int ix = oldRtTrackList.FindIndex(t => t.Name == trackListRt200[i].Name && t.Category == trackListRt200[i].Category);
@@ -438,12 +438,7 @@ namespace CTTB.Commands
                     using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                         json = await sr.ReadToEndAsync().ConfigureAwait(false);
                     List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-                    var hwCompleted = new bool[councilJson.Count];
-
-                    for (int i = 0; i < hwCompleted.Length; i++)
-                    {
-                        hwCompleted[i] = true;
-                    }
+                    var hwCompleted = new bool?[councilJson.Count];
 
                     for (int i = 1; i < response.Values.Count; i++)
                     {
@@ -454,6 +449,10 @@ namespace CTTB.Commands
                         int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
                         if (lastChecked != int.Parse(response.Values[i][1].ToString()) && today == int.Parse(response.Values[i][1].ToString()) + 1)
                         {
+                            for (int h = 0; h < hwCompleted.Length; h++)
+                            {
+                                hwCompleted[h] = true;
+                            }
                             for (int j = 12; j < response.Values[0].Count; j++)
                             {
                                 int ix = councilJson.FindIndex(x => x.SheetName == response.Values[0][j].ToString());
@@ -473,9 +472,10 @@ namespace CTTB.Commands
                             }
                         }
                     }
+                    List<string> inconsistentMembers = new List<string>();
                     for (int i = 0; i < hwCompleted.Length; i++)
                     {
-                        if (hwCompleted[i])
+                        if (hwCompleted[i] == true)
                         {
                             councilJson[i].HwInARow++;
                             if (councilJson[i].HwInARow > 4)
@@ -483,10 +483,11 @@ namespace CTTB.Commands
                                 councilJson[i].TimesMissedHw = 0;
                             }
                         }
-                        else
+                        else if (hwCompleted[i] == false)
                         {
                             councilJson[i].TimesMissedHw++;
                             councilJson[i].HwInARow = 0;
+                            inconsistentMembers.Add(councilJson[i].SheetName);
                             if (councilJson[i].TimesMissedHw > 0 && councilJson[i].TimesMissedHw % 3 == 0)
                             {
                                 string message = $"Hello {councilJson[i].SheetName}. Just to let you know, you appear to have not completed council homework in a while, have been inconsistent with your homework, or are not completing it sufficiently enough. Just to remind you, if you miss homework too many times, admins might have to remove you from council. If you have an issue which stops you from doing homework, please let an admin know.";
@@ -544,6 +545,36 @@ namespace CTTB.Commands
 
                         await channel.SendMessageAsync($"<@&608386209655554058> {listOfTracks} due for today.");
                     }
+
+                    foreach (var c in ctx.Guild.Channels)
+                    {
+                        if (c.Value.Id == 935200150710808626)
+                        {
+                            channel = c.Value;
+                        }
+                    }
+
+                    string description = string.Empty;
+                    foreach (var member in inconsistentMembers)
+                    {
+                        description += $"{member}\n";
+                    }
+
+                    if (inconsistentMembers.Count > 0)
+                    {
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Members who missed homework:**__",
+                            Description = description,
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+
 
                     var now = DateTime.Now;
                     File.WriteAllText("lastUpdated.txt", now.ToString());

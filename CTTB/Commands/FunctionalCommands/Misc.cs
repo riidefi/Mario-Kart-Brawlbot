@@ -60,7 +60,7 @@ namespace CTTB.Commands
             "Toad's Factory",
             "Mario Circuit",
             "Coconut Mall",
-            "DK's Snowboard Cross",
+            "DK Summit",
             "Wario's Gold Mine",
             "Daisy Circuit",
             "Koopa Cape",
@@ -186,7 +186,7 @@ namespace CTTB.Commands
                     for (int i = 3; i < 15; i++)
                     {
                         WebClient webClient = new WebClient();
-                        await webClient.DownloadFileTaskAsync(response.Values[i][5].ToString().Split('"')[1], $@"workdir/input/{response.Values[i][2]}.szs");
+                        await webClient.DownloadFileTaskAsync(response.Values[i][5].ToString().Split('"')[1], $@"workdir/input/{response.Values[i][2].ToString().Replace("???", "Secret")}.szs");
                         for (int j = 0; j < courseStrings.Length; j++)
                         {
                             if (response.Values[i][6].ToString().Split('/')[0].Remove(response.Values[i][6].ToString().Split('/')[0].Length - 1) == courseStrings[j])
@@ -242,10 +242,10 @@ namespace CTTB.Commands
                         for (int i = 0; i < cups.Count; i++)
                         {
                             streamwriter.WriteLine($"\nC \"{i + 1}\" # {i + 12}");
-                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track1Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track1Slot) - 1]}; 0x00; \"{cups[i].Track1Name}\"; \"{cups[i].Track1Name.Replace("???", "secret")}\"; \"\"");
-                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track2Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track2Slot) - 1]}; 0x00; \"{cups[i].Track2Name}\"; \"{cups[i].Track2Name.Replace("???", "secret")}\"; \"\"");
-                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track3Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track3Slot) - 1]}; 0x00; \"{cups[i].Track3Name}\"; \"{cups[i].Track3Name.Replace("???", "secret")}\"; \"\"");
-                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track4Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track4Slot) - 1]}; 0x00; \"{cups[i].Track4Name}\"; \"{cups[i].Track4Name.Replace("???", "secret")}\"; \"\"");
+                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track1Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track1Slot) - 1]}; 0x00; \"{cups[i].Track1Name.Replace("???", "Secret")}\"; \"{cups[i].Track1Name}\"; \"\"");
+                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track2Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track2Slot) - 1]}; 0x00; \"{cups[i].Track2Name.Replace("???", "Secret")}\"; \"{cups[i].Track2Name}\"; \"\"");
+                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track3Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track3Slot) - 1]}; 0x00; \"{cups[i].Track3Name.Replace("???", "Secret")}\"; \"{cups[i].Track3Name}\"; \"\"");
+                            streamwriter.WriteLine($"T {courseMusicIds[Convert.ToInt32(cups[i].Track4Music) - 1]}; {courseSlotIds[Convert.ToInt32(cups[i].Track4Slot) - 1]}; 0x00; \"{cups[i].Track4Name.Replace("???", "Secret")}\"; \"{cups[i].Track4Name}\"; \"\"");
 
                         }
                         streamwriter.Close();
@@ -516,7 +516,7 @@ namespace CTTB.Commands
                         sw.WriteLine($"  {28740 + i * 4:X}	= {cups[i].Track1BMG}");
                         sw.WriteLine($"  {28741 + i * 4:X}	= {cups[i].Track2BMG}");
                         sw.WriteLine($"  {28742 + i * 4:X}	= {cups[i].Track3BMG}");
-                        sw.WriteLine($"  {28743 + i * 4:X}	= {(cups[i].Track4BMG.ToLowerInvariant() == "secret" ? "???" : cups[i].Track4BMG)}");
+                        sw.WriteLine($"  {28743 + i * 4:X}	= {(cups[i].Track4BMG.ToLowerInvariant() == "secret" ? @"\c{red}???\c{off}" : cups[i].Track4BMG)}");
                     }
                     sw.WriteLine(@"");
                     sw.WriteLine(@" 18697	/");

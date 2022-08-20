@@ -1,27 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CTTB.Commands;
+﻿using CTTB.Commands;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.EventArgs;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using System.Globalization;
-using System.Reflection;
-using DSharpPlus.CommandsNext.Exceptions;
-using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using DSharpPlus.Interactivity.Enums;
-using DSharpPlus.Interactivity.EventHandling;
 using DSharpPlus.Interactivity.Extensions;
-using DSharpPlus.Lavalink;
-using DSharpPlus.VoiceNext;
-using Microsoft.Extensions.DependencyInjection;
-using System.Runtime.InteropServices.ComTypes;
+using DSharpPlus.SlashCommands;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace CTTB
 {
@@ -29,6 +19,7 @@ namespace CTTB
     {
         public DiscordClient Client { get; private set; }
         public CommandsNextExtension Commands { get; private set; }
+        public SlashCommandsExtension SlashCommands { get; private set; }
         public InteractivityExtension Interactivity { get; private set; }
 
         public async Task RunAsync()
@@ -78,6 +69,10 @@ namespace CTTB
             Commands.RegisterCommands<Misc>();
             Commands.RegisterCommands<Threads>();
             Commands.RegisterCommands<Update>();
+
+            SlashCommands = Client.UseSlashCommands();
+
+            SlashCommands.RegisterCommands<Testing>();
 
             await Client.ConnectAsync();
 

@@ -6,6 +6,8 @@ using DSharpPlus.Interactivity.Extensions;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
+using Google.Apis.Sheets.v4.Data;
+using IronPython.Compiler.Ast;
 using IronPython.Runtime.Operations;
 using Newtonsoft.Json;
 using OpenQA.Selenium;
@@ -23,235 +25,9 @@ namespace CTTB.Commands
     {
         public Util Utility = new Util();
 
-        [Command("rating")]
-        public async Task GetTrackRating(CommandContext ctx, [RemainingText] string track = "")
+        public async Task MakeNextUpdatePage(CommandContext ctx, ValueRange response)
         {
-            try
-            {
-                await ctx.TriggerTypingAsync();
-                string description = "";
-                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                ServiceAccountCredential credential = new ServiceAccountCredential(
-                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                var service = new SheetsService(new BaseClientService.Initializer()
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "Custom Track Testing Bot",
-                });
-
-                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Data'!A226:Q443");
-                var response = await request.ExecuteAsync();
-
-                int e = 0;
-                List<string> earlyTrackDisplay = new List<string>();
-
-                for (int i = 0; i < response.Values.Count; i++)
-                {
-                    if (Utility.CompareStrings(response.Values[i][0].ToString(), track) || Utility.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Utility.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
-                    {
-                        earlyTrackDisplay.Add(response.Values[i][0].ToString());
-                        e++;
-                    }
-                }
-
-                int m = 0;
-                List<string> midTrackDisplay = new List<string>();
-
-                if (DateTime.Now > DateTime.ParseExact($"02/07/{DateTime.Now.Year}", "dd/MM/yyyy", CultureInfo.InvariantCulture))
-                {
-                    request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year} Track Rating Data'!A226:Q443");
-                    response = await request.ExecuteAsync();
-
-                    for (int i = 0; i < response.Values.Count; i++)
-                    {
-                        if (Utility.CompareStrings(response.Values[i][0].ToString(), track) || Utility.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Utility.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
-                        {
-                            midTrackDisplay.Add(response.Values[i][0].ToString());
-                            m++;
-                        }
-                    }
-                }
-                if (e < 1 && m < 1)
-                {
-                    var embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = $"*{track} was not found in the latest track rating polls.*" +
-                        "\n**c!rating track**",
-                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                }
-                else
-                {
-                    request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Graphs'");
-                    response = await request.ExecuteAsync();
-                    foreach (var t in response.Values)
-                    {
-                        while (t.Count < 15)
-                        {
-                            t.Add("");
-                        }
-                    }
-
-                    int ix = -1;
-
-                    for (int i = 0; i < response.Values.Count; i++)
-                    {
-                        if (response.Values[i][12].ToString().Contains("Average Track"))
-                        {
-                            ix = i + 2;
-                            break;
-                        }
-                    }
-
-                    string earlyAverage = $"{Math.Round((double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}";
-
-                    request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Data'!A226:Q443");
-                    response = await request.ExecuteAsync();
-
-                    if (earlyTrackDisplay.Count > 0)
-                    {
-                        description += $"__**Early {DateTime.Now.Year} Track Rating Data (Average: {earlyAverage}%):**__\n";
-                        for (int i = 0; i < earlyTrackDisplay.Count; i++)
-                        {
-                            foreach (var t in response.Values)
-                            {
-                                if (earlyTrackDisplay[i] == t[0].ToString())
-                                {
-                                    description += $"__{t[0]}__:\nAll - {Math.Round((double.Parse(t[2].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}/{Math.Round((double.Parse(t[3].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}/{Math.Round((double.Parse(t[4].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}%\n";
-                                    description += $"Comp - {Math.Round((double.Parse(t[6].ToString()) / (double.Parse(t[6].ToString()) + double.Parse(t[7].ToString()) + double.Parse(t[8].ToString()))) * 100)}/{Math.Round((double.Parse(t[7].ToString()) / (double.Parse(t[6].ToString()) + double.Parse(t[7].ToString()) + double.Parse(t[8].ToString()))) * 100)}/{Math.Round((double.Parse(t[8].ToString()) / (double.Parse(t[6].ToString()) + double.Parse(t[7].ToString()) + double.Parse(t[8].ToString()))) * 100)}%\n";
-                                    description += $"Non-Comp - {Math.Round((double.Parse(t[10].ToString()) / (double.Parse(t[10].ToString()) + double.Parse(t[11].ToString()) + double.Parse(t[12].ToString()))) * 100)}/{Math.Round((double.Parse(t[11].ToString()) / (double.Parse(t[10].ToString()) + double.Parse(t[11].ToString()) + double.Parse(t[12].ToString()))) * 100)}/{Math.Round((double.Parse(t[12].ToString()) / (double.Parse(t[10].ToString()) + double.Parse(t[11].ToString()) + double.Parse(t[12].ToString()))) * 100)}%\n";
-                                    description += $"Creators - {Math.Round((double.Parse(t[14].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}/{Math.Round((double.Parse(t[15].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}/{Math.Round((double.Parse(t[16].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}%\n";
-                                }
-                            }
-                        }
-                    }
-
-                    if (DateTime.Now > DateTime.ParseExact($"02/07/{DateTime.Now.Year}", "dd/MM/yyyy", CultureInfo.InvariantCulture))
-                    {
-                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year} Track Rating Graphs'");
-                        response = await request.ExecuteAsync();
-                        foreach (var t in response.Values)
-                        {
-                            while (t.Count < 15)
-                            {
-                                t.Add("");
-                            }
-                        }
-
-                        ix = -1;
-
-                        for (int i = 0; i < response.Values.Count; i++)
-                        {
-                            if (response.Values[i][12].ToString().Contains("Average Track"))
-                            {
-                                ix = i + 2;
-                                break;
-                            }
-                        }
-
-                        string midAverage = $"{Math.Round((double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}";
-
-                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year} Track Rating Data'!A226:Q443");
-                        response = await request.ExecuteAsync();
-
-                        if (midTrackDisplay.Count > 0)
-                        {
-                            description += $"__**Mid {DateTime.Now.Year} Track Rating Data (Average: {midAverage}%):**__\n";
-                            for (int i = 0; i < midTrackDisplay.Count; i++)
-                            {
-                                foreach (var t in response.Values)
-                                {
-                                    if (midTrackDisplay[i] == t[0].ToString())
-                                    {
-                                        description += $"__{t[0]}__:\nAll - {Math.Round((double.Parse(t[2].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}/{Math.Round((double.Parse(t[3].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}/{Math.Round((double.Parse(t[4].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}%\n";
-                                        description += $"Comp - {Math.Round((double.Parse(t[6].ToString()) / (double.Parse(t[6].ToString()) + double.Parse(t[7].ToString()) + double.Parse(t[8].ToString()))) * 100)}/{Math.Round((double.Parse(t[7].ToString()) / (double.Parse(t[6].ToString()) + double.Parse(t[7].ToString()) + double.Parse(t[8].ToString()))) * 100)}/{Math.Round((double.Parse(t[8].ToString()) / (double.Parse(t[6].ToString()) + double.Parse(t[7].ToString()) + double.Parse(t[8].ToString()))) * 100)}%\n";
-                                        description += $"Non-Comp - {Math.Round((double.Parse(t[10].ToString()) / (double.Parse(t[10].ToString()) + double.Parse(t[11].ToString()) + double.Parse(t[12].ToString()))) * 100)}/{Math.Round((double.Parse(t[11].ToString()) / (double.Parse(t[10].ToString()) + double.Parse(t[11].ToString()) + double.Parse(t[12].ToString()))) * 100)}/{Math.Round((double.Parse(t[12].ToString()) / (double.Parse(t[10].ToString()) + double.Parse(t[11].ToString()) + double.Parse(t[12].ToString()))) * 100)}%\n";
-                                        description += $"Creators - {Math.Round((double.Parse(t[14].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}/{Math.Round((double.Parse(t[15].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}/{Math.Round((double.Parse(t[16].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}%\n";
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (description.ToCharArray().Length > 1600)
-                    {
-                        var embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Error:**__",
-                            Description = "*Embed too large. Please refine your search.*" +
-                                   "\n**c!rating track**",
-                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else if (description.ToCharArray().Length == 0)
-                    {
-                        var embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = "__**Error:**__",
-                            Description = $"*{track} was not found in the latest track rating polls.*" +
-                        "\n**c!rating track**",
-                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        var embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**{DateTime.Now.Year} Track Ratings for {track} (Remove/Indifferent/Keep):**__",
-                            Description = description,
-                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-                    }
-                }
-            }
-
-            catch (Exception ex)
-            {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Error:**__",
-                    Description = $"*{ex.Message}*" +
-                       "\n**c!rating track**",
-                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
-
-                Console.WriteLine(ex.ToString());
-            }
         }
 
         [Command("nextupdate")]
@@ -336,20 +112,107 @@ namespace CTTB.Commands
                         }
                         k++;
                     }
+                    k++;
                 }
 
-                var embed = new DiscordEmbedBuilder
+                if (response.Values[k][0].ToString() == "update delimiter")
                 {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**{response.Values[1][1]}:**__",
-                    Description = description,
-                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1751905284",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    List<Page> pages = new List<Page>();
+                    Page page1 = new Page("", new DiscordEmbedBuilder
                     {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**{response.Values[k - 14][1]}:**__",
+                        Description = description,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1751905284",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    });
+                    pages.Add(page1);
+
+                    k += 3;
+
+                    description = $"**{response.Values[k][1]}:**";
+
+                    while (response.Values[k][2].ToString() != "delimiter")
+                    {
+                        if (response.Values[k][2].ToString() == "")
+                        {
+                            description += "\n*TBD*";
+                        }
+                        else
+                        {
+                            string dl = response.Values[k][5].ToString().Contains("=HYPERLINK") ? $"[{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})" : "-";
+                            description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | {dl}";
+                        }
+                        k++;
                     }
-                };
-                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    k++;
+                    if (response.Values[k][1].ToString() != "end")
+                    {
+                        description += $"\n**{response.Values[k][1]}:**";
+                        while (response.Values[k][2].ToString() != "delimiter")
+                        {
+                            if (response.Values[k][2].ToString() == "")
+                            {
+                                description += "\n*TBD*";
+                            }
+                            else
+                            {
+                                string dl = response.Values[k][5].ToString().Contains("=HYPERLINK") ? $"[{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})" : "-";
+                                description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | {dl}";
+                            }
+                            k++;
+                        }
+                        k++;
+                    }
+                    if (response.Values[k][1].ToString() != "end")
+                    {
+                        description += $"\n**{response.Values[k][1]}:**";
+                        while (response.Values[k][2].ToString() != "delimiter")
+                        {
+                            if (response.Values[k][2].ToString() == "")
+                            {
+                                description += "\n*TBD*";
+                            }
+                            else
+                            {
+                                string dl = response.Values[k][5].ToString().Contains("=HYPERLINK") ? $"[{response.Values[k][5].ToString().Split('"')[3]}]({response.Values[k][5].ToString().Split('"')[1]})" : "-";
+                                description += $"\n{response.Values[k][2]} {response.Values[k][4]} | {response.Values[k][3]} | {dl}";
+                            }
+                            k++;
+                        }
+                    }
+                    Page page2 = new Page("", new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**{response.Values[k - 13][1]}:**__",
+                        Description = description,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1751905284",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    });
+                    pages.Add(page2);
+                    await ctx.Channel.SendPaginatedMessageAsync(ctx.User, pages);
+                }
+                else
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**{response.Values[1][1]}:**__",
+                        Description = description,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1751905284",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {
@@ -1750,6 +1613,441 @@ namespace CTTB.Commands
                     Description = $"*{ex.Message}*" +
                         "\n**c!pop rts/cts/track**",
                     Url = "https://chadsoft.co.uk/time-trials/",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        [Command("rating")]
+        public async Task GetTrackRating(CommandContext ctx, [RemainingText] string track = "")
+        {
+            try
+            {
+                await ctx.TriggerTypingAsync();
+                string description = "";
+                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                ServiceAccountCredential credential = new ServiceAccountCredential(
+                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                var service = new SheetsService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "Custom Track Testing Bot",
+                });
+
+                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Data'!A226:Y443");
+                var response = await request.ExecuteAsync();
+
+                int e = 0;
+                List<string> earlyTrackDisplay = new List<string>();
+
+                for (int i = 0; i < response.Values.Count; i++)
+                {
+                    if (Utility.CompareStrings(response.Values[i][0].ToString(), track) || Utility.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Utility.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                    {
+                        earlyTrackDisplay.Add(response.Values[i][0].ToString());
+                        e++;
+                    }
+                }
+
+                int m = 0;
+                List<string> midTrackDisplay = new List<string>();
+
+                if (DateTime.Now > DateTime.ParseExact($"02/07/{DateTime.Now.Year}", "dd/MM/yyyy", CultureInfo.InvariantCulture))
+                {
+                    request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year} Track Rating Data'!A226:Y443");
+                    response = await request.ExecuteAsync();
+
+                    for (int i = 0; i < response.Values.Count; i++)
+                    {
+                        if (Utility.CompareStrings(response.Values[i][0].ToString(), track) || Utility.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Utility.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Utility.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                        {
+                            midTrackDisplay.Add(response.Values[i][0].ToString());
+                            m++;
+                        }
+                    }
+                }
+                if (e < 1 && m < 1)
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{track} was not found in the latest track rating polls.*" +
+                        "\n**c!rating track**",
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                }
+                else if (track == "")
+                {
+                    response.Values = response.Values.OrderBy(t => int.Parse(t[6].ToString())).ToList();
+                    List<Page> pages = new List<Page>();
+                    string description1 = "";
+                    string description2 = "";
+                    string description3 = "";
+                    string description4 = "";
+                    string description5 = "";
+                    string description6 = "";
+                    string description7 = "";
+                    string description8 = "";
+                    string description9 = "";
+                    string description10 = "";
+                    string description11 = "";
+                    for (int i = 0; i < 21; i++)
+                    {
+                        description1 = description1 + $"**{i + 1})** {response.Values[i][0]} *({Utility.RankNumber(response.Values[i][12].ToString())} / {Utility.RankNumber(response.Values[i][18].ToString())} / {Utility.RankNumber(response.Values[i][24].ToString())})*\n";
+                    }
+                    for (int i = 21; i < 42; i++)
+                    {
+                        description2 = description2 + $"**{i + 1})** {response.Values[i][0]} *({Utility.RankNumber(response.Values[i][12].ToString())} / {Utility.RankNumber(response.Values[i][18].ToString())} / {Utility.RankNumber(response.Values[i][24].ToString())})*\n";
+                    }
+                    for (int i = 42; i < 63; i++)
+                    {
+                        description3 = description3 + $"**{i + 1})** {response.Values[i][0]} *({Utility.RankNumber(response.Values[i][12].ToString())} / {Utility.RankNumber(response.Values[i][18].ToString())} / {Utility.RankNumber(response.Values[i][24].ToString())})*\n";
+                    }
+                    for (int i = 63; i < 84; i++)
+                    {
+                        description4 = description4 + $"**{i + 1})** {response.Values[i][0]} *({Utility.RankNumber(response.Values[i][12].ToString())} / {Utility.RankNumber(response.Values[i][18].ToString())} / {Utility.RankNumber(response.Values[i][24].ToString())})*\n";
+                    }
+                    for (int i = 84; i < 105; i++)
+                    {
+                        description5 = description5 + $"**{i + 1})** {response.Values[i][0]} *({Utility.RankNumber(response.Values[i][12].ToString())} / {Utility.RankNumber(response.Values[i][18].ToString())} / {Utility.RankNumber(response.Values[i][24].ToString())})*\n";
+                    }
+                    for (int i = 105; i < 126; i++)
+                    {
+                        description6 = description6 + $"**{i + 1})** {response.Values[i][0]} *({Utility.RankNumber(response.Values[i][12].ToString())} / {Utility.RankNumber(response.Values[i][18].ToString())} / {Utility.RankNumber(response.Values[i][24].ToString())})*\n";
+                    }
+                    for (int i = 126; i < 147; i++)
+                    {
+                        description7 = description7 + $"**{i + 1})** {response.Values[i][0]} *({Utility.RankNumber(response.Values[i][12].ToString())} / {Utility.RankNumber(response.Values[i][18].ToString())} / {Utility.RankNumber(response.Values[i][24].ToString())})*\n";
+                    }
+                    for (int i = 147; i < 168; i++)
+                    {
+                        description8 = description8 + $"**{i + 1})** {response.Values[i][0]} *({Utility.RankNumber(response.Values[i][12].ToString())} / {Utility.RankNumber(response.Values[i][18].ToString())} / {Utility.RankNumber(response.Values[i][24].ToString())})*\n";
+                    }
+                    for (int i = 168; i < 189; i++)
+                    {
+                        description9 = description9 + $"**{i + 1})** {response.Values[i][0]} *({Utility.RankNumber(response.Values[i][12].ToString())} / {Utility.RankNumber(response.Values[i][18].ToString())} / {Utility.RankNumber(response.Values[i][24].ToString())})*\n";
+                    }
+                    for (int i = 189; i < 210; i++)
+                    {
+                        description10 = description10 + $"**{i + 1})** {response.Values[i][0]} *({Utility.RankNumber(response.Values[i][12].ToString())} / {Utility.RankNumber(response.Values[i][18].ToString())} / {Utility.RankNumber(response.Values[i][24].ToString())})*\n";
+                    }
+                    for (int i = 210; i < 218; i++)
+                    {
+                        description11 = description11 + $"**{i + 1})** {response.Values[i][0]} *({Utility.RankNumber(response.Values[i][12].ToString())} / {Utility.RankNumber(response.Values[i][18].ToString())} / {Utility.RankNumber(response.Values[i][24].ToString())})*\n";
+                    }
+                    var embed1 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 1-21 (Comp/Non-comp/Creators):**__",
+                        Description = description1,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    var embed2 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 22-42 (Comp/Non-comp/Creators):**__",
+                        Description = description2,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    var embed3 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 43-63 (Comp/Non-comp/Creators):**__",
+                        Description = description3,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    var embed4 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 64-84 (Comp/Non-comp/Creators):**__",
+                        Description = description4,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    var embed5 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 85-105 (Comp/Non-comp/Creators):**__",
+                        Description = description5,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    var embed6 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 106-126 (Comp/Non-comp/Creators):**__",
+                        Description = description6,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    var embed7 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 127-147 (Comp/Non-comp/Creators):**__",
+                        Description = description7,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    var embed8 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 148-168 (Comp/Non-comp/Creators):**__",
+                        Description = description8,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    var embed9 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 169-189 (Comp/Non-comp/Creators):**__",
+                        Description = description9,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    var embed10 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 190-210 (Comp/Non-comp/Creators):**__",
+                        Description = description10,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    var embed11 = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Displaying 211-218 (Comp/Non-comp/Creators):**__",
+                        Description = description11,
+                        Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    Page page1 = new Page("", embed1);
+                    Page page2 = new Page("", embed2);
+                    Page page3 = new Page("", embed3);
+                    Page page4 = new Page("", embed4);
+                    Page page5 = new Page("", embed5);
+                    Page page6 = new Page("", embed6);
+                    Page page7 = new Page("", embed7);
+                    Page page8 = new Page("", embed8);
+                    Page page9 = new Page("", embed9);
+                    Page page10 = new Page("", embed10);
+                    Page page11 = new Page("", embed11);
+                    pages.Add(page1);
+                    pages.Add(page2);
+                    pages.Add(page3);
+                    pages.Add(page4);
+                    pages.Add(page5);
+                    pages.Add(page6);
+                    pages.Add(page7);
+                    pages.Add(page8);
+                    pages.Add(page9);
+                    pages.Add(page10);
+                    pages.Add(page11);
+                    await ctx.Channel.SendPaginatedMessageAsync(ctx.User, pages);
+                }
+                else
+                {
+                    request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Graphs'");
+                    response = await request.ExecuteAsync();
+                    foreach (var t in response.Values)
+                    {
+                        while (t.Count < 15)
+                        {
+                            t.Add("");
+                        }
+                    }
+
+                    int ix = -1;
+
+                    for (int i = 0; i < response.Values.Count; i++)
+                    {
+                        if (response.Values[i][12].ToString().Contains("Average Track"))
+                        {
+                            ix = i + 2;
+                            break;
+                        }
+                    }
+
+                    string earlyAverage = $"{Math.Round((double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}";
+
+                    request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Data'!A226:Y443");
+                    response = await request.ExecuteAsync();
+
+                    if (earlyTrackDisplay.Count > 0)
+                    {
+                        description += $"__**Early {DateTime.Now.Year} Track Rating Data (Average: {earlyAverage}%):**__\n";
+                        for (int i = 0; i < earlyTrackDisplay.Count; i++)
+                        {
+                            foreach (var t in response.Values)
+                            {
+                                if (earlyTrackDisplay[i] == t[0].ToString())
+                                {
+                                    description += $"__{t[0]}__:\nAll - {Math.Round((double.Parse(t[2].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}/{Math.Round((double.Parse(t[3].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}/{Math.Round((double.Parse(t[4].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}% - {Utility.RankNumber(t[6].ToString())}\n";
+                                    description += $"Comp - {Math.Round((double.Parse(t[8].ToString()) / (double.Parse(t[8].ToString()) + double.Parse(t[9].ToString()) + double.Parse(t[10].ToString()))) * 100)}/{Math.Round((double.Parse(t[9].ToString()) / (double.Parse(t[8].ToString()) + double.Parse(t[9].ToString()) + double.Parse(t[10].ToString()))) * 100)}/{Math.Round((double.Parse(t[10].ToString()) / (double.Parse(t[8].ToString()) + double.Parse(t[9].ToString()) + double.Parse(t[10].ToString()))) * 100)}% - {Utility.RankNumber(t[12].ToString())}\n";
+                                    description += $"Non-Comp - {Math.Round((double.Parse(t[14].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}/{Math.Round((double.Parse(t[15].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}/{Math.Round((double.Parse(t[16].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}% - {Utility.RankNumber(t[18].ToString())}\n";
+                                    description += $"Creators - {Math.Round((double.Parse(t[20].ToString()) / (double.Parse(t[20].ToString()) + double.Parse(t[21].ToString()) + double.Parse(t[22].ToString()))) * 100)}/{Math.Round((double.Parse(t[21].ToString()) / (double.Parse(t[20].ToString()) + double.Parse(t[21].ToString()) + double.Parse(t[22].ToString()))) * 100)}/{Math.Round((double.Parse(t[22].ToString()) / (double.Parse(t[20].ToString()) + double.Parse(t[21].ToString()) + double.Parse(t[22].ToString()))) * 100)}% - {Utility.RankNumber(t[24].ToString())}\n";
+                                }
+                            }
+                        }
+                    }
+
+                    if (DateTime.Now > DateTime.ParseExact($"02/07/{DateTime.Now.Year}", "dd/MM/yyyy", CultureInfo.InvariantCulture))
+                    {
+                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year} Track Rating Graphs'");
+                        response = await request.ExecuteAsync();
+                        foreach (var t in response.Values)
+                        {
+                            while (t.Count < 15)
+                            {
+                                t.Add("");
+                            }
+                        }
+
+                        ix = -1;
+
+                        for (int i = 0; i < response.Values.Count; i++)
+                        {
+                            if (response.Values[i][12].ToString().Contains("Average Track"))
+                            {
+                                ix = i + 2;
+                                break;
+                            }
+                        }
+
+                        string midAverage = $"{Math.Round((double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}";
+
+                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year} Track Rating Data'!A226:Y443");
+                        response = await request.ExecuteAsync();
+
+                        if (midTrackDisplay.Count > 0)
+                        {
+                            description += $"__**Mid {DateTime.Now.Year} Track Rating Data (Average: {midAverage}%):**__\n";
+                            for (int i = 0; i < midTrackDisplay.Count; i++)
+                            {
+                                foreach (var t in response.Values)
+                                {
+                                    if (midTrackDisplay[i] == t[0].ToString())
+                                    {
+                                        description += $"__{t[0]}__:\nAll - {Math.Round((double.Parse(t[2].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}/{Math.Round((double.Parse(t[3].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}/{Math.Round((double.Parse(t[4].ToString()) / (double.Parse(t[2].ToString()) + double.Parse(t[3].ToString()) + double.Parse(t[4].ToString()))) * 100)}% - {Utility.RankNumber(t[6].ToString())}\n";
+                                        description += $"Comp - {Math.Round((double.Parse(t[8].ToString()) / (double.Parse(t[8].ToString()) + double.Parse(t[9].ToString()) + double.Parse(t[10].ToString()))) * 100)}/{Math.Round((double.Parse(t[9].ToString()) / (double.Parse(t[8].ToString()) + double.Parse(t[9].ToString()) + double.Parse(t[10].ToString()))) * 100)}/{Math.Round((double.Parse(t[10].ToString()) / (double.Parse(t[8].ToString()) + double.Parse(t[9].ToString()) + double.Parse(t[10].ToString()))) * 100)}% - {Utility.RankNumber(t[12].ToString())}\n";
+                                        description += $"Non-Comp - {Math.Round((double.Parse(t[14].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}/{Math.Round((double.Parse(t[15].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}/{Math.Round((double.Parse(t[16].ToString()) / (double.Parse(t[14].ToString()) + double.Parse(t[15].ToString()) + double.Parse(t[16].ToString()))) * 100)}% - {Utility.RankNumber(t[18].ToString())}\n";
+                                        description += $"Creators - {Math.Round((double.Parse(t[20].ToString()) / (double.Parse(t[20].ToString()) + double.Parse(t[21].ToString()) + double.Parse(t[22].ToString()))) * 100)}/{Math.Round((double.Parse(t[21].ToString()) / (double.Parse(t[20].ToString()) + double.Parse(t[21].ToString()) + double.Parse(t[22].ToString()))) * 100)}/{Math.Round((double.Parse(t[22].ToString()) / (double.Parse(t[20].ToString()) + double.Parse(t[21].ToString()) + double.Parse(t[22].ToString()))) * 100)}% - {Utility.RankNumber(t[24].ToString())}\n";
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (description.ToCharArray().Length > 1600)
+                    {
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = "*Embed too large. Please refine your search.*" +
+                                   "\n**c!rating track**",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else if (description.ToCharArray().Length == 0)
+                    {
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*{track} was not found in the latest track rating polls.*" +
+                        "\n**c!rating track**",
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**{DateTime.Now.Year} Track Ratings for {track} (Remove/Indifferent/Keep - Rank):**__",
+                            Description = description,
+                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                    }
+                }
+            }
+
+            catch (Exception ex)
+            {
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*{ex.Message}*" +
+                       "\n**c!rating track**",
+                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
