@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CTTB.Commands
+namespace MKBB.Commands
 {
     public class CouncilMember
     {

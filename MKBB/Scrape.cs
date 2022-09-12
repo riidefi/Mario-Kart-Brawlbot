@@ -1,4 +1,4 @@
-﻿using CTTB.Commands;
+﻿using MKBB.Commands;
 using DSharpPlus.CommandsNext;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
@@ -18,7 +18,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CTTB
+namespace MKBB
 {
     static class MyLinqExtensions
     {

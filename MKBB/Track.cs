@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 
-namespace CTTB.Commands
+namespace MKBB.Commands
 {
     public class Track
     {
