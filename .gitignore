@@ -338,12 +338,12 @@ ASALocalRun/
 *.xml
 *.config
 *.xsd
-/CTTB/Properties/AssemblyInfo.cs
-/CTTB/CTTB.csproj
-/CTTB.sln
+/MKBB/Properties/AssemblyInfo.cs
+/MKBB/MKBB.csproj
+/MKBB.sln
 *.p12
 *.dll
 *.szs
 *.bin
 [Rr]esources/
-CTTB/Commands/FunctionalCommands/Testing.cs
+MKBB/Commands/FunctionalCommands/Testing.cs
