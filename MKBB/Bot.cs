@@ -14,6 +14,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace MKBB
 {
@@ -49,6 +50,41 @@ namespace MKBB
 
         private async Task Interactions(DiscordClient client)
         {
+            client.InteractionCreated += async (s, e) =>
+            {
+                DiscordChannel channel = e.Interaction.Channel;
+
+                foreach (var c in e.Interaction.Guild.Channels)
+                {
+                    if (c.Value.Id == 1019149329556062278)
+                    {
+                        channel = c.Value;
+                    }
+                }
+
+                string options = "";
+
+                if (e.Interaction.Data.Options != null)
+                {
+                    foreach (var option in e.Interaction.Data.Options)
+                    {
+                        options += $" {option.Name}: *{option.Value}*";
+                    }
+                }
+
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Notice:**__",
+                    Description = $"'/{e.Interaction.Data.Name}{options}' was used by <@{e.Interaction.User.Id}>.",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Server Time: {DateTime.Now}"
+                    }
+                };
+                await channel.SendMessageAsync(embed);
+            };
+
             client.ComponentInteractionCreated += async (s, e) =>
             {
                 foreach (var p in Util.PendingInteractions)

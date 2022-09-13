@@ -191,20 +191,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Error:**__",
-                    Description = $"*{ex.Message}*",
-                    Url = Util.GetCouncilUrl(),
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
-                Console.WriteLine(ex.ToString());
+                await Util.ThrowError(ctx, ex);
 
             }
         }
@@ -314,20 +301,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*{ex.Message}*",
-                    Url = Util.GetCouncilUrl(),
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
-                Console.WriteLine(ex.ToString());
+                await Util.ThrowError(ctx, ex);
             }
         }
 
@@ -454,20 +428,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*{ex.Message}*",
-                    Url = Util.GetCouncilUrl(),
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
-                Console.WriteLine(ex.ToString());
+                await Util.ThrowError(ctx, ex);
             }
         }
 
@@ -663,20 +624,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*{ex.Message}*",
-                    Url = Util.GetCouncilUrl(),
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
-                Console.WriteLine(ex.ToString());
+                await Util.ThrowError(ctx, ex);
             }
         }
 
@@ -760,20 +708,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*{ex.Message}*",
-                    Url = Util.GetCouncilUrl(),
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
-                Console.WriteLine(ex.ToString());
+                await Util.ThrowError(ctx, ex);
             }
         }
 
@@ -809,20 +744,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Error:**__",
-                    Description = $"*{ex.Message}*",
-                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
-                Console.WriteLine(ex.ToString());
+                await Util.ThrowError(ctx, ex);
             }
         }
 
@@ -859,20 +781,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Error:**__",
-                    Description = $"*{ex.Message}*",
-                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
-                Console.WriteLine(ex.ToString());
+                await Util.ThrowError(ctx, ex);
             }
         }
 
@@ -909,20 +818,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Error:**__",
-                    Description = $"*{ex.Message}*",
-                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
-                Console.WriteLine(ex.ToString());
+                await Util.ThrowError(ctx, ex);
             }
         }
 
@@ -992,20 +888,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Error:**__",
-                    Description = $"*{ex.Message}*",
-                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
-                Console.WriteLine(ex.ToString());
+                await Util.ThrowError(ctx, ex);
             }
         }
     }

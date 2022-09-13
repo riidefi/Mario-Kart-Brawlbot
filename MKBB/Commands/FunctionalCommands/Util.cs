@@ -10,6 +10,9 @@ using System.Collections.Generic;
 using DSharpPlus;
 using static IronPython.Modules.PythonRegex;
 using DSharpPlus.SlashCommands;
+using System.Threading.Tasks;
+using System.Threading.Channels;
+using System.Runtime.Remoting.Channels;
 
 namespace MKBB.Commands
 {
@@ -381,6 +384,81 @@ namespace MKBB.Commands
                 }
             }
             return index;
+        }
+
+        public static async Task ThrowError(InteractionContext ctx, Exception ex)
+        {
+            var embed = new DiscordEmbedBuilder
+            {
+                Color = new DiscordColor("#FF0000"),
+                Title = $"__**Error:**__",
+                Description = $"*{ex.Message}*",
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                }
+            };
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+
+            DiscordChannel channel = ctx.Channel;
+
+            foreach (var c in ctx.Guild.Channels)
+            {
+                if (c.Value.Id == 1019149329556062278)
+                {
+                    channel = c.Value;
+                }
+            }
+
+            string options = "";
+
+            if (ctx.Interaction.Data.Options != null)
+            {
+                foreach (var option in ctx.Interaction.Data.Options)
+                {
+                    options += $" {option.Name}: *{option.Value}*";
+                }
+            }
+
+            embed = new DiscordEmbedBuilder
+            {
+                Color = new DiscordColor("#FF0000"),
+                Title = $"__**Error:**__",
+                Description = $"'/{ctx.Interaction.Data.Name}{options}' was used by <@{ctx.User.Id}>." +
+                $"\n\n{ex}",
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    Text = $"Server Time: {DateTime.Now}"
+                }
+            };
+            await channel.SendMessageAsync(embed);
+
+            Console.WriteLine(ex.ToString());
+        }
+
+        public static async Task ThrowInteractionlessError(InteractionContext ctx, Exception ex)
+        {
+            DiscordChannel channel = ctx.Channel;
+
+            foreach (var c in ctx.Guild.Channels)
+            {
+                if (c.Value.Id == 1019149329556062278)
+                {
+                    channel = c.Value;
+                }
+            }
+
+            var embed = new DiscordEmbedBuilder
+            {
+                Color = new DiscordColor("#FF0000"),
+                Title = $"__**Error:**__",
+                Description = $"\n\n{ex}",
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    Text = $"Server Time: {DateTime.Now}"
+                }
+            };
+            await channel.SendMessageAsync(embed);
         }
     }
 }

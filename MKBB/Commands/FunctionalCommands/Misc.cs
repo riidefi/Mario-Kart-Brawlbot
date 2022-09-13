@@ -647,19 +647,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*{ex.Message}*",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
-                Console.WriteLine(ex.ToString());
+                await Util.ThrowError(ctx, ex);
 
                 if (Directory.Exists(@"workdir/"))
                 {
@@ -742,19 +730,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                var embed = new DiscordEmbedBuilder
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Error:**__",
-                    Description = $"*{ex.Message}*",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
-                Console.WriteLine(ex.ToString());
+                await Util.ThrowError(ctx, ex);
             }
         }
     }
