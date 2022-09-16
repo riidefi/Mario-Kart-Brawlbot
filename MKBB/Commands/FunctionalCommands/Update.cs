@@ -326,7 +326,7 @@ namespace MKBB.Commands
 
             var processInfo = new ProcessStartInfo();
             processInfo.FileName = @"sudo";
-            processInfo.Arguments = $"cp rts.json /var/www/brawlbox/";
+            processInfo.Arguments = $"cp rts.json /var/www/brawlbox/MKBB/";
             processInfo.CreateNoWindow = true;
             processInfo.WindowStyle = ProcessWindowStyle.Hidden;
             processInfo.UseShellExecute = false;
@@ -339,7 +339,7 @@ namespace MKBB.Commands
 
             processInfo = new ProcessStartInfo();
             processInfo.FileName = @"sudo";
-            processInfo.Arguments = $"cp rts200.json /var/www/brawlbox/";
+            processInfo.Arguments = $"cp rts200.json /var/www/brawlbox/MKBB/";
             processInfo.CreateNoWindow = true;
             processInfo.WindowStyle = ProcessWindowStyle.Hidden;
             processInfo.UseShellExecute = false;
@@ -352,7 +352,7 @@ namespace MKBB.Commands
 
             processInfo = new ProcessStartInfo();
             processInfo.FileName = @"sudo";
-            processInfo.Arguments = $"cp cts.json /var/www/brawlbox/";
+            processInfo.Arguments = $"cp cts.json /var/www/brawlbox/MKBB/";
             processInfo.CreateNoWindow = true;
             processInfo.WindowStyle = ProcessWindowStyle.Hidden;
             processInfo.UseShellExecute = false;
@@ -365,7 +365,7 @@ namespace MKBB.Commands
 
             processInfo = new ProcessStartInfo();
             processInfo.FileName = @"sudo";
-            processInfo.Arguments = $"cp cts200.json /var/www/brawlbox/";
+            processInfo.Arguments = $"cp cts200.json /var/www/brawlbox/MKBB/";
             processInfo.CreateNoWindow = true;
             processInfo.WindowStyle = ProcessWindowStyle.Hidden;
             processInfo.UseShellExecute = false;

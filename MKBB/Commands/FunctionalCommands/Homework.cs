@@ -108,35 +108,35 @@ namespace MKBB.Commands
                 string dl = string.Empty;
                 if (download.ToLowerInvariant().Contains("discord"))
                 {
-                    dl = $"=HYPERLINK({download}, Discord)";
+                    dl = $"=HYPERLINK(\"{download}\", \"Discord\")";
                 }
                 else if (download.ToLowerInvariant().Contains("google"))
                 {
-                    dl = $"=HYPERLINK({download}, Google Drive)";
+                    dl = $"=HYPERLINK(\"{download}\", \"Google Drive\")";
                 }
                 else if (download.ToLowerInvariant().Contains("mega"))
                 {
-                    dl = $"=HYPERLINK({download}, Mega)";
+                    dl = $"=HYPERLINK(\"{download}\", \"Mega\")";
                 }
                 else if (download.ToLowerInvariant().Contains("mediafire"))
                 {
-                    dl = $"=HYPERLINK({download}, MediaFire)";
+                    dl = $"=HYPERLINK(\"{download}\", \"MediaFire\")";
                 }
                 else if (download.ToLowerInvariant().Contains("icedrive"))
                 {
-                    dl = $"=HYPERLINK({download}, Icedrive)";
+                    dl = $"=HYPERLINK(\"{download}\", \"Icedrive\")";
                 }
                 else if (download.ToLowerInvariant().Contains("sync"))
                 {
-                    dl = $"=HYPERLINK({download}, Sync)";
+                    dl = $"=HYPERLINK(\"{download}\", \"Sync\")";
                 }
                 else if (download.ToLowerInvariant().Contains("pcloud"))
                 {
-                    dl = $"=HYPERLINK({download}, pCloud)";
+                    dl = $"=HYPERLINK(\"{download}\", \"pCloud\")";
                 }
                 else
                 {
-                    dl = $"=HYPERLINK({download}, Unregistered)";
+                    dl = $"=HYPERLINK(\"{download}\", \"Unregistered\")";
                 }
 
                 IList<object> obj = new List<object>

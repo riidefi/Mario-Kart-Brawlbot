@@ -110,7 +110,7 @@ namespace MKBB.Commands
 
                 if (embeds.Count > 1)
                 {
-                    builder.AddComponents(Util.GeneratePageArrows());
+                    builder.AddComponents(Util.GeneratePageArrows(ctx));
                 }
 
                 var message = await ctx.EditResponseAsync(builder);
@@ -814,7 +814,7 @@ namespace MKBB.Commands
 
                 else if (arg.ToLowerInvariant().Contains("rts") || arg.ToLowerInvariant().Contains("cts"))
                 {
-                    var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows()));
+                    var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows(ctx)));
 
                     PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
@@ -1091,7 +1091,7 @@ namespace MKBB.Commands
                             }
                         }
                     };
-                    var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows()));
+                    var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows(ctx)));
 
                     PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 

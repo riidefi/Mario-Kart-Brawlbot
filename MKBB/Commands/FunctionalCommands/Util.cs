@@ -217,10 +217,18 @@ namespace MKBB.Commands
             return new DiscordLinkButtonComponent(GetCouncilUrl(), "Council Page");
         }
 
-        public static DiscordButtonComponent[] GeneratePageArrows()
+        public static DiscordButtonComponent[] GeneratePageArrows(InteractionContext ctx)
         {
-            var leftButton = new DiscordButtonComponent(ButtonStyle.Primary, "leftButton", "🢀");
-            var rightButton = new DiscordButtonComponent(ButtonStyle.Primary, "rightButton", "🢂");
+            var leftButton = new DiscordButtonComponent(ButtonStyle.Primary, "leftButton", "", false, new DiscordComponentEmoji(DiscordEmoji.FromName(ctx.Client, ":arrow_backward:")));
+            var rightButton = new DiscordButtonComponent(ButtonStyle.Primary, "rightButton", "", false, new DiscordComponentEmoji(DiscordEmoji.FromName(ctx.Client, ":arrow_forward:")));
+
+            return new DiscordButtonComponent[] { leftButton, rightButton };
+        }
+
+        public static DiscordButtonComponent[] GeneratePageArrows(DiscordClient client)
+        {
+            var leftButton = new DiscordButtonComponent(ButtonStyle.Primary, "leftButton", "", false, new DiscordComponentEmoji(DiscordEmoji.FromName(client, ":arrow_backward:")));
+            var rightButton = new DiscordButtonComponent(ButtonStyle.Primary, "rightButton", "", false, new DiscordComponentEmoji(DiscordEmoji.FromName(client, ":arrow_forward:")));
 
             return new DiscordButtonComponent[] { leftButton, rightButton };
         }

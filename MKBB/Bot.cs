@@ -97,7 +97,7 @@ namespace MKBB
                             await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage,
                                 new DiscordInteractionResponseBuilder()
                                 .AddEmbed(p.Pages[p.CurrentPage])
-                                .AddComponents(Util.GeneratePageArrows()));
+                                .AddComponents(Util.GeneratePageArrows(Client)));
                         }
                     }
                     else if (e.Id == "leftButton")
@@ -108,7 +108,7 @@ namespace MKBB
                             await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage,
                                 new DiscordInteractionResponseBuilder()
                                 .AddEmbed(p.Pages[p.CurrentPage])
-                                .AddComponents(Util.GeneratePageArrows()));
+                                .AddComponents(Util.GeneratePageArrows(Client)));
                         }
                     }
                 }
