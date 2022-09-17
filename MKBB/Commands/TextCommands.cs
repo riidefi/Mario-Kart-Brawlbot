@@ -57,11 +57,10 @@ namespace MKBB.Commands
                             "\n/delhw track" +
                             "\n/createtest" +
                             "\n/starttimers" +
-                            "\n/missedhw member" +
-                            "\n/resetmissedhw member" +
-                            "\n/checkmissedhw" +
-                            "\n/removemissedhw member" +
-                            "\n/addmissedhw member" +
+                            "\n/strikes member" +
+                            "\n/resetstrikes member" +
+                            "\n/removestrike member" +
+                            "\n/addstrike member" +
                             "\n/randomassign (reset)" +
                             "\n/assignedthreads member" +
                             "\n/removeassignedthread thread id/all" +

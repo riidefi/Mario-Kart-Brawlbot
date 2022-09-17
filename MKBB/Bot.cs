@@ -159,7 +159,7 @@ namespace MKBB
 
             SlashCommands.RegisterCommands<TextCommands>();
             SlashCommands.RegisterCommands<Update>();
-            SlashCommands.RegisterCommands<Homework>();
+            SlashCommands.RegisterCommands<Council>();
             SlashCommands.RegisterCommands<Misc>();
             SlashCommands.RegisterCommands<Info>();
             SlashCommands.RegisterCommands<Issues>();
