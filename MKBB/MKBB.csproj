@@ -308,26 +308,27 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bot.cs" />
-    <Compile Include="Commands\FunctionalCommands\Homework.cs" />
+    <Compile Include="Commands\FunctionalCommands\Council.cs" />
     <Compile Include="Commands\FunctionalCommands\Info.cs" />
     <Compile Include="Commands\FunctionalCommands\Issues.cs" />
     <Compile Include="Commands\FunctionalCommands\Threads.cs" />
     <Compile Include="Commands\FunctionalCommands\Update.cs" />
-    <Compile Include="Commands\FunctionalCommands\Util.cs" />
-    <Compile Include="CouncilJson.cs" />
+    <Compile Include="ClassOrStruct\Util.cs" />
+    <Compile Include="ClassOrStruct\CouncilJson.cs" />
     <Compile Include="Commands\FunctionalCommands\Misc.cs" />
-    <Compile Include="CupInfo.cs" />
-    <Compile Include="PendingPaginator.cs" />
+    <Compile Include="ClassOrStruct\CupInfo.cs" />
+    <Compile Include="ClassOrStruct\PendingPaginator.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Scrape.cs" />
+    <Compile Include="ClassOrStruct\Scrape.cs" />
     <Compile Include="Commands\FunctionalCommands\Testing.cs" />
-    <Compile Include="Track.cs" />
+    <Compile Include="ClassOrStruct\Tool.cs" />
+    <Compile Include="ClassOrStruct\Track.cs" />
     <Compile Include="Commands\TextCommands.cs" />
-    <Compile Include="ConfigJson.cs" />
+    <Compile Include="ClassOrStruct\ConfigJson.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

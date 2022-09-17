@@ -23,7 +23,7 @@ using System.Threading.Tasks;
 namespace MKBB.Commands
 {
 
-    public class Homework : ApplicationCommandModule
+    public class Council : ApplicationCommandModule
     {
         [SlashCommand("addhw", "Adds homework to the council sheet.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
@@ -712,9 +712,9 @@ namespace MKBB.Commands
             }
         }
 
-        [SlashCommand("addmissedhw", "To increment a council member's missed homework count.")]
+        [SlashCommand("addstrike", "To increment a council member's missed homework count.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
-        public async Task IncrementMissedHw(InteractionContext ctx,
+        public async Task IncrementStrikes(InteractionContext ctx,
             [Option("member", "The name of the council member you are incrementing the missed homework count of.")] string member)
         {
             try
@@ -732,7 +732,7 @@ namespace MKBB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Notice:**__",
-                    Description = $"*Missed homework count for {councilJson[ix].SheetName} has been incremented.*",
+                    Description = $"*Strike count for {councilJson[ix].SheetName} has been incremented.*",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -748,9 +748,9 @@ namespace MKBB.Commands
             }
         }
 
-        [SlashCommand("removemissedhw", "To decrement a council member's missed homework count.")]
+        [SlashCommand("removestrike", "To decrement a council member's missed homework count.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
-        public async Task DecrementMissedHw(InteractionContext ctx,
+        public async Task DecrementStrikes(InteractionContext ctx,
             [Option("member", "The name of the council member you are decrementing the missed homework count of.")] string member)
         {
             await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
@@ -769,7 +769,7 @@ namespace MKBB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Notice:**__",
-                    Description = $"*Missed homework count for {councilJson[ix].SheetName} has been decremented.*",
+                    Description = $"*Strike count for {councilJson[ix].SheetName} has been decremented.*",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -785,9 +785,9 @@ namespace MKBB.Commands
             }
         }
 
-        [SlashCommand("resetmissedhw", "To reset a council member's, or all of council's missed homework count.")]
+        [SlashCommand("resetstrikes", "To reset a council member's, or all of council's missed homework count.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
-        public async Task ResetMissedHw(InteractionContext ctx,
+        public async Task ResetStrikes(InteractionContext ctx,
             [Option("member", "The name of the council member you are resetting the missed homework count of.")] string member)
         {
             try
@@ -806,7 +806,7 @@ namespace MKBB.Commands
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Notice:**__",
-                    Description = $"*Missed homework count for {councilJson[ix].SheetName} has been reset.*",
+                    Description = $"*Strike count for {councilJson[ix].SheetName} has been reset.*",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -822,8 +822,8 @@ namespace MKBB.Commands
             }
         }
 
-        [SlashCommand("missedhw", "Either gets a specific member's missed homework count, or a list of all.")]
-        public async Task DisplayMissedHw(InteractionContext ctx,
+        [SlashCommand("strikes", "Either gets a specific member's missed homework count, or a list of all.")]
+        public async Task DisplayStrikes(InteractionContext ctx,
             [Option("member", "The name of the council member you are requesting the missed homework count of.")] string member = "")
         {
             try
@@ -877,7 +877,7 @@ namespace MKBB.Commands
                 var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Council Members Missed Homework Count:**__",
+                    Title = $"__**Council Members Strike Count:**__",
                     Description = description,
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
