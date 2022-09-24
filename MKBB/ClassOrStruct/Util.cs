@@ -21,8 +21,8 @@ namespace MKBB.Commands
         public enum CheckType : byte
         {
             STRING_MATCH = 0x0,
-            INCOMPLETE_STRING = 0x1,
-            ABBREVIATION = 0x2,
+            ABBREVIATION = 0x1,
+            INCOMPLETE_STRING = 0x2,
             LEVENSHTEIN = 0x3,
             NO_MATCH = 0x4
         }
@@ -247,6 +247,14 @@ namespace MKBB.Commands
                     index = i;
                     break;
                 }
+                else if (CompareStringAbbreviation(comparer, list[i].Name))
+                {
+                    if (type > CheckType.ABBREVIATION)
+                    {
+                        type = CheckType.ABBREVIATION;
+                        index = i;
+                    }
+                }
                 else if (CompareIncompleteStrings(list[i].Name, comparer))
                 {
                     if (type > CheckType.INCOMPLETE_STRING)
@@ -255,11 +263,43 @@ namespace MKBB.Commands
                         index = i;
                     }
                 }
+                else if (CompareStringsLevenshteinDistance(list[i].Name, comparer))
+                {
+                    if (type == CheckType.NO_MATCH)
+                    {
+                        type = CheckType.LEVENSHTEIN;
+                        index = i;
+                    }
+                }
+            }
+            return index;
+        }
+
+        public static int ListNameCheck(List<Tool> list, string comparer, int startIx = 0)
+        {
+            int index = -1;
+            CheckType type = CheckType.NO_MATCH;
+            for (int i = startIx; i < list.Count; i++)
+            {
+                if (CompareStrings(list[i].Name, comparer))
+                {
+                    type = CheckType.STRING_MATCH;
+                    index = i;
+                    break;
+                }
                 else if (CompareStringAbbreviation(comparer, list[i].Name))
                 {
                     if (type > CheckType.ABBREVIATION)
                     {
                         type = CheckType.ABBREVIATION;
+                        index = i;
+                    }
+                }
+                else if (CompareIncompleteStrings(list[i].Name, comparer))
+                {
+                    if (type > CheckType.INCOMPLETE_STRING)
+                    {
+                        type = CheckType.INCOMPLETE_STRING;
                         index = i;
                     }
                 }
@@ -287,19 +327,19 @@ namespace MKBB.Commands
                     index = i;
                     break;
                 }
-                else if (CompareIncompleteStrings(list[i].ToString(), comparer))
-                {
-                    if (type > CheckType.INCOMPLETE_STRING)
-                    {
-                        type = CheckType.INCOMPLETE_STRING;
-                        index = i;
-                    }
-                }
                 else if (CompareStringAbbreviation(comparer, list[i].ToString()))
                 {
                     if (type > CheckType.ABBREVIATION)
                     {
                         type = CheckType.ABBREVIATION;
+                        index = i;
+                    }
+                }
+                else if (CompareIncompleteStrings(list[i].ToString(), comparer))
+                {
+                    if (type > CheckType.INCOMPLETE_STRING)
+                    {
+                        type = CheckType.INCOMPLETE_STRING;
                         index = i;
                     }
                 }
@@ -329,19 +369,19 @@ namespace MKBB.Commands
                         index = i;
                         break;
                     }
-                    else if (CompareIncompleteStrings(list[ix1][i].ToString(), comparer))
-                    {
-                        if (type > CheckType.INCOMPLETE_STRING)
-                        {
-                            type = CheckType.INCOMPLETE_STRING;
-                            index = i;
-                        }
-                    }
                     else if (CompareStringAbbreviation(comparer, list[ix1][i].ToString()))
                     {
                         if (type > CheckType.ABBREVIATION)
                         {
                             type = CheckType.ABBREVIATION;
+                            index = i;
+                        }
+                    }
+                    else if (CompareIncompleteStrings(list[ix1][i].ToString(), comparer))
+                    {
+                        if (type > CheckType.INCOMPLETE_STRING)
+                        {
+                            type = CheckType.INCOMPLETE_STRING;
                             index = i;
                         }
                     }
@@ -468,5 +508,105 @@ namespace MKBB.Commands
             };
             await channel.SendMessageAsync(embed);
         }
+
+        public static List<string> Characters = new List<string>
+        {
+            "Mario",
+            "Baby Peach",
+            "Waluigi",
+            "Bowser",
+            "Baby Daisy",
+            "Dry Bones",
+            "Baby Mario",
+            "Luigi",
+            "Toad",
+            "Donkey Kong",
+            "Yoshi",
+            "Wario",
+            "Baby Luigi",
+            "Toadette",
+            "Koopa Troopa",
+            "Daisy",
+            "Peach",
+            "Birdo",
+            "Diddy Kong",
+            "King Boo",
+            "Bowser Jr.",
+            "Dry Bowser",
+            "Funky Kong",
+            "Rosalina",
+            "Small Mii Outfit A",
+            "Small Mii Outfit A",
+            "Small Mii Outfit B",
+            "Small Mii Outfit B",
+            "Small Mii Outfit C",
+            "Small Mii Outfit C",
+            "Medium Mii Outfit A",
+            "Medium Mii Outfit A",
+            "Medium Mii Outfit B",
+            "Medium Mii Outfit B",
+            "Medium Mii Outfit C",
+            "Medium Mii Outfit C",
+            "Large Mii Outfit A",
+            "Large Mii Outfit A",
+            "Large Mii Outfit B",
+            "Large Mii Outfit B",
+            "Large Mii Outfit C",
+            "Large Mii Outfit C",
+            "Medium Mii",
+            "Small Mii",
+            "Large Mii",
+            "Peach",
+            "Daisy",
+            "Rosalina"
+        };
+
+        public static List<string> Vehicles = new List<string>
+        {
+            "Standard Kart S",
+            "Standard Kart M",
+            "Standard Kart L",
+            "Baby Booster",
+            "Classic Dragster",
+            "Offroader",
+            "Mini Beast",
+            "Wild Wing",
+            "Flame Flyer",
+            "Cheep Charger",
+            "Super Blooper",
+            "Piranha Prowler",
+            "Rally Romper",
+            "Royal Racer",
+            "Jetsetter",
+            "Blue Falcon",
+            "Sprinter",
+            "Honeycoupe",
+            "Standard Bike S",
+            "Standard Bike M",
+            "Standard Bike L",
+            "Bullet Bike",
+            "Mach Bike",
+            "Bowser Bike",
+            "Bit Bike",
+            "Bon Bon",
+            "Wario Bike",
+            "Quacker",
+            "Rapide",
+            "Shooting Star",
+            "Magikruiser",
+            "Nitrocycle",
+            "Spear",
+            "Jet Bubble",
+            "Dolphin Dasher",
+            "Phantom"
+        };
+
+        public static List<string> Controllers = new List<string>
+        {
+            "Wii Wheel",
+            "Nunchuck",
+            "Classic Controller",
+            "Gamecube Controller"
+        };
     }
 }

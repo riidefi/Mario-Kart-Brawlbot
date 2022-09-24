@@ -22,184 +22,6 @@ namespace MKBB.Commands
 {
     public class Issues : ApplicationCommandModule
     {
-        [SlashCommand("issues", "Displays a list of issues in order of issue count.")]
-        public async Task GetTrackIssues(InteractionContext ctx,
-            [Option("track-name", "The track that the issues were found on.")] string track = "")
-        {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-
-            var json = string.Empty;
-            var description = string.Empty;
-
-            string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-            ServiceAccountCredential credential = new ServiceAccountCredential(
-               new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-            var service = new SheetsService(new BaseClientService.Initializer()
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "Mario Kart Brawlbot",
-            });
-
-            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
-            var response = await request.ExecuteAsync();
-            foreach (var t in response.Values)
-            {
-                while (t.Count < 7)
-                {
-                    t.Add("");
-                }
-            }
-
-            try
-            {
-                json = File.ReadAllText("cts.json");
-                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
-
-                Track trackDisplay = new Track();
-                string maj = string.Empty;
-                string min = string.Empty;
-
-                if (track == "")
-                {
-                    int j = 0;
-                    Dictionary<string, int> issueCount = new Dictionary<string, int>();
-
-                    foreach (var v in response.Values)
-                    {
-                        if (v[0].ToString() != "Track")
-                        {
-                            int count = v[5].ToString().Count(c => c == '\n') + v[6].ToString().Count(c => c == '\n');
-                            if (v[5].ToString().ToCharArray().Length != 0 && v[5].ToString().ToCharArray()[0] == '-')
-                            {
-                                count++;
-                            }
-                            if (v[6].ToString().ToCharArray().Length != 0 && v[6].ToString().ToCharArray()[0] == '-')
-                            {
-                                count++;
-                            }
-                            issueCount.Add(v[0].ToString(), count);
-                        }
-                    }
-                    issueCount = issueCount.OrderByDescending(a => a.Value).ToDictionary(a => a.Key, a => a.Value);
-
-                    List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
-
-                    foreach (var t in issueCount.Keys.ToList())
-                    {
-                        for (int i = 0; i < response.Values.Count; i++)
-                        {
-                            if (Util.CompareIncompleteStrings(t, response.Values[i][0].ToString()))
-                            {
-                                if (response.Values[i][5].ToString() == "")
-                                {
-                                    maj = "-No reported bugs";
-                                }
-                                else
-                                {
-                                    maj = response.Values[i][5].ToString();
-                                }
-                                if (response.Values[i][6].ToString() == "")
-                                {
-                                    min = "-No reported bugs";
-                                }
-                                else
-                                {
-                                    min = response.Values[i][6].ToString();
-                                }
-                                description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*";
-                                j++;
-
-                                var embed = new DiscordEmbedBuilder
-                                {
-                                    Color = new DiscordColor("#FF0000"),
-                                    Title = $"__**Known issues on {response.Values[i][0]}:**__",
-                                    Description = description,
-                                    Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                                    {
-                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                                    }
-                                };
-                                embeds.Add(embed);
-                            }
-                        }
-                    }
-
-                    var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows(ctx)));
-
-                    PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
-
-                    Util.PendingInteractions.Add(pending);
-                }
-                else
-                {
-                    int index1 = Util.ListNameCheck(trackList, track);
-                    int index2 = Util.ListNameCheck(response.Values, track, ix2: 0);
-
-                    if (index1 > -1 && index2 > -1)
-                    {
-                        if (response.Values[index2][5].ToString() == "")
-                        {
-                            maj = "-No reported bugs";
-                        }
-                        else
-                        {
-                            maj = response.Values[index2][5].ToString();
-                        }
-                        if (response.Values[index2][6].ToString() == "")
-                        {
-                            min = "-No reported bugs";
-                        }
-                        else
-                        {
-                            min = response.Values[index2][6].ToString();
-                        }
-                        description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*";
-                        trackDisplay = trackList[index1];
-                    }
-
-                    if (index1 < 0 || index2 < 0)
-                    {
-                        var embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = "__**Error:**__",
-                            Description = $"*{track} could not be found.\nThe track does not exist, or is not in CTGP.*",
-                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                    }
-                    else
-                    {
-                        var embed = new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Known issues on {trackDisplay.Name} *(First result)*:**__",
-                            Description = description,
-                            Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        };
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                await Util.ThrowError(ctx, ex);
-            }
-        }
-
         [SlashCommand("reportissue", "Used to report issues on tracks.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
         public async Task ReportIssue(InteractionContext ctx,
@@ -211,7 +33,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 ? false : true });
 
                 string json = string.Empty;
                 string maj = string.Empty;
@@ -322,7 +144,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 ? false : true });
 
                 string json = string.Empty;
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
@@ -412,7 +234,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 ? false : true });
 
                 string json = string.Empty;
                 string description = string.Empty;

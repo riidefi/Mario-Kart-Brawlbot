@@ -318,6 +318,10 @@
     <Compile Include="Commands\FunctionalCommands\Misc.cs" />
     <Compile Include="ClassOrStruct\CupInfo.cs" />
     <Compile Include="ClassOrStruct\PendingPaginator.cs" />
+    <Compile Include="ClassOrStruct\Player.cs" />
+    <Compile Include="ClassOrStruct\Href.cs" />
+    <Compile Include="Commands\FunctionalCommands\PlayerManagement.cs" />
+    <Compile Include="ClassOrStruct\Ghost.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -344,11 +348,13 @@
     <None Include="key.p12" />
     <None Include="packages.config" />
     <None Include="assigned.json" />
+    <None Include="bin\Debug\players.json" />
     <None Include="Resources\lecode-JAP.bin" />
     <None Include="Resources\lecode-PAL.bin" />
     <None Include="Resources\lecode-USA.bin" />
     <None Include="Resources\MenuSingle_E_mom.szs" />
     <None Include="Resources\MenuSingle_E_reg.szs" />
+    <None Include="bin\Debug\tools.json" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="bin\Debug\lastUpdated.txt" />

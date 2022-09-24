@@ -58,7 +58,7 @@ namespace MKBB.Commands
             Util.PendingInteractions = new List<PendingPaginator>();
             try
             {
-                await CheckHw(ctx);
+                await CheckStrikes(ctx);
                 await UpdateInit(ctx, "all");
             }
             catch (Exception ex)
@@ -118,10 +118,10 @@ namespace MKBB.Commands
             string ctttUrl = "http://tt.chadsoft.co.uk/ctgp-leaderboards.json";
             string rttt200Url = "http://tt.chadsoft.co.uk/original-track-leaderboards-200cc.json";
             string cttt200Url = "http://tt.chadsoft.co.uk/ctgp-leaderboards-200cc.json";
-            string ctwwUrl1 = "https://wiimmfi.de/stats/track/mv/ctgp?m=json&p=std,c1,0";
-            string ctwwUrl2 = "https://wiimmfi.de/stats/track/mv/ctgp?m=json&p=std,c1,0,100";
-            string ctwwUrl3 = "https://wiimmfi.de/stats/track/mv/ctgp?m=json&p=std,c1,0,200";
-            string wwUrl = "https://wiimmfi.de/stats/track/mv/ww?m=json&p=std,c1,0";
+            string ctwwUrl1 = "https://wiimmfi.de/stats/track/mv/ctgp?m=json&p=std,c2,0";
+            string ctwwUrl2 = "https://wiimmfi.de/stats/track/mv/ctgp?m=json&p=std,c2,0,100";
+            string ctwwUrl3 = "https://wiimmfi.de/stats/track/mv/ctgp?m=json&p=std,c2,0,200";
+            string wwUrl = "https://wiimmfi.de/stats/track/mv/ww?m=json&p=std,c2,0";
 
             // Leaderboards
 
@@ -134,23 +134,23 @@ namespace MKBB.Commands
 
             foreach (var track in rtRawJson.Leaderboard)
             {
-                track.LeaderboardLink = track.Link.Href.LeaderboardLink;
-                track.Link = null;
+                track.LeaderboardLink = track.LinkContainer.Href.URL;
+                track.LinkContainer = null;
             }
             foreach (var track in ctRawJson.Leaderboard)
             {
-                track.LeaderboardLink = track.Link.Href.LeaderboardLink;
-                track.Link = null;
+                track.LeaderboardLink = track.LinkContainer.Href.URL;
+                track.LinkContainer = null;
             }
             foreach (var track in rtRaw200Json.Leaderboard)
             {
-                track.LeaderboardLink = track.Link.Href.LeaderboardLink;
-                track.Link = null;
+                track.LeaderboardLink = track.LinkContainer.Href.URL;
+                track.LinkContainer = null;
             }
             foreach (var track in ctRaw200Json.Leaderboard)
             {
-                track.LeaderboardLink = track.Link.Href.LeaderboardLink;
-                track.Link = null;
+                track.LeaderboardLink = track.LinkContainer.Href.URL;
+                track.LinkContainer = null;
             }
 
             var rtJson = JsonConvert.SerializeObject(rtRawJson.Leaderboard);
@@ -308,6 +308,26 @@ namespace MKBB.Commands
                 await Util.Scraper.GetSlotIds(trackListRt, trackListRt200, trackList, trackList200);
             }
 
+            string playerListJson = File.ReadAllText("players.json");
+            List<Player> playerList = JsonConvert.DeserializeObject<List<Player>>(playerListJson);
+
+            foreach (var player in playerList)
+            {
+                try
+                {
+                    var playerJson = JsonConvert.DeserializeObject<Player>(await webClient.DownloadStringTaskAsync(player.PlayerLink));
+                    player.MiiName = playerJson.MiiName;
+                    Console.WriteLine($"Updating data for {player.MiiName}.");
+                }
+                catch
+                {
+                    Console.WriteLine($"Download failed for {player.MiiName}.");
+                }
+            }
+
+            playerListJson = JsonConvert.SerializeObject(playerList);
+            File.WriteAllText("players.json", playerListJson);
+
             JsonSerializerSettings settings = new JsonSerializerSettings()
             {
                 DefaultValueHandling = DefaultValueHandling.Ignore
@@ -386,25 +406,25 @@ namespace MKBB.Commands
 
         }
 
-        [SlashCommand("checkmissedhw", "Checks council spreadsheet for missed homework, and also notifies if there is homework due.")]
+        [SlashCommand("checkstrikes", "Checks council spreadsheet for strikes, and also notifies if there is homework due.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
-        public async Task CheckHwInit(InteractionContext ctx)
+        public async Task CheckStrikesInit(InteractionContext ctx)
         {
-            if (ctx.CommandName == "checkmissedhw")
+            if (ctx.CommandName == "checkstrikes")
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
             }
             try
             {
-                await CheckHw(ctx);
+                await CheckStrikes(ctx);
 
-                if (ctx.CommandName == "checkmissedhw")
+                if (ctx.CommandName == "checkstrikes")
                 {
                     var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Notice:**__",
-                        Description = $"*Any missed homework has been recorded.*",
+                        Description = $"*Any strikes have been recorded.*",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Server Time: {DateTime.Now}"
@@ -415,7 +435,7 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                if (ctx.CommandName == "checkmissedhw")
+                if (ctx.CommandName == "checkstrikes")
                 {
                     await Util.ThrowError(ctx, ex);
                 }
@@ -426,7 +446,7 @@ namespace MKBB.Commands
             }
         }
 
-        public async Task CheckHw(InteractionContext ctx)
+        public async Task CheckStrikes(InteractionContext ctx)
         {
             List<string> trackDisplay = new List<string>();
             string json;
@@ -594,7 +614,14 @@ namespace MKBB.Commands
                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                     }
                 };
-                await ctx.CreateResponseAsync("", embed, true);
+                foreach (var c in ctx.Guild.Channels)
+                {
+                    if (c.Value.Id == 1019149329556062278)
+                    {
+                        channel = c.Value;
+                    }
+                }
+                await channel.SendMessageAsync(embed);
             }
 
 

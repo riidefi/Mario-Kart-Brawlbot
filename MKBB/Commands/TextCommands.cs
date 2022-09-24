@@ -14,31 +14,32 @@ namespace MKBB.Commands
         [SlashCommand("help", "Gives a list of commands available.")]
         public async Task Help(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 ? false : true });
             string description = "__**Standard Commands:**__" +
-                "\n/help" +
+                "\n/bkt track" +
                 "\n/cttp" +
+                "\n/help" +
+                "\n/info track" +
+                "\n/issues track" +
+                "\n/nextupdate" +
+                "\n/pop rts/cts/track online/tts" +
+                "\n/rating track" +
                 "\n/source" +
                 "\n/staff track" +
-                "\n/issues track" +
                 "\n/subissues track" +
-                "\n/info track" +
-                "\n/bkt track" +
-                "\n/pop rts/cts/track online/tts" +
                 "\n/summary track" +
-                "\n/nextupdate" +
-                "\n/rating track";
+                "\n/tools name";
 
             foreach (var role in ctx.Member.Roles)
             {
                 if (role.Name == "Track Council")
                 {
                     description += "\n\n__**Council Commands:**__" +
-                        "\n/hw" +
-                        "\n/gethw track member" +
-                        "\n/submithw yes/fixes/neutral/no track feedback" +
                         "\n/assignedthreads" +
-                        "\n/missedhw";
+                        "\n/gethw track member" +
+                        "\n/hw" +
+                        "\n/strikes member" +
+                        "\n/submithw yes/fixes/neutral/no track feedback";
                 }
             }
 
@@ -48,25 +49,28 @@ namespace MKBB.Commands
                 {
                     {
                         description += "\n\n__**Admin Commands:**__" +
-                            "\n/update" +
-                            "\n/lastupdated" +
-                            "\n/reportissue major/minor track -Issue" +
-                            "\n/clearissues track" +
-                            "\n/replaceissues old track new track author version slot laps" +
                             "\n/addhw track author version download link slot-filename speed/lap modifiers notes" +
-                            "\n/delhw track" +
-                            "\n/createtest" +
-                            "\n/starttimers" +
-                            "\n/strikes member" +
-                            "\n/resetstrikes member" +
-                            "\n/removestrike member" +
                             "\n/addstrike member" +
-                            "\n/randomassign (reset)" +
-                            "\n/assignedthreads member" +
-                            "\n/removeassignedthread thread id/all" +
+                            "\n/addtool name creators description download" +
                             "\n/assign member thread id" +
+                            "\n/assignedthreads member" +
+                            "\n/clearissues track" +
+                            "\n/createtest" +
+                            "\n/delhw track" +
+                            "\n/deltool name" +
+                            "\n/dmrole role message" +
+                            "\n/edittool oldname name creators description download" +
+                            "\n/lastupdated" +
+                            "\n/randomassign (reset)" +
+                            "\n/removeassignedthread thread id/all" +
+                            "\n/removestrike member" +
+                            "\n/replaceissues old track new track author version slot laps" +
+                            "\n/reportissue major/minor track -Issue" +
+                            "\n/resetstrikes member" +
+                            "\n/starttimers" +
+                            "\n/strikes member/all" +
                             "\n/unassign member thread id" +
-                            "\n/dmrole role message";
+                            "\n/update";
                     }
                 }
             }
@@ -90,7 +94,7 @@ namespace MKBB.Commands
         [SlashCommand("cttp", "Gives links relating to the Custom Track Test Pack.")]
         public async Task CTTP(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 ? false : true });
             var embed = new DiscordEmbedBuilder
             {
                 Color = new DiscordColor("#FF0000"),
@@ -110,14 +114,14 @@ namespace MKBB.Commands
         [SlashCommand("sheets", "Gives the links to useful spreadsheets.")]
         public async Task Sheets(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 ? false : true });
             string description = "**Backroom Page:** *This page has all of the information on our finalized updates, and is viewable to the public. The first tab outlines what the next few updates will look like, and the second tab contains all the accepted tracks, with the fixes needed (if any).*" +
                 "\n\n**Testing Notes Page:** *This page is what we fill when doing the online tests. It also contains the downloads for all the tracks in the test.*";
             var message = new DiscordWebhookBuilder();
             bool councilMember = false;
             foreach (var role in ctx.Member.Roles)
             {
-                if (role.Id == 608386209655554058 || role.Id == 228909597090512896)
+                if (role.Id == 608386209655554058 || role.Id == 228909597090512896 && ctx.Channel.Id != 908709951411716166)
                 {
                     councilMember = true;
                     break;
@@ -151,7 +155,7 @@ namespace MKBB.Commands
         [SlashCommand("source", "Gives a link to the source code of this bot.")]
         public async Task SourceCode(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 ? false : true });
             var embed = new DiscordEmbedBuilder
             {
                 Color = new DiscordColor("#FF0000"),

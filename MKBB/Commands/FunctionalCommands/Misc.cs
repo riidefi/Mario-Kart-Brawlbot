@@ -7,22 +7,25 @@ using DSharpPlus.SlashCommands.Attributes;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
+using Newtonsoft.Json;
 using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace MKBB.Commands
 {
     public class Misc : ApplicationCommandModule
     {
-        [SlashCommand("createtest", "Creates a test back for CTTP for CTGP track tests.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        //[SlashCommand("createtest", "Creates a test back for CTTP for CTGP track tests.")]
+        //[SlashRequireUserPermissions(Permissions.Administrator)]
         public async Task CreateTestPack(InteractionContext ctx)
         {
             try
@@ -664,53 +667,28 @@ namespace MKBB.Commands
         [SlashCommand("dmrole", "Direct messages members of a role specified.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
         public async Task DMRole(InteractionContext ctx,
-            [Option("role", "The member role you want to send a direct message to.")] string role,
+            [Option("role", "The member role you want to send a direct message to.")] DiscordRole role,
             [Option("message", "The message you would like to send in the direct message.")] string message)
         {
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
-                DiscordRole discordRole = null;
-                foreach (var r in ctx.Guild.Roles.Values)
+                var members = ctx.Guild.GetAllMembersAsync();
+                foreach (var member in members.Result)
                 {
-                    if (r.Id.ToString() == role.Replace("<@&", string.Empty).Replace(">", string.Empty))
+                    foreach (var r in member.Roles)
                     {
-                        discordRole = r;
-                    }
-                }
-                if (discordRole == null)
-                {
-                    var embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = $"*{role} could not be found in the server.*",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        if (r == role)
                         {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                }
-                else
-                {
-                    var members = ctx.Guild.GetAllMembersAsync();
-                    foreach (var member in members.Result)
-                    {
-                        foreach (var r in member.Roles)
-                        {
-                            if (r == discordRole)
+                            try
                             {
-                                try
-                                {
-                                    await member.SendMessageAsync(message).ConfigureAwait(false);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine(ex.Message);
-                                    Console.WriteLine("DMs are likely closed.");
-                                }
+                                await member.SendMessageAsync(message).ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                                Console.WriteLine("DMs are likely closed.");
                             }
                         }
                     }
@@ -719,7 +697,7 @@ namespace MKBB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Success:**__",
-                        Description = $"*Message was sent to {role} successfully.*",
+                        Description = $"*Message was sent to {role.Mention} successfully.*",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -727,6 +705,185 @@ namespace MKBB.Commands
                     };
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                 }
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
+        [SlashCommand("addtool", "Adds a tool to the list of tools.")]
+        [SlashRequireUserPermissions(Permissions.Administrator)]
+        public async Task AddTool(InteractionContext ctx,
+            [Option("name", "The name of the tool you would like to add.")] string toolName,
+            [Option("creators", "The name(s) of the creators of the tool.")] string toolCreators,
+            [Option("description", "The description of the tool i.e. what it does.")] string toolDescription,
+            [Option("download", "The link to the download for the tool.")] string toolDownload)
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+
+                string json;
+                using (var fs = File.OpenRead("tools.json"))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                List<Tool> toolList = JsonConvert.DeserializeObject<List<Tool>>(json);
+
+                toolList.Add(new Tool
+                {
+                    Name = toolName,
+                    Creators = toolCreators,
+                    Description = toolDescription,
+                    Download = toolDownload
+                });
+
+                toolList = toolList.OrderBy(x => x.Name).ToList();
+                string tools = JsonConvert.SerializeObject(toolList);
+                File.WriteAllText("tools.json", tools);
+
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Tool was added:**__",
+                    Description = $"**Name:**\n" +
+                            $"{toolName}\n" +
+                            $"**Creators:**\n" +
+                            $"{toolCreators}\n" +
+                            $"**Description:**\n" +
+                            $"{toolDescription}\n" +
+                            $"**Download:**\n" +
+                            $"{toolDownload}",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
+        [SlashCommand("edittool", "Adds a tool to the list of tools.")]
+        [SlashRequireUserPermissions(Permissions.Administrator)]
+        public async Task EditTool(InteractionContext ctx,
+            [Option("old-name", "The name of the tool you would like to edit.")] string oldToolName,
+            [Option("name", "The new name for the tool you are editing.")] string toolName = "",
+            [Option("creators", "The new name(s) of the creators of the tool.")] string toolCreators = "",
+            [Option("description", "The new description of the tool i.e. what it does.")] string toolDescription = "",
+            [Option("download", "The new link to the download for the tool.")] string toolDownload = "")
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+
+                string json;
+                using (var fs = File.OpenRead("tools.json"))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                List<Tool> toolList = JsonConvert.DeserializeObject<List<Tool>>(json);
+
+                int index = Util.ListNameCheck(toolList, oldToolName);
+
+                var embed = new DiscordEmbedBuilder();
+                if (index > -1)
+                {
+                    if (toolName != "")
+                    {
+                        toolList[index].Name = toolName;
+                    }
+                    if (toolCreators != "")
+                    {
+                        toolList[index].Creators = toolCreators;
+                    }
+                    if (toolDescription != "")
+                    {
+                        toolList[index].Description = toolDescription;
+                    }
+                    if (toolDownload != "")
+                    {
+                        toolList[index].Download = toolDownload;
+                    }
+
+                    string tools = JsonConvert.SerializeObject(toolList);
+                    File.WriteAllText("tools.json", tools);
+
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**{oldToolName} has been edited:**__",
+                        Description = $"**Name:**\n" +
+                        $"{toolList[index].Name}\n" +
+                        $"**Creators:**\n" +
+                        $"{toolList[index].Creators}\n" +
+                        $"**Description:**\n" +
+                        $"{toolList[index].Description}\n" +
+                        $"**Download:**\n" +
+                        $"{toolList[index].Download}",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                }
+                else
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{oldToolName} could not be found. If you think a tool is missing, contact <@105742694730457088>.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                }
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
+        [SlashCommand("deltool", "Removes a tool from the list of tools.")]
+        [SlashRequireUserPermissions(Permissions.Administrator)]
+        public async Task DeleteTool(InteractionContext ctx,
+            [Option("name", "The name of the tool you would like to delete.")] string toolName)
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+
+                string json;
+                using (var fs = File.OpenRead("tools.json"))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                List<Tool> toolList = JsonConvert.DeserializeObject<List<Tool>>(json);
+
+                int index = Util.ListNameCheck(toolList, toolName);
+
+                string displayName = toolList[index].Name;
+                toolList.RemoveAt(index);
+
+                string tools = JsonConvert.SerializeObject(toolList);
+                File.WriteAllText("tools.json", tools);
+
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Success:**__",
+                    Description = $"*{displayName} has been removed.*",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
             }
             catch (Exception ex)
             {

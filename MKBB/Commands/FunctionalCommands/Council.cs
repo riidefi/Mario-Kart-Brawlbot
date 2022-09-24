@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -435,7 +436,7 @@ namespace MKBB.Commands
         [SlashCommand("gethw", "For council and admins to get homework feedback.")]
         public async Task GetSpecificHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track you're requesting feedback of.")] string track,
-            [Option("member", "The name of the council member you are requesting the feedback of.")] string member)
+            [Option("member", "The council member you are requesting the feedback of.")] DiscordUser member)
         {
             try
             {
@@ -447,28 +448,7 @@ namespace MKBB.Commands
                     json = await sr.ReadToEndAsync().ConfigureAwait(false);
                 List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
 
-                int ix = -1;
-
-                if (member == "")
-                {
-                    ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
-                    if (ix != -1)
-                    {
-                        member = councilJson[ix].SheetName;
-                    }
-                }
-                else
-                {
-                    ix = councilJson.FindIndex(x => Util.CompareStrings(x.SheetName, member));
-                    if (ix == -1)
-                    {
-                        ix = councilJson.FindIndex(x => Util.CompareIncompleteStrings(x.SheetName, member) || Util.CompareStringsLevenshteinDistance(x.SheetName, member));
-                    }
-                    if (ix != -1)
-                    {
-                        member = councilJson[ix].SheetName;
-                    }
-                }
+                int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
 
                 string description = string.Empty;
 
@@ -478,7 +458,7 @@ namespace MKBB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
-                        Description = $"*{member} could not be found on council.*",
+                        Description = $"*{member.Mention} could not be found on council.*",
                         Url = Util.GetCouncilUrl(),
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
@@ -518,7 +498,7 @@ namespace MKBB.Commands
 
                     for (int i = 12; i < response.Values[0].Count; i++)
                     {
-                        if (Util.CompareStrings(member, response.Values[0][i].ToString()))
+                        if (Util.CompareStrings(councilJson[ix].SheetName, response.Values[0][i].ToString()))
                         {
                             sheetIx = i;
                         }
@@ -531,7 +511,7 @@ namespace MKBB.Commands
 
                     foreach (var m in response.Values[0])
                     {
-                        if (m.ToString() == member)
+                        if (m.ToString() == councilJson[ix].SheetName)
                         {
                             k++;
                         }
@@ -555,17 +535,17 @@ namespace MKBB.Commands
                             {
                                 if (t[sheetIx].ToString() == "")
                                 {
-                                    description = $"*<@{councilJson[ix].DiscordId}> has not done their homework yet.*";
+                                    description = $"*{member.Mention} has not done their homework yet.*";
                                 }
                                 else
                                 {
                                     if (t[sheetIx].ToString().ToCharArray().Length > 3500)
                                     {
-                                        description = $"**Homework of <@{councilJson[ix].DiscordId}>:**\n{t[sheetIx].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
+                                        description = $"**Homework of {member.Mention}:**\n{t[sheetIx].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
                                     }
                                     else
                                     {
-                                        description = $"**Homework of <@{councilJson[ix].DiscordId}>:**\n{t[sheetIx]}";
+                                        description = $"**Homework of {member.Mention}:**\n{t[sheetIx]}";
                                     }
                                 }
                                 trackDisplay = t[0].ToString();
@@ -580,7 +560,7 @@ namespace MKBB.Commands
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
-                            Description = $"*{member} could not be found on council.*",
+                            Description = $"*{member.Mention} could not be found on council.*",
                             Url = Util.GetCouncilUrl(),
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
@@ -589,7 +569,6 @@ namespace MKBB.Commands
                         };
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                     }
-
                     else if (l == 0)
                     {
                         var embed = new DiscordEmbedBuilder
@@ -628,7 +607,7 @@ namespace MKBB.Commands
             }
         }
 
-        [SlashCommand("hw", "Get's a list of all the current homework, and information related to it.")]
+        [SlashCommand("hw", "Gets a list of all the current homework, and information related to it.")]
         public async Task GetHomework(InteractionContext ctx)
         {
             try
@@ -715,7 +694,7 @@ namespace MKBB.Commands
         [SlashCommand("addstrike", "To increment a council member's missed homework count.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
         public async Task IncrementStrikes(InteractionContext ctx,
-            [Option("member", "The name of the council member you are incrementing the missed homework count of.")] string member)
+            [Option("member", "The council member you are incrementing the missed homework count of.")] DiscordUser member)
         {
             try
             {
@@ -726,18 +705,37 @@ namespace MKBB.Commands
                     json = await sr.ReadToEndAsync().ConfigureAwait(false);
                 List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
 
-                int ix = councilJson.FindIndex(x => Util.CompareStrings(x.SheetName, member));
+                int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
                 councilJson[ix].TimesMissedHw++;
-                var embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder();
+                if (ix < 0)
                 {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Notice:**__",
-                    Description = $"*Strike count for {councilJson[ix].SheetName} has been incremented.*",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    embed = new DiscordEmbedBuilder
                     {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Error:**__",
+                        Description = $"*{member.Mention} could not be found on council.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+                else
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Notice:**__",
+                        Description = $"*Strike count for {member.Mention} has been incremented.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                }
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                 string council = JsonConvert.SerializeObject(councilJson);
                 File.WriteAllText("council.json", council);
@@ -751,7 +749,7 @@ namespace MKBB.Commands
         [SlashCommand("removestrike", "To decrement a council member's missed homework count.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
         public async Task DecrementStrikes(InteractionContext ctx,
-            [Option("member", "The name of the council member you are decrementing the missed homework count of.")] string member)
+            [Option("member", "The name of the council member you are decrementing the missed homework count of.")] DiscordUser member)
         {
             await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
             try
@@ -762,19 +760,37 @@ namespace MKBB.Commands
                     json = await sr.ReadToEndAsync().ConfigureAwait(false);
                 List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
 
-                int ix = councilJson.FindIndex(x => Util.CompareIncompleteStrings(x.SheetName, member) || Util.CompareStringsLevenshteinDistance(x.SheetName, member));
-
+                int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
                 councilJson[ix].TimesMissedHw--;
-                var embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder();
+                if (ix < 0)
                 {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Notice:**__",
-                    Description = $"*Strike count for {councilJson[ix].SheetName} has been decremented.*",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    embed = new DiscordEmbedBuilder
                     {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Error:**__",
+                        Description = $"*{member.Mention} could not be found on council.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+                else
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Notice:**__",
+                        Description = $"*Strike count for {member.Mention} has been decremented.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                }
                 string council = JsonConvert.SerializeObject(councilJson);
                 File.WriteAllText("council.json", council);
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
@@ -788,7 +804,7 @@ namespace MKBB.Commands
         [SlashCommand("resetstrikes", "To reset a council member's, or all of council's missed homework count.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
         public async Task ResetStrikes(InteractionContext ctx,
-            [Option("member", "The name of the council member you are resetting the missed homework count of.")] string member)
+            [Option("member", "The name of the council member you are resetting the missed homework count of.")] DiscordUser member)
         {
             try
             {
@@ -799,19 +815,37 @@ namespace MKBB.Commands
                     json = await sr.ReadToEndAsync().ConfigureAwait(false);
                 List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
 
-                int ix = councilJson.FindIndex(x => Util.CompareIncompleteStrings(x.SheetName, member) || Util.CompareStringsLevenshteinDistance(x.SheetName, member));
-
+                int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
                 councilJson[ix].TimesMissedHw = 0;
-                var embed = new DiscordEmbedBuilder
+                var embed = new DiscordEmbedBuilder();
+                if (ix < 0)
                 {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = "__**Notice:**__",
-                    Description = $"*Strike count for {councilJson[ix].SheetName} has been reset.*",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    embed = new DiscordEmbedBuilder
                     {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Error:**__",
+                        Description = $"*{member.Mention} could not be found on council.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+                else
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Notice:**__",
+                        Description = $"*Strike count for {member.Mention} has been reset.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                }
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                 string council = JsonConvert.SerializeObject(councilJson);
                 File.WriteAllText("council.json", council);
@@ -822,9 +856,59 @@ namespace MKBB.Commands
             }
         }
 
-        [SlashCommand("strikes", "Either gets a specific member's missed homework count, or a list of all.")]
+        [SlashCommand("strikes", "Gets a specific member's strike count.")]
         public async Task DisplayStrikes(InteractionContext ctx,
-            [Option("member", "The name of the council member you are requesting the missed homework count of.")] string member = "")
+            [Option("member", "The name of the council member you are requesting the missed homework count of.")] DiscordUser member)
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+                string json;
+                using (var fs = File.OpenRead("council.json"))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+
+
+                int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
+                var embed = new DiscordEmbedBuilder();
+                if (ix < 0)
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{member.Mention} could not be found on council.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                }
+                else
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Council Members Strike Count:**__",
+                        Description = $"*{councilJson[ix].SheetName}: {councilJson[ix].TimesMissedHw}*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                }
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
+        [SlashCommand("allstrikes", "Gets a list of all council member's strikes.")]
+        [SlashRequireUserPermissions(Permissions.Administrator)]
+        public async Task DisplayAllStrikes(InteractionContext ctx)
         {
             try
             {
@@ -837,41 +921,9 @@ namespace MKBB.Commands
 
                 string description = string.Empty;
 
-                int ix = -1;
-
-                foreach (var role in ctx.Member.Roles)
+                foreach (var m in councilJson)
                 {
-                    if (role.Name == "Admin")
-                    {
-                        if (Util.CompareStrings(member, "all"))
-                        {
-                            foreach (var m in councilJson)
-                            {
-                                description += $"*{m.SheetName}: {m.TimesMissedHw}*\n";
-                            }
-                        }
-                        else
-                        {
-                            ix = councilJson.FindIndex(x => Util.CompareStrings(x.SheetName, member));
-                            if (ix != -1)
-                            {
-                                member = councilJson[ix].SheetName;
-                            }
-                            if (ix >= 0)
-                            {
-                                description += $"*{councilJson[ix].SheetName}: {councilJson[ix].TimesMissedHw}*";
-                            }
-                        }
-                    }
-                }
-
-                if (description == string.Empty)
-                {
-                    ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
-                    if (ix >= 0)
-                    {
-                        description += $"*{councilJson[ix].SheetName}: {councilJson[ix].TimesMissedHw}*";
-                    }
+                    description += $"*{m.SheetName}: {m.TimesMissedHw}*\n";
                 }
 
                 var embed = new DiscordEmbedBuilder

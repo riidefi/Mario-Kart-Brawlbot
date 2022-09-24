@@ -4,8 +4,10 @@ using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
 using IronPython.Runtime;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace MKBB.Commands
@@ -15,49 +17,25 @@ namespace MKBB.Commands
         [SlashCommand("test", "this is a test")]
         public async Task Test(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 ? false : true });
 
-            var embeds = new List<DiscordEmbedBuilder>() {
+            //string playerList = JsonConvert.SerializeObject(players);
+            //File.WriteAllText("council.json", playerList);
 
-            new DiscordEmbedBuilder
+
+
+            var embed = new DiscordEmbedBuilder
             {
                 Color = new DiscordColor("#FF0000"),
-                Title = $"__**Test:**__",
-                Description = "This is a test page 1.",
+                Title = $"__**Notice:**__",
+                Description = $"Created json.",
                 Footer = new DiscordEmbedBuilder.EmbedFooter
                 {
                     Text = $"Server Time: {DateTime.Now}"
                 }
-            },
-
-            new DiscordEmbedBuilder
-            {
-                Color = new DiscordColor("#FF0000"),
-                Title = $"__**Test:**__",
-                Description = "This is a test page 2.",
-                Footer = new DiscordEmbedBuilder.EmbedFooter
-                {
-                    Text = $"Server Time: {DateTime.Now}"
-                }
-            },
-
-            new DiscordEmbedBuilder
-            {
-                Color = new DiscordColor("#FF0000"),
-                Title = $"__**Test:**__",
-                Description = "This is a test page 3.",
-                Footer = new DiscordEmbedBuilder.EmbedFooter
-                {
-                    Text = $"Server Time: {DateTime.Now}"
-                }
-            },
             };
 
-            var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows(ctx)));
-
-            PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
-
-            Util.PendingInteractions.Add(pending);
+            var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed).AddComponents(Util.GeneratePageArrows(ctx)));
         }
     }
 }

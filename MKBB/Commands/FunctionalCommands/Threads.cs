@@ -127,7 +127,7 @@ namespace MKBB.Commands
         [SlashCommand("assignedthreads", "To view the threads you are assigned to.")]
         // Council
         public async Task CheckAssignedThreads(InteractionContext ctx,
-            [Option("member", "The council member you want to view the threads of.")] string member)
+            [Option("member", "The council member you want to view the threads of.")] DiscordUser member)
         {
             try
             {
@@ -137,32 +137,27 @@ namespace MKBB.Commands
                 using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                     json = await sr.ReadToEndAsync().ConfigureAwait(false);
                 List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-                if (member == "reset" && ctx.Member.Roles.Select(x => x.Name == "Admin").Count() > 0)
+
+                string description = string.Empty;
+
+                int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
+                var embed = new DiscordEmbedBuilder();
+                if (ix < 0)
                 {
-                    foreach (var councilMember in councilJson)
+                    embed = new DiscordEmbedBuilder
                     {
-                        councilMember.AssignedThreadIds = new List<ulong>();
-                    }
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Error:**__",
+                        Description = $"*{member.Mention} could not be found on council.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
                 }
                 else
                 {
-                    string description = string.Empty;
-
-                    int ix = -1;
-
-                    if (member == "")
-                    {
-                        ix = councilJson.FindIndex(x => x.DiscordId == ctx.Member.Id);
-                    }
-                    else
-                    {
-                        ix = councilJson.FindIndex(x => Util.CompareStrings(x.SheetName, member));
-                        if (ix == -1)
-                        {
-                            ix = councilJson.FindIndex(x => Util.CompareIncompleteStrings(x.SheetName, member) || Util.CompareStringsLevenshteinDistance(x.SheetName, member));
-                        }
-                    }
-
                     for (int i = 0; i < councilJson[ix].AssignedThreadIds.Count; i++)
                     {
                         string tName = string.Empty;
@@ -188,7 +183,7 @@ namespace MKBB.Commands
                         description = "*No assigned threads.*";
                     }
 
-                    var embed = new DiscordEmbedBuilder
+                    embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Assigned Threads of {councilJson[ix].SheetName}:**__",
@@ -198,8 +193,8 @@ namespace MKBB.Commands
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                         }
                     };
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                 }
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
             }
             catch (Exception ex)
             {
@@ -215,7 +210,7 @@ namespace MKBB.Commands
             {
                 try
                 {
-                    await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+                    await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = false });
 
                     string json = string.Empty;
 
@@ -391,12 +386,12 @@ namespace MKBB.Commands
                         recentlyAssigned.Add(m);
                     }
 
-                    await ctx.Channel.SendMessageAsync(
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent(
                     $"<@{assignedMembers[0].DiscordId}>, " +
                     $"<@{assignedMembers[1].DiscordId}>, " +
                     $"<@{assignedMembers[2].DiscordId}>, " +
                     $"<@{assignedMembers[3].DiscordId}>, and " +
-                    $"<@{assignedMembers[4].DiscordId}> have been assigned to this thread.");
+                    $"<@{assignedMembers[4].DiscordId}> have been assigned to this thread."));
 
                     string assigned = JsonConvert.SerializeObject(recentlyAssigned);
                     File.WriteAllText("assigned.json", assigned);
@@ -414,7 +409,7 @@ namespace MKBB.Commands
         [SlashCommand("assign", "Assign a thread to a council member.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
         public async Task AssignCouncilMemberToThread(InteractionContext ctx,
-            [Option("member", "The council member you want to remove the thread from.")] string member,
+            [Option("member", "The council member you want to remove the thread from.")] DiscordUser member,
             [Option("thread-id", "The id of the thread you wish to remove the specified member from.")] string threadId)
         {
             if (ctx.Channel.IsThread && ctx.Channel.ParentId == 369281592407097345)
@@ -435,32 +430,22 @@ namespace MKBB.Commands
                         json = await sr.ReadToEndAsync().ConfigureAwait(false);
                     List<CouncilMember> recentlyAssigned = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
 
-                    int ix = -1;
-
-                    foreach (var m in councilJson)
+                    int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
+                    var embed = new DiscordEmbedBuilder();
+                    if (ix < 0)
                     {
-                        ix = councilJson.FindIndex(x => Util.CompareStrings(x.SheetName, member));
-                        if (ix == -1)
-                        {
-                            ix = councilJson.FindIndex(x => Util.CompareIncompleteStrings(x.SheetName, member) || Util.CompareStringsLevenshteinDistance(x.SheetName, member));
-                        }
-                    }
-
-                    if (ix == -1)
-                    {
-                        var embed = new DiscordEmbedBuilder
+                        embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = "__**Error:**__",
-                            Description = $"*{member} could not be found on council.*",
+                            Title = $"__**Error:**__",
+                            Description = $"*{member.Mention} could not be found on council.*",
+                            Url = Util.GetCouncilUrl(),
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                     }
-
                     else
                     {
                         bool duplicate = false;
@@ -493,7 +478,7 @@ namespace MKBB.Commands
                         }
                         if (duplicate)
                         {
-                            var embed = new DiscordEmbedBuilder
+                            embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
@@ -507,7 +492,7 @@ namespace MKBB.Commands
                         }
                         else if (!threadExists)
                         {
-                            var embed = new DiscordEmbedBuilder
+                            embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
@@ -530,7 +515,7 @@ namespace MKBB.Commands
                             string council = JsonConvert.SerializeObject(councilJson);
                             File.WriteAllText("council.json", council);
 
-                            var embed = new DiscordEmbedBuilder
+                            embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Success:**__",
@@ -540,9 +525,9 @@ namespace MKBB.Commands
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                                 }
                             };
-                            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                         }
                     }
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                 }
                 catch (Exception ex)
                 {
@@ -554,7 +539,7 @@ namespace MKBB.Commands
         [SlashCommand("unassign", "Unassign a thread to a council member.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
         public async Task UnassignCouncilMemberToThread(InteractionContext ctx,
-            [Option("member", "The council member you want to remove the thread from.")] string member,
+            [Option("member", "The council member you want to remove the thread from.")] DiscordUser member,
             [Option("thread-id", "The id of the thread you wish to remove the specified member from.")] string threadId)
         {
             if (ctx.Channel.IsThread && ctx.Channel.ParentId == 369281592407097345)
@@ -575,32 +560,22 @@ namespace MKBB.Commands
                         json = await sr.ReadToEndAsync().ConfigureAwait(false);
                     List<CouncilMember> recentlyAssigned = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
 
-                    int ix = -1;
-
-                    foreach (var m in councilJson)
+                    int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
+                    var embed = new DiscordEmbedBuilder();
+                    if (ix < 0)
                     {
-                        ix = councilJson.FindIndex(x => Util.CompareStrings(x.SheetName, member));
-                        if (ix == -1)
-                        {
-                            ix = councilJson.FindIndex(x => Util.CompareIncompleteStrings(x.SheetName, member) || Util.CompareStringsLevenshteinDistance(x.SheetName, member));
-                        }
-                    }
-
-                    if (ix == -1)
-                    {
-                        var embed = new DiscordEmbedBuilder
+                        embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = "__**Error:**__",
-                            Description = $"*{member} could not be found on council.*",
+                            Title = $"__**Error:**__",
+                            Description = $"*{member.Mention} could not be found on council.*",
+                            Url = Util.GetCouncilUrl(),
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                     }
-
                     else
                     {
                         bool threadFound = false;
@@ -633,7 +608,7 @@ namespace MKBB.Commands
                         }
                         if (!threadExists)
                         {
-                            var embed = new DiscordEmbedBuilder
+                            embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
@@ -647,7 +622,7 @@ namespace MKBB.Commands
                         }
                         else if (!threadFound)
                         {
-                            var embed = new DiscordEmbedBuilder
+                            embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Error:**__",
@@ -670,7 +645,7 @@ namespace MKBB.Commands
                             string council = JsonConvert.SerializeObject(councilJson);
                             File.WriteAllText("council.json", council);
 
-                            var embed = new DiscordEmbedBuilder
+                            embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = "__**Success:**__",
@@ -680,9 +655,9 @@ namespace MKBB.Commands
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                                 }
                             };
-                            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                         }
                     }
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                 }
                 catch (Exception ex)
                 {

@@ -24,6 +24,7 @@ namespace MKBB
         public CommandsNextExtension Commands { get; private set; }
         public SlashCommandsExtension SlashCommands { get; private set; }
         public InteractivityExtension Interactivity { get; private set; }
+        public PlayerManagement PlayerMgt { get; private set; }
 
         private async Task Events(SlashCommandsExtension slash)
         {
@@ -155,15 +156,16 @@ namespace MKBB
 
             SlashCommands = Client.UseSlashCommands();
 
-            //SlashCommands.RegisterCommands<Testing>();
+            //SlashCommands.RegisterCommands<Testing>(180306609233330176);
+            SlashCommands.RegisterCommands<PlayerManagement>(180306609233330176);
 
             SlashCommands.RegisterCommands<TextCommands>();
-            SlashCommands.RegisterCommands<Update>();
-            SlashCommands.RegisterCommands<Council>();
-            SlashCommands.RegisterCommands<Misc>();
+            SlashCommands.RegisterCommands<Update>(180306609233330176);
+            SlashCommands.RegisterCommands<Council>(180306609233330176);
+            SlashCommands.RegisterCommands<Misc>(180306609233330176);
             SlashCommands.RegisterCommands<Info>();
-            SlashCommands.RegisterCommands<Issues>();
-            SlashCommands.RegisterCommands<Threads>();
+            SlashCommands.RegisterCommands<Issues>(180306609233330176);
+            SlashCommands.RegisterCommands<Threads>(180306609233330176);
 
             await Events(SlashCommands);
 

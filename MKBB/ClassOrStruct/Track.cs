@@ -11,7 +11,7 @@ namespace MKBB.Commands
     public class Track
     {
         [JsonProperty("_links")]
-        public Link Link { get; set; }
+        public Link LinkContainer { get; set; }
         [JsonProperty("categoryId")]
         public int Category { get; set; }
         [JsonProperty("name")]
@@ -35,18 +35,6 @@ namespace MKBB.Commands
         public string SlotID { get; set; }
     }
 
-    public class Link
-    {
-        [JsonProperty("item")]
-        public Href Href { get; set; }
-    }
-
-    public class Href
-    {
-        [JsonProperty("href")]
-        public string LeaderboardLink { get; set; }
-    }
-
     public class LeaderboardInfo
     {
         [JsonProperty("leaderboards")]
@@ -56,13 +44,13 @@ namespace MKBB.Commands
     public class GhostList
     {
         [JsonProperty("ghosts")]
-        public List<Ghost> List { get; set; }
+        public List<BKT> List { get; set; }
     }
 
-    public class Ghost
+    public class BKT
     {
         [JsonProperty("_links")]
-        public Link Link { get; set; }
+        public Link LinkContainer { get; set; }
         [JsonProperty("player")]
         public string BKTHolder { get; set; }
         [JsonProperty("dateSet")]
