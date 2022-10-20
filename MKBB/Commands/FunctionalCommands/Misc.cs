@@ -737,7 +737,6 @@ namespace MKBB.Commands
                     Description = toolDescription,
                     Download = toolDownload
                 });
-
                 toolList = toolList.OrderBy(x => x.Name).ToList();
                 string tools = JsonConvert.SerializeObject(toolList);
                 File.WriteAllText("tools.json", tools);

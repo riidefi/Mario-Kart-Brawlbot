@@ -7,6 +7,7 @@ using IronPython.Runtime;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -19,23 +20,18 @@ namespace MKBB.Commands
         {
             await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 ? false : true });
 
-            //string playerList = JsonConvert.SerializeObject(players);
-            //File.WriteAllText("council.json", playerList);
-
-
-
             var embed = new DiscordEmbedBuilder
             {
                 Color = new DiscordColor("#FF0000"),
                 Title = $"__**Notice:**__",
-                Description = $"Created json.",
+                Description = $"{Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays)}",
                 Footer = new DiscordEmbedBuilder.EmbedFooter
                 {
                     Text = $"Server Time: {DateTime.Now}"
                 }
             };
 
-            var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed).AddComponents(Util.GeneratePageArrows(ctx)));
+            var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
         }
     }
 }

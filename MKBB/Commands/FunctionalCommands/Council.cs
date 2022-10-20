@@ -645,45 +645,63 @@ namespace MKBB.Commands
                     }
                 }
 
-                for (int i = 1; i < response.Values.Count; i++)
+                if (response.Values[1][0].ToString() == "")
                 {
-                    var t = response.Values[i];
-                    var tRaw = responseRaw.Values[i];
-                    string tally = "*Unreviewed*";
-                    if (today >= int.Parse(t[1].ToString()))
+                    var embed = new DiscordEmbedBuilder
                     {
-                        var emote = string.Empty;
-                        if ((double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString())) / (double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString()) + double.Parse(tRaw[11].ToString())) >= 2.0 / 3.0)
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Council Homework:**__",
+                        Description = "*There is currently no homework assigned.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
-                            emote = DiscordEmoji.FromName(ctx.Client, ":Yes:");
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                         }
-                        else
-                        {
-                            emote = DiscordEmoji.FromName(ctx.Client, ":No:");
-                        }
-                        tally = $"{tRaw[8]}/{tRaw[9]}/{tRaw[10]}/{tRaw[11]} {emote}";
-                    }
-                    try
-                    {
-                        description += $"{t[0]} | {tRaw[1]} | [Download]({t[4].ToString().Split('"')[1]}) | {tally}\n";
-                    }
-                    catch
-                    {
-                        description += $"{t[0]} | {tRaw[1]} | *Check spreadsheet for download* | {tally}\n";
-                    }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                 }
-                var embed = new DiscordEmbedBuilder
+                else
                 {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Council Homework:**__",
-                    Description = description,
-                    Url = Util.GetCouncilUrl(),
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    for (int i = 1; i < response.Values.Count; i++)
                     {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        var t = response.Values[i];
+                        var tRaw = responseRaw.Values[i];
+                        string tally = "*Unreviewed*";
+                        if (today >= int.Parse(t[1].ToString()))
+                        {
+                            var emote = string.Empty;
+                            if ((double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString())) / (double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString()) + double.Parse(tRaw[11].ToString())) >= 2.0 / 3.0)
+                            {
+                                emote = DiscordEmoji.FromName(ctx.Client, ":Yes:");
+                            }
+                            else
+                            {
+                                emote = DiscordEmoji.FromName(ctx.Client, ":No:");
+                            }
+                            tally = $"{tRaw[8]}/{tRaw[9]}/{tRaw[10]}/{tRaw[11]} {emote}";
+                        }
+                        try
+                        {
+                            description += $"{t[0]} | {tRaw[1]} | [Download]({t[4].ToString().Split('"')[1]}) | {tally}\n";
+                        }
+                        catch
+                        {
+                            description += $"{t[0]} | {tRaw[1]} | *Check spreadsheet for download* | {tally}\n";
+                        }
                     }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Council Homework:**__",
+                        Description = description,
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
             }
             catch (Exception ex)
             {

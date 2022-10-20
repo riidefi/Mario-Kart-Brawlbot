@@ -505,7 +505,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 ? false : true });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 || ctx.Channel.ParentId == 755509221394743467 ? false : true });
                 string description = "";
                 string json = File.ReadAllText($"rts.json");
                 List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
@@ -667,7 +667,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 1-21:**__",
                             Description = description1,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -678,7 +678,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 22-32:**__",
                             Description = description2,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -739,7 +739,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 1-21:**__",
                             Description = description1,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -750,7 +750,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 22-42:**__",
                             Description = description2,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -761,7 +761,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 43-63:**__",
                             Description = description3,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -772,7 +772,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 64-84:**__",
                             Description = description4,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -783,7 +783,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 85-105:**__",
                             Description = description5,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -794,7 +794,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 106-126:**__",
                             Description = description6,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -805,7 +805,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 127-147:**__",
                             Description = description7,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -816,7 +816,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 148-168:**__",
                             Description = description8,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -827,7 +827,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 169-189:**__",
                             Description = description9,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -838,7 +838,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 190-210:**__",
                             Description = description10,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -849,7 +849,7 @@ namespace MKBB.Commands
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Displaying 211-218:**__",
                             Description = description11,
-                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                            Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -907,7 +907,7 @@ namespace MKBB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
                         Description = $"*{arg} could not be found.*",
-                        Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                        Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -931,7 +931,7 @@ namespace MKBB.Commands
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Displaying tracks containing *{arg}*:**__",
                         Description = description1,
-                        Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c1,0" : "https://chadsoft.co.uk/time-trials/",
+                        Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ww?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"

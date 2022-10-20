@@ -1,5 +1,4 @@
-﻿using MKBB.Commands;
-using DSharpPlus;
+﻿using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
@@ -9,12 +8,12 @@ using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
 using Microsoft.Extensions.Logging;
+using MKBB.Commands;
 using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using System.Linq;
 
 namespace MKBB
 {
@@ -136,7 +135,7 @@ namespace MKBB
             };
 
             Client = new DiscordClient(config);
-
+                
             Client.Ready += OnClientReady;
 
             Client.UseInteractivity(new InteractivityConfiguration
@@ -158,7 +157,7 @@ namespace MKBB
 
             //SlashCommands.RegisterCommands<Testing>(180306609233330176);
             SlashCommands.RegisterCommands<PlayerManagement>(180306609233330176);
-
+            
             SlashCommands.RegisterCommands<TextCommands>();
             SlashCommands.RegisterCommands<Update>(180306609233330176);
             SlashCommands.RegisterCommands<Council>(180306609233330176);

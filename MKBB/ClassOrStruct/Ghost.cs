@@ -30,6 +30,8 @@ namespace MKBB.Commands
         public string CategoryName { get; set; }
         [JsonProperty("playersFastest")]
         public bool IsPB { get; set; }
+        [JsonProperty("200cc")]
+        public bool Is200cc { get; set; }
         public ExtraInfo ExtraInfo { get; set; }
     }
 

@@ -45,6 +45,7 @@ namespace MKBB.Commands
                     player = JsonConvert.DeserializeObject<Player>(await webClient.DownloadStringTaskAsync(playerUrl));
                     player.PlayerLink = playerUrl;
                     player.DiscordId = ctx.Member.Id;
+                    player.Ghosts = null;
                 }
                 catch
                 {
@@ -56,7 +57,7 @@ namespace MKBB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
-                        Description = "*Player ID was invalid or doesn't exist.*",
+                        Description = "*Player ID was invalid or doesn't exist. To get your player ID, go to the [Chadsoft player page](https://www.chadsoft.co.uk/time-trials/players.html) and search for your player page, which will have your player ID.*",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -131,7 +132,7 @@ namespace MKBB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
-                        Description = $"*Player ID has not yet been registered. Please use /register to register your player ID if you haven't already.*",
+                        Description = $"*Player ID has not yet been registered. Please use /register to register your player ID if you haven't already. To get your player ID, go to the [Chadsoft player page](https://www.chadsoft.co.uk/time-trials/players.html) and search for your player page, which will have your player ID.*",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -191,7 +192,7 @@ namespace MKBB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
-                        Description = $"{user.Username} has not been registered. To register, use /register with your Chadsoft player ID.",
+                        Description = $"*{user.Username} has not been registered. To register, use /register with your Chadsoft player ID. To get your player ID, go to the [Chadsoft player page](https://www.chadsoft.co.uk/time-trials/players.html) and search for your player page, which will have your player ID.*",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -205,7 +206,7 @@ namespace MKBB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
-                        Description = $"{track} could not be found.",
+                        Description = $"*{track} could not be found.*",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -219,53 +220,70 @@ namespace MKBB.Commands
                     Track foundTrack = trackList[trackIx];
                     List<Track> allTrackCategories = trackList.Where(x => x.SHA1 == foundTrack.SHA1).ToList();
                     Player player = JsonConvert.DeserializeObject<Player>(await webClient.DownloadStringTaskAsync(playerList[playerIx].PlayerLink));
-                    List <Ghost> applicableGhosts = player.Ghosts.Where(x => x.TrackID == foundTrack.SHA1 && x.IsPB).ToList();
-                    List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
-                    allTrackCategories.OrderBy(x => x.Category);
-                    applicableGhosts.OrderBy(x => x.Category);
-
-                    foreach (var ghost in applicableGhosts)
+                    List<Ghost> applicableGhosts = player.Ghosts.Where(x => x.TrackID == foundTrack.SHA1 && x.IsPB && x.Is200cc == (cc == "" ? false : true)).ToList();
+                    if (applicableGhosts.Count == 0)
                     {
-                        ghost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL}"));
-                        ghost.CategoryName = allTrackCategories.Find(x => x.Category == ghost.Category).CategoryName;
-
                         var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**{trackList[trackIx].Name} - {ghost.CategoryName}:**__",
-                            Description = $"{user.Username}'s fastest time on {trackList[trackIx].Name}:\n\n" +
-                            $"**Time:** {ghost.FinishTimeSimple}\n\n" +
-                            $"**Splits:** {string.Join(" - ", ghost.ExtraInfo.SimpleSplits.ToArray())}\n\n" +
-                            $"**Combo:** {Util.Characters[ghost.DriverID]} on {Util.Vehicles[ghost.VehicleID]}\n\n" +
-                            $"**Date Set:** {ghost.DateSet.Split('T')[0]}\n\n" +
-                            $"**Controller:**\n{Util.Controllers[ghost.ControllerID]}\n\n" +
-                            $"**Extra Details:**\n" +
-                            $"*Exact Finish Time: {ghost.FinishTime}*\n\n" +
-                            $"*Exact Splits: {string.Join(" - ", ghost.ExtraInfo.Splits.ToArray())}*",
-                            Url = $"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL.Substring(0, ghost.LinkContainer.Href.URL.Length - 4)}.html",
+                            Title = $"__**Error:**__",
+                            Description = $"*No record was found on {trackList[trackIx].Name}.*",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
-
-                        embeds.Add(embed);
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                     }
-
-                    var messageBuilder = new DiscordWebhookBuilder().AddEmbed(embeds[0]);
-
-                    if (embeds.Count() > 1)
+                    else
                     {
-                        messageBuilder.AddComponents(Util.GeneratePageArrows(ctx));
-                    }
+                        List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                        allTrackCategories.OrderBy(x => x.Category);
+                        applicableGhosts.OrderBy(x => x.Category);
 
-                    var message = await ctx.EditResponseAsync(messageBuilder);
+                        foreach (var ghost in applicableGhosts)
+                        {
+                            ghost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL}"));
+                            ghost.CategoryName = allTrackCategories.Find(x => x.Category == ghost.Category).CategoryName;
 
-                    if (embeds.Count() > 1)
-                    {
-                        PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                            var embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**{trackList[trackIx].Name} - {ghost.CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")}:**__",
+                                Description = $"{user.Username}'s fastest time on {trackList[trackIx].Name}:\n\n" +
+                                $"**Time:** {ghost.FinishTimeSimple}\n\n" +
+                                $"**Splits:** {string.Join(" - ", ghost.ExtraInfo.SimpleSplits.ToArray())}\n\n" +
+                                $"**Combo:** {Util.Characters[ghost.DriverID]} on {Util.Vehicles[ghost.VehicleID]}\n\n" +
+                                $"**Date Set:** {ghost.DateSet.Split('T')[0]}\n\n" +
+                                $"**Controller:**\n{Util.Controllers[ghost.ControllerID]}\n\n" +
+                                $"**Extra Details:**\n" +
+                                $"*Exact Finish Time: {ghost.FinishTime}*\n\n" +
+                                $"*Exact Splits: {string.Join(" - ", ghost.ExtraInfo.Splits.ToArray())}*",
+                                Url = $"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL.Substring(0, ghost.LinkContainer.Href.URL.Length - 4)}html",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
 
-                        Util.PendingInteractions.Add(pending);
+                            embeds.Add(embed);
+                        }
+
+                        var messageBuilder = new DiscordWebhookBuilder().AddEmbed(embeds[0]);
+
+                        if (embeds.Count() > 1)
+                        {
+                            messageBuilder.AddComponents(Util.GeneratePageArrows(ctx));
+                        }
+
+                        var message = await ctx.EditResponseAsync(messageBuilder);
+
+                        if (embeds.Count() > 1)
+                        {
+                            PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+
+                            Util.PendingInteractions.Add(pending);
+                        }
                     }
                 }
             }

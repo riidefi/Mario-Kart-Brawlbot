@@ -61,7 +61,7 @@ namespace MKBB
             var m3s = new List<string>();
             for (int i = 0; i < innerText1.Count; i++)
             {
-                if (i % 11 - 4 == 0)
+                if (i % 11 - 5 == 0)
                 {
                     m3s.Add(innerText1[i].InnerHtml);
                 }
@@ -72,7 +72,7 @@ namespace MKBB
             var innerText2 = ctwwHtml2.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
             for (int i = 0; i < innerText2.Count; i++)
             {
-                if (i % 11 - 4 == 0)
+                if (i % 11 - 5 == 0)
                 {
                     m3s.Add(innerText2[i].InnerHtml);
                 }
@@ -83,7 +83,7 @@ namespace MKBB
             var innerText3 = ctwwHtml3.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
             for (int i = 0; i < innerText3.Count; i++)
             {
-                if (i % 11 - 4 == 0)
+                if (i % 11 - 5 == 0)
                 {
                     m3s.Add(innerText3[i].InnerHtml);
                 }
@@ -142,13 +142,13 @@ namespace MKBB
             innerText1 = wwHtml.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
             m3s = new List<string>();
             var m3Names = new List<string>();
-            for (int i = 0; i < 320; i++)
+            for (int i = 0; i < 32 * 11; i++)
             {
                 if (i % 11 - 2 == 0)
                 {
                     m3Names.Add(innerText1[i].InnerText);
                 }
-                if (i % 11 - 4 == 0)
+                if (i % 11 - 5 == 0)
                 {
                     m3s.Add(innerText1[i].InnerHtml);
                 }

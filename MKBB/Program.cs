@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MKBB
+﻿namespace MKBB
 {
     class Program
     {

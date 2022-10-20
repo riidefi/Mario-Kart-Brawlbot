@@ -30,47 +30,50 @@ namespace MKBB.Commands
                 "\n/summary track" +
                 "\n/tools name";
 
-            foreach (var role in ctx.Member.Roles)
+            if (ctx.Guild.Id == 180306609233330176)
             {
-                if (role.Name == "Track Council")
+                foreach (var role in ctx.Member.Roles)
                 {
-                    description += "\n\n__**Council Commands:**__" +
-                        "\n/assignedthreads" +
-                        "\n/gethw track member" +
-                        "\n/hw" +
-                        "\n/strikes member" +
-                        "\n/submithw yes/fixes/neutral/no track feedback";
-                }
-            }
-
-            foreach (var role in ctx.Member.Roles)
-            {
-                if (role.Name == "Admin")
-                {
+                    if (role.Name == "Track Council" || role.Name == "Admin")
                     {
-                        description += "\n\n__**Admin Commands:**__" +
-                            "\n/addhw track author version download link slot-filename speed/lap modifiers notes" +
-                            "\n/addstrike member" +
-                            "\n/addtool name creators description download" +
-                            "\n/assign member thread id" +
-                            "\n/assignedthreads member" +
-                            "\n/clearissues track" +
-                            "\n/createtest" +
-                            "\n/delhw track" +
-                            "\n/deltool name" +
-                            "\n/dmrole role message" +
-                            "\n/edittool oldname name creators description download" +
-                            "\n/lastupdated" +
-                            "\n/randomassign (reset)" +
-                            "\n/removeassignedthread thread id/all" +
-                            "\n/removestrike member" +
-                            "\n/replaceissues old track new track author version slot laps" +
-                            "\n/reportissue major/minor track -Issue" +
-                            "\n/resetstrikes member" +
-                            "\n/starttimers" +
-                            "\n/strikes member/all" +
-                            "\n/unassign member thread id" +
-                            "\n/update";
+                        description += "\n\n__**Council Commands:**__" +
+                            "\n/assignedthreads" +
+                            "\n/gethw track member" +
+                            "\n/hw" +
+                            "\n/strikes member" +
+                            "\n/submithw yes/fixes/neutral/no track feedback";
+                    }
+                }
+
+                foreach (var role in ctx.Member.Roles)
+                {
+                    if (role.Name == "Admin")
+                    {
+                        {
+                            description += "\n\n__**Admin Commands:**__" +
+                                "\n/addhw track author version download link slot-filename speed/lap modifiers notes" +
+                                "\n/addstrike member" +
+                                "\n/addtool name creators description download" +
+                                "\n/assign member thread id" +
+                                "\n/assignedthreads member" +
+                                "\n/clearissues track" +
+                                "\n/createtest" +
+                                "\n/delhw track" +
+                                "\n/deltool name" +
+                                "\n/dmrole role message" +
+                                "\n/edittool oldname name creators description download" +
+                                "\n/lastupdated" +
+                                "\n/randomassign (reset)" +
+                                "\n/removeassignedthread thread id/all" +
+                                "\n/removestrike member" +
+                                "\n/replaceissues old track new track author version slot laps" +
+                                "\n/reportissue major/minor track -Issue" +
+                                "\n/resetstrikes member" +
+                                "\n/starttimers" +
+                                "\n/strikes member/all" +
+                                "\n/unassign member thread id" +
+                                "\n/update";
+                        }
                     }
                 }
             }
