@@ -25,7 +25,12 @@ namespace MKBB.Commands
         public string WiimmfiName { get; set; }
         [JsonProperty("popularity")]
         public int TimeTrialScore { get; set; }
-        public int WiimmfiScore { get; set; }
+        public int M1 { get; set; }
+        public int M2 { get; set; }
+        public int M3 { get; set; }
+        public int M6 { get; set; }
+        public int M9 { get; set; }
+        public int M12 { get; set; }
         public string LeaderboardLink { get; set; }
         public string BKTLink { get; set; }
         public string BKTHolder { get; set; }
@@ -33,6 +38,26 @@ namespace MKBB.Commands
         public string BKTUploadTime { get; set; }
         public string CategoryName { get; set; }
         public string SlotID { get; set; }
+
+        public int ReturnOnlinePopularity(string month)
+        {
+            switch (month)
+            {
+                case "m1":
+                    return M1;
+                case "m2":
+                    return M2;
+                case "m3":
+                    return M3;
+                case "m6":
+                    return M6;
+                case "m9":
+                    return M9;
+                case "m12":
+                    return M12;
+            }
+            return -1;
+        }
     }
 
     public class LeaderboardInfo

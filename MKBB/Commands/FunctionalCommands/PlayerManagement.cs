@@ -152,6 +152,7 @@ namespace MKBB.Commands
                         Description = $"<:goldstar:1021692357659332689> - {starsJson.Stars.Gold}\n" +
                         $"<:silverstar:1021692359202836480> - {starsJson.Stars.Silver}\n" +
                         $"<:bronzestar:1021692360956059688> - {starsJson.Stars.Bronze}",
+                        Url = $"{playerList[ix].PlayerLink.Substring(0, playerList[ix].PlayerLink.Length-5)}.html",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"

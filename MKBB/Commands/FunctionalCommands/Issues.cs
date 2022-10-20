@@ -278,8 +278,7 @@ namespace MKBB.Commands
                     response.Values[index2][6] = "";
                     description = $"**{newTrack}:**\nAuthor: *{author}*\nVersion: *{version}*\nSlots: *{slot}*\nSpeed/Laps: *{laps}*";
                 }
-
-                if (index1 < 0 || index2 < 0)
+                else if (index1 < 0 || index2 < 0)
                 {
                     var embed = new DiscordEmbedBuilder
                     {

@@ -22,7 +22,7 @@ namespace MKBB.Commands
                 "\n/info track" +
                 "\n/issues track" +
                 "\n/nextupdate" +
-                "\n/pop rts/cts/track online/tts" +
+                "\n/pop rts/cts/track stat-duration online/tts" +
                 "\n/rating track" +
                 "\n/source" +
                 "\n/staff track" +

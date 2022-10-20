@@ -195,7 +195,12 @@ namespace MKBB.Commands
                 if (ix != -1)
                 {
                     trackListRt[i].WiimmfiName = oldRtTrackList[ix].WiimmfiName;
-                    trackListRt[i].WiimmfiScore = oldRtTrackList[ix].WiimmfiScore;
+                    trackListRt[i].M1 = oldRtTrackList[ix].M1;
+                    trackListRt[i].M2 = oldRtTrackList[ix].M2;
+                    trackListRt[i].M3 = oldRtTrackList[ix].M3;
+                    trackListRt[i].M6 = oldRtTrackList[ix].M6;
+                    trackListRt[i].M9 = oldRtTrackList[ix].M9;
+                    trackListRt[i].M12 = oldRtTrackList[ix].M12;
                     trackListRt[i].BKTLink = oldRtTrackList[ix].BKTLink;
                     trackListRt[i].BKTHolder = oldRtTrackList[ix].BKTHolder;
                     trackListRt[i].CategoryName = oldRtTrackList[ix].CategoryName;
@@ -211,7 +216,12 @@ namespace MKBB.Commands
                 if (ix != -1)
                 {
                     trackListRt200[i].WiimmfiName = oldRtTrackList[ix].WiimmfiName;
-                    trackListRt200[i].WiimmfiScore = oldRtTrackList[ix].WiimmfiScore;
+                    trackListRt200[i].M1 = oldRtTrackList[ix].M1;
+                    trackListRt200[i].M2 = oldRtTrackList[ix].M2;
+                    trackListRt200[i].M3 = oldRtTrackList[ix].M3;
+                    trackListRt200[i].M6 = oldRtTrackList[ix].M6;
+                    trackListRt200[i].M9 = oldRtTrackList[ix].M9;
+                    trackListRt200[i].M12 = oldRtTrackList[ix].M12;
                     trackListRt200[i].BKTLink = oldRtTrackList[ix].BKTLink;
                     trackListRt200[i].BKTHolder = oldRtTrackList[ix].BKTHolder;
                     trackListRt200[i].CategoryName = oldRtTrackList[ix].CategoryName;
@@ -227,7 +237,12 @@ namespace MKBB.Commands
                 if (ix != -1)
                 {
                     trackList[i].WiimmfiName = oldTrackList[ix].WiimmfiName;
-                    trackList[i].WiimmfiScore = oldTrackList[ix].WiimmfiScore;
+                    trackList[i].M1 = oldTrackList[ix].M1;
+                    trackList[i].M2 = oldTrackList[ix].M2;
+                    trackList[i].M3 = oldTrackList[ix].M3;
+                    trackList[i].M6 = oldTrackList[ix].M6;
+                    trackList[i].M9 = oldTrackList[ix].M9;
+                    trackList[i].M12 = oldTrackList[ix].M12;
                     trackList[i].BKTLink = oldTrackList[ix].BKTLink;
                     trackList[i].BKTHolder = oldTrackList[ix].BKTHolder;
                     trackList[i].CategoryName = oldTrackList[ix].CategoryName;
@@ -243,7 +258,12 @@ namespace MKBB.Commands
                 if (ix != -1)
                 {
                     trackList200[i].WiimmfiName = oldTrackList[ix].WiimmfiName;
-                    trackList200[i].WiimmfiScore = oldTrackList[ix].WiimmfiScore;
+                    trackList200[i].M1 = oldTrackList[ix].M1;
+                    trackList200[i].M2 = oldTrackList[ix].M2;
+                    trackList200[i].M3 = oldTrackList[ix].M3;
+                    trackList200[i].M6 = oldTrackList[ix].M6;
+                    trackList200[i].M9 = oldTrackList[ix].M9;
+                    trackList200[i].M12 = oldTrackList[ix].M12;
                     trackList200[i].BKTLink = oldTrackList[ix].BKTLink;
                     trackList200[i].BKTHolder = oldTrackList[ix].BKTHolder;
                     trackList200[i].CategoryName = oldTrackList[ix].CategoryName;

@@ -58,12 +58,37 @@ namespace MKBB
             ctwwHtml1.LoadHtml(ctwwDl1);
             var bodyNode1 = ctwwHtml1.DocumentNode.SelectNodes("//td[contains(@class, 'LL')]");
             var innerText1 = ctwwHtml1.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
+            var m1s = new List<string>();
+            var m2s = new List<string>();
             var m3s = new List<string>();
+            var m6s = new List<string>();
+            var m9s = new List<string>();
+            var m12s = new List<string>();
             for (int i = 0; i < innerText1.Count; i++)
             {
+                if (i % 11 - 3 == 0)
+                {
+                    m1s.Add(innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 4 == 0)
+                {
+                    m2s.Add(innerText1[i].InnerHtml);
+                }
                 if (i % 11 - 5 == 0)
                 {
                     m3s.Add(innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 6 == 0)
+                {
+                    m6s.Add(innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 7 == 0)
+                {
+                    m9s.Add(innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 8 == 0)
+                {
+                    m12s.Add(innerText1[i].InnerHtml);
                 }
             }
             Console.WriteLine("Downloading 1st Wiimmfi Page");
@@ -72,9 +97,29 @@ namespace MKBB
             var innerText2 = ctwwHtml2.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
             for (int i = 0; i < innerText2.Count; i++)
             {
+                if (i % 11 - 3 == 0)
+                {
+                    m1s.Add(innerText2[i].InnerHtml);
+                }
+                if (i % 11 - 4 == 0)
+                {
+                    m2s.Add(innerText2[i].InnerHtml);
+                }
                 if (i % 11 - 5 == 0)
                 {
                     m3s.Add(innerText2[i].InnerHtml);
+                }
+                if (i % 11 - 6 == 0)
+                {
+                    m6s.Add(innerText2[i].InnerHtml);
+                }
+                if (i % 11 - 7 == 0)
+                {
+                    m9s.Add(innerText2[i].InnerHtml);
+                }
+                if (i % 11 - 8 == 0)
+                {
+                    m12s.Add(innerText2[i].InnerHtml);
                 }
             }
             Console.WriteLine("Downloading 2nd Wiimmfi Page");
@@ -83,18 +128,38 @@ namespace MKBB
             var innerText3 = ctwwHtml3.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
             for (int i = 0; i < innerText3.Count; i++)
             {
+                if (i % 11 - 3 == 0)
+                {
+                    m1s.Add(innerText3[i].InnerHtml);
+                }
+                if (i % 11 - 4 == 0)
+                {
+                    m2s.Add(innerText3[i].InnerHtml);
+                }
                 if (i % 11 - 5 == 0)
                 {
                     m3s.Add(innerText3[i].InnerHtml);
+                }
+                if (i % 11 - 6 == 0)
+                {
+                    m6s.Add(innerText3[i].InnerHtml);
+                }
+                if (i % 11 - 7 == 0)
+                {
+                    m9s.Add(innerText3[i].InnerHtml);
+                }
+                if (i % 11 - 8 == 0)
+                {
+                    m12s.Add(innerText3[i].InnerHtml);
                 }
             }
             Console.WriteLine("Downloading 3rd Wiimmfi Page");
 
             int j = 0;
 
-            j = await ScrapeBodyNode(trackListNc, oldJson, m3s, bodyNode1, j);
-            j = await ScrapeBodyNode(trackListNc, oldJson, m3s, bodyNode2, j);
-            await ScrapeBodyNode(trackListNc, oldJson, m3s, bodyNode3, j);
+            j = await ScrapeBodyNode(trackListNc, oldJson, m1s, m2s, m3s, m6s, m9s, m12s, bodyNode1, j);
+            j = await ScrapeBodyNode(trackListNc, oldJson, m1s, m2s, m3s, m6s, m9s, m12s, bodyNode2, j);
+            await ScrapeBodyNode(trackListNc, oldJson, m1s, m2s, m3s, m6s, m9s, m12s, bodyNode3, j);
 
             for (int i = 0; i < trackList.Count; i++)
             {
@@ -102,7 +167,12 @@ namespace MKBB
                 {
                     if (t.Name == trackList[i].Name)
                     {
-                        trackList[i].WiimmfiScore = t.WiimmfiScore;
+                        trackList[i].M1 = t.M1; 
+                        trackList[i].M2 = t.M2; 
+                        trackList[i].M3 = t.M3; 
+                        trackList[i].M6 = t.M6;
+                        trackList[i].M9 = t.M9; 
+                        trackList[i].M12 = t.M12;
                         trackList[i].WiimmfiName = t.WiimmfiName;
                     }
                 }
@@ -113,7 +183,12 @@ namespace MKBB
                 {
                     if (t.Name == trackList200[i].Name)
                     {
-                        trackList200[i].WiimmfiScore = t.WiimmfiScore;
+                        trackList200[i].M1 = t.M1;
+                        trackList200[i].M2 = t.M2; 
+                        trackList200[i].M3 = t.M3; 
+                        trackList200[i].M6 = t.M6;
+                        trackList200[i].M9 = t.M9; 
+                        trackList200[i].M12 = t.M12;
                         trackList200[i].WiimmfiName = t.WiimmfiName;
                     }
                 }
@@ -140,35 +215,70 @@ namespace MKBB
             HtmlDocument wwHtml = new HtmlDocument();
             wwHtml.LoadHtml(wwDl);
             innerText1 = wwHtml.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
+            m1s = new List<string>();
+            m2s = new List<string>();
             m3s = new List<string>();
-            var m3Names = new List<string>();
+            m6s = new List<string>();
+            m9s = new List<string>();
+            m12s = new List<string>();
+            var names = new List<string>();
             for (int i = 0; i < 32 * 11; i++)
             {
                 if (i % 11 - 2 == 0)
                 {
-                    m3Names.Add(innerText1[i].InnerText);
+                    names.Add(innerText1[i].InnerText);
+                }
+                if (i % 11 - 3 == 0)
+                {
+                    m1s.Add(innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 4 == 0)
+                {
+                    m2s.Add(innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 5 == 0)
                 {
                     m3s.Add(innerText1[i].InnerHtml);
                 }
+                if (i % 11 - 6 == 0)
+                {
+                    m6s.Add(innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 7 == 0)
+                {
+                    m9s.Add(innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 8 == 0)
+                {
+                    m12s.Add(innerText1[i].InnerHtml);
+                }
             }
-            for (int i = 0; i < m3Names.Count; i++)
+            for (int i = 0; i < names.Count; i++)
             {
                 foreach (var t in trackListRTNc)
                 {
-                    if (m3Names[i].Contains(t.Name))
+                    if (names[i].Contains(t.Name))
                     {
-                        t.WiimmfiScore = int.Parse(m3s[i]);
-                        t.WiimmfiName = m3Names[i];
+                        t.M1 = int.Parse(m1s[i]);
+                        t.M2 = int.Parse(m2s[i]);
+                        t.M3 = int.Parse(m3s[i]);
+                        t.M6 = int.Parse(m6s[i]);
+                        t.M9 = int.Parse(m9s[i]);
+                        t.M12 = int.Parse(m12s[i]);
+                        t.WiimmfiName = names[i];
                     }
                 }
                 foreach (var t in trackListRT200Nc)
                 {
-                    if (m3Names[i].Contains(t.Name))
+                    if (names[i].Contains(t.Name))
                     {
-                        t.WiimmfiScore = int.Parse(m3s[i]);
-                        t.WiimmfiName = m3Names[i];
+                        t.M1 = int.Parse(m1s[i]);
+                        t.M2 = int.Parse(m2s[i]);
+                        t.M3 = int.Parse(m3s[i]);
+                        t.M6 = int.Parse(m6s[i]);
+                        t.M9 = int.Parse(m9s[i]);
+                        t.M12 = int.Parse(m12s[i]);
+                        t.WiimmfiName = names[i];
                     }
                 }
             }
@@ -179,7 +289,12 @@ namespace MKBB
                 {
                     if (t.Name == trackListRt[i].Name)
                     {
-                        trackListRt[i].WiimmfiScore = t.WiimmfiScore;
+                        trackListRt[i].M1 = t.M1;
+                        trackListRt[i].M2 = t.M2;
+                        trackListRt[i].M3 = t.M3;
+                        trackListRt[i].M6 = t.M6;
+                        trackListRt[i].M9 = t.M9;
+                        trackListRt[i].M12 = t.M12;
                         trackListRt[i].WiimmfiName = t.WiimmfiName;
                     }
                 }
@@ -190,14 +305,28 @@ namespace MKBB
                 {
                     if (t.Name == trackListRt200[i].Name)
                     {
-                        trackListRt200[i].WiimmfiScore = t.WiimmfiScore;
+                        trackListRt200[i].M1 = t.M1;
+                        trackListRt200[i].M2 = t.M2;
+                        trackListRt200[i].M3 = t.M3;
+                        trackListRt200[i].M6 = t.M6;
+                        trackListRt200[i].M9 = t.M9;
+                        trackListRt200[i].M12 = t.M12;
                         trackListRt200[i].WiimmfiName = t.WiimmfiName;
                     }
                 }
             }
         }
 
-        private async Task<int> ScrapeBodyNode(List<Track> trackListNc, List<Track> oldJson, List<string> m3s, HtmlNodeCollection bodyNode, int j)
+        private async Task<int> ScrapeBodyNode(List<Track> trackListNc,
+            List<Track> oldJson,
+            List<string> m1s,
+            List<string> m2s,
+            List<string> m3s,
+            List<string> m6s,
+            List<string> m9s,
+            List<string> m12s,
+            HtmlNodeCollection bodyNode,
+            int j)
         {
             WebClient webClient = new WebClient();
 
@@ -213,7 +342,12 @@ namespace MKBB
                         if (t.InnerText.Contains(track.Name))
                         {
                             g = trackListNc.FindIndex(ix => ix.Name.Contains(track.Name));
-                            trackListNc[g].WiimmfiScore = int.Parse(m3s[j]);
+                            trackListNc[g].M1 = int.Parse(m1s[j]);
+                            trackListNc[g].M2 = int.Parse(m2s[j]);
+                            trackListNc[g].M3 = int.Parse(m3s[j]);
+                            trackListNc[g].M6 = int.Parse(m6s[j]);
+                            trackListNc[g].M9 = int.Parse(m9s[j]);
+                            trackListNc[g].M12 = int.Parse(m12s[j]);
                             trackListNc[g].WiimmfiName = t.InnerText;
                             check = false;
                         }
@@ -230,7 +364,12 @@ namespace MKBB
                             {
                                 if (tt.InnerText.ToLowerInvariant().Contains(trackListNc[i].SHA1.ToLowerInvariant()))
                                 {
-                                    trackListNc[i].WiimmfiScore = int.Parse(m3s[j]);
+                                    trackListNc[i].M1 = int.Parse(m1s[j]);
+                                    trackListNc[i].M2 = int.Parse(m2s[j]);
+                                    trackListNc[i].M3 = int.Parse(m3s[j]);
+                                    trackListNc[i].M6 = int.Parse(m6s[j]);
+                                    trackListNc[i].M9 = int.Parse(m9s[j]);
+                                    trackListNc[i].M12 = int.Parse(m12s[j]);
                                     trackListNc[i].WiimmfiName = t.InnerText;
                                 }
                             }
@@ -243,7 +382,12 @@ namespace MKBB
                     {
                         if (t.InnerText.Split(':')[1].Split(' ')[1].ToLowerInvariant().Contains(trackListNc[i].SHA1.ToLowerInvariant()))
                         {
-                            trackListNc[i].WiimmfiScore = int.Parse(m3s[j]);
+                            trackListNc[i].M1 = int.Parse(m1s[j]);
+                            trackListNc[i].M2 = int.Parse(m2s[j]);
+                            trackListNc[i].M3 = int.Parse(m3s[j]);
+                            trackListNc[i].M6 = int.Parse(m6s[j]);
+                            trackListNc[i].M9 = int.Parse(m9s[j]);
+                            trackListNc[i].M12 = int.Parse(m12s[j]);
                         }
                     }
                 }
