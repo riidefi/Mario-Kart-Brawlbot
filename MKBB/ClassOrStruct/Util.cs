@@ -1,18 +1,14 @@
-﻿using DSharpPlus.CommandsNext;
-using System;
-using FluentScheduler;
-using System.IO;
-using Newtonsoft.Json;
-using System.Text;
-using IronPython.Runtime;
+﻿using DSharpPlus;
 using DSharpPlus.Entities;
-using System.Collections.Generic;
-using DSharpPlus;
-using static IronPython.Modules.PythonRegex;
 using DSharpPlus.SlashCommands;
+using FluentScheduler;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using System.Threading.Channels;
-using System.Runtime.Remoting.Channels;
 
 namespace MKBB.Commands
 {
@@ -57,6 +53,44 @@ namespace MKBB.Commands
             (char)89,
             (char)90
         };
+
+        public static string ConvertToSheetRange(int row1, int col1, int row2, int col2)
+        {
+            row1++; col1++; row2++; col2++;
+            return $"{ToBase26(col1)}{row1}:{ToBase26(col2)}{row2}";
+        }
+
+        public static string ConvertToSheetRange(int row1, int col1)
+        {
+            row1++; col1++;
+            return $"{ToBase26(col1)}{row1}";
+        }
+
+        private static string ToBase26(int myNumber)
+        {
+            var array = new LinkedList<int>();
+
+            while (myNumber > 26)
+            {
+                int value = myNumber % 26;
+                if (value == 0)
+                {
+                    myNumber = myNumber / 26 - 1;
+                    array.AddFirst(26);
+                }
+                else
+                {
+                    myNumber /= 26;
+                    array.AddFirst(value);
+                }
+            }
+
+            if (myNumber > 0)
+            {
+                array.AddFirst(myNumber);
+            }
+            return new string(array.Select(s => (char)('A' + s - 1)).ToArray());
+        }
 
         public static Scrape Scraper = new Scrape();
 

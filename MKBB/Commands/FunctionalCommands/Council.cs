@@ -354,45 +354,41 @@ namespace MKBB.Commands
                 request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
                 var response = await request.ExecuteAsync();
 
-                int ix = -1;
+                int row = -1;
+                int col = -1;
 
                 for (int i = 0; i < response.Values[0].Count; i++)
                 {
                     if (Util.CompareStrings(response.Values[0][i].ToString(), member))
                     {
-                        ix = i;
+                        col = i;
                     }
                 }
 
                 int j = 0;
 
-                foreach (var t in response.Values)
+                for (int i = 0; i < response.Values.Count; i++)
                 {
-                    while (t.Count < response.Values[0].Count)
+                    while (response.Values[i].Count < response.Values[0].Count)
                     {
-                        t.Add("");
+                        response.Values[i].Add("");
                     }
-                    if (j > 0)
+                    if (Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
                     {
+                        row = i;
+                        response.Values[row][col] = vote + "\n" + feedback;
+                        j++;
                         break;
                     }
-                    else if (Util.CompareStringAbbreviation(track, t[0].ToString()) || Util.CompareStringsLevenshteinDistance(track, t[0].ToString()))
-                    {
-                        t[ix] = vote + "\n" + feedback;
-                        j++;
-                    }
                 }
 
-                SpreadsheetsResource.ValuesResource.UpdateRequest updateRequest;
+                ValueRange updateValueRange = new ValueRange();
+                updateValueRange.Values = new List<IList<object>>()
+                {
+                    new List<object>(){ response.Values[row][col] }
+                };
 
-                if (response.Values[0].Count < 27)
-                {
-                    updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:{Util.strAlpha[response.Values[0].Count - 1]}{response.Values.Count}");
-                }
-                else
-                {
-                    updateRequest = service.Spreadsheets.Values.Update(response, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!A1:A{Util.strAlpha[response.Values[0].Count % 26 - 1]}{response.Values.Count}");
-                }
+                var updateRequest = service.Spreadsheets.Values.Update(updateValueRange, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!{Util.ConvertToSheetRange(row, col)}");
                 updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                 var update = await updateRequest.ExecuteAsync();
 

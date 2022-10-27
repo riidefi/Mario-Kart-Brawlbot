@@ -156,8 +156,8 @@ namespace MKBB
             SlashCommands = Client.UseSlashCommands();
 
             //SlashCommands.RegisterCommands<Testing>(180306609233330176);
+
             SlashCommands.RegisterCommands<PlayerManagement>(180306609233330176);
-            
             SlashCommands.RegisterCommands<TextCommands>();
             SlashCommands.RegisterCommands<Update>(180306609233330176);
             SlashCommands.RegisterCommands<Council>(180306609233330176);
@@ -165,6 +165,7 @@ namespace MKBB
             SlashCommands.RegisterCommands<Info>();
             SlashCommands.RegisterCommands<Issues>(180306609233330176);
             SlashCommands.RegisterCommands<Threads>(180306609233330176);
+            //SlashCommands.RegisterCommands<Ghostbusters>(180306609233330176);
 
             await Events(SlashCommands);
 

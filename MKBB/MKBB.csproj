@@ -309,6 +309,7 @@
   <ItemGroup>
     <Compile Include="Bot.cs" />
     <Compile Include="Commands\FunctionalCommands\Council.cs" />
+    <Compile Include="Commands\FunctionalCommands\Ghostbusters.cs" />
     <Compile Include="Commands\FunctionalCommands\Info.cs" />
     <Compile Include="Commands\FunctionalCommands\Issues.cs" />
     <Compile Include="Commands\FunctionalCommands\Threads.cs" />

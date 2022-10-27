@@ -60,6 +60,17 @@ namespace MKBB.Commands
         }
     }
 
+    public class NewTracks {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+        [JsonProperty("trackid")]
+        public string SHA1 { get; set; }
+        [JsonProperty("ghosts")]
+        public List<Ghost> Ghosts { get; set; }
+        [JsonProperty("average")]
+        public string AverageTime { get; set; }
+    }
+
     public class LeaderboardInfo
     {
         [JsonProperty("leaderboards")]

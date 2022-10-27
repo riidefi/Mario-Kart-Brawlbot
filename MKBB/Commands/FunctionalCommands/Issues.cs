@@ -225,12 +225,12 @@ namespace MKBB.Commands
         [SlashCommand("replaceissues", "Replaces the track in the issues tab with a new track.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
         public async Task ReplaceTrackIssues(InteractionContext ctx,
-            [Option("track-name", "The name of the track being replaced.")] string track = "",
-            [Option("new-track-name", "The name of the track being added.")] string newTrack = "",
-            [Option("authors", "The author or authors of the track being added.")] string author = "",
-            [Option("version", "The version number of the track being added.")] string version = "",
-            [Option("slots", "The track/music slots of the track being added e.g. 'Luigi Circuit / Block Plaza'")] string slot = "",
-            [Option("lap-and-speed-modifiers", "The lap and speed modifiers of the track being added, the most common being '1 / 3'.")] string laps = "")
+            [Option("track-name", "The name of the track being replaced.")] string track,
+            [Option("new-track-name", "The name of the track being added.")] string newTrack,
+            [Option("authors", "The author or authors of the track being added.")] string author,
+            [Option("version", "The version number of the track being added.")] string version,
+            [Option("slots", "The track/music slots of the track being added e.g. 'Luigi Circuit / Block Plaza'")] string slot,
+            [Option("lap-and-speed-modifiers", "The lap and speed modifiers of the track being added, the most common being '1 / 3'.")] string laps)
         {
             try
             {
@@ -264,21 +264,9 @@ namespace MKBB.Commands
                 json = File.ReadAllText("cts.json");
                 List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
 
-                int index1 = Util.ListNameCheck(trackList, track);
-                int index2 = Util.ListNameCheck(response.Values, track, ix2: 0);
+                int index = Util.ListNameCheck(response.Values, track, ix2: 0);
 
-                if (index1 > -1 && index2 > -1)
-                {
-                    response.Values[index2][0] = newTrack;
-                    response.Values[index2][1] = author;
-                    response.Values[index2][2] = version;
-                    response.Values[index2][3] = slot;
-                    response.Values[index2][4] = laps;
-                    response.Values[index2][5] = "";
-                    response.Values[index2][6] = "";
-                    description = $"**{newTrack}:**\nAuthor: *{author}*\nVersion: *{version}*\nSlots: *{slot}*\nSpeed/Laps: *{laps}*";
-                }
-                else if (index1 < 0 || index2 < 0)
+                if (index < 0)
                 {
                     var embed = new DiscordEmbedBuilder
                     {
@@ -295,6 +283,15 @@ namespace MKBB.Commands
                 }
                 else
                 {
+                    response.Values[index][0] = newTrack;
+                    response.Values[index][1] = author;
+                    response.Values[index][2] = version;
+                    response.Values[index][3] = slot;
+                    response.Values[index][4] = laps;
+                    response.Values[index][5] = "";
+                    response.Values[index][6] = "";
+                    description = $"**{newTrack}:**\nAuthor: *{author}*\nVersion: *{version}*\nSlots: *{slot}*\nSpeed/Laps: *{laps}*";
+
                     var orderedResponse = response.Values.OrderBy(x => x[0].ToString()).ToList();
                     for (int i = 0; i < response.Values.Count; i++)
                     {

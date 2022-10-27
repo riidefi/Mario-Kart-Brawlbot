@@ -1,26 +1,23 @@
-﻿using DSharpPlus.CommandsNext;
-using DSharpPlus.CommandsNext.Attributes;
+﻿using DSharpPlus;
 using DSharpPlus.Entities;
+using DSharpPlus.SlashCommands;
+using DSharpPlus.SlashCommands.Attributes;
+using FluentScheduler;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Newtonsoft.Json;
-using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using FluentScheduler;
-using System.Globalization;
-using System.Linq;
-using DSharpPlus.SlashCommands;
-using DSharpPlus;
-using DSharpPlus.SlashCommands.Attributes;
 
 namespace MKBB.Commands
 {
@@ -504,7 +501,7 @@ namespace MKBB.Commands
                 using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                     json = await sr.ReadToEndAsync().ConfigureAwait(false);
                 List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-                var hwCompleted = new bool[councilJson.Count];
+                var hwCompleted = new bool?[councilJson.Count];
 
                 List<CouncilMember> consistentMembers = new List<CouncilMember>();
                 for (int i = 1; i < response.Values.Count; i++)
@@ -514,7 +511,7 @@ namespace MKBB.Commands
                         tracks.Add(response.Values[i][0].ToString());
                     }
                     int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
-                    if (lastChecked != int.Parse(response.Values[i][1].ToString()) && today == int.Parse(response.Values[i][1].ToString()) + 1)
+                    if (lastChecked <= int.Parse(response.Values[i][1].ToString()) && today == int.Parse(response.Values[i][1].ToString()) + 1)
                     {
                         for (int j = 12; j < response.Values[0].Count; j++)
                         {
@@ -542,10 +539,14 @@ namespace MKBB.Commands
                     {
                         hwCompleted[ix] = true;
                     }
+                    else
+                    {
+                        hwCompleted[ix] = false;
+                    }
                 }
                 for (int i = 0; i < hwCompleted.Length; i++)
                 {
-                    if (hwCompleted[i])
+                    if (hwCompleted[i] == true)
                     {
                         councilJson[i].HwInARow++;
                         if (councilJson[i].HwInARow > 4)
@@ -553,7 +554,7 @@ namespace MKBB.Commands
                             councilJson[i].TimesMissedHw = 0;
                         }
                     }
-                    else
+                    else if (hwCompleted[i] == false)
                     {
                         councilJson[i].TimesMissedHw++;
                         councilJson[i].HwInARow = 0;
@@ -624,12 +625,15 @@ namespace MKBB.Commands
                 }
 
                 string description = string.Empty;
-                foreach (var member in consistentMembers)
+                for (int i = 0; i < hwCompleted.Length; i++)
                 {
-                    description += $"{member}\n";
+                    if (hwCompleted[i] != null)
+                    {
+                        description += $"{councilJson[i].SheetName}";
+                    }
                 }
 
-                if (consistentMembers.Count > 0)
+                if (hwCompleted.Select(x => x == false).ToArray().Length > 0)
                 {
                     var embed = new DiscordEmbedBuilder
                     {
