@@ -25,7 +25,7 @@ namespace MKBB.Commands
                 "\n/info track" +
                 "\n/issues track" +
                 "\n/nextupdate" +
-                "\n/pop rts/cts/track stat-duration online/tts" +
+                "\n/pop rts/cts/track (stat-duration) (online/tts)" +
                 "\n/rating track" +
                 "\n/source" +
                 "\n/staff track" +
@@ -33,7 +33,8 @@ namespace MKBB.Commands
                 "\n/tools name" +
                 "\n/register chadsoft-link" +
                 "\n/stars" +
-                "\n/pb track player";
+                "\n/pb track player (engine-class)" +
+                "\n/top10 track (engine-class)";
 
             if (ctx.Guild.Id == 180306609233330176 && ctx.Channel.Id != 908709951411716166)
             {
@@ -43,7 +44,7 @@ namespace MKBB.Commands
                     {
                         description += "\n\n__**Ghostbusters Commands:**__" +
                             "\n/gblist" +
-                            "\n/gbsubmittime chadsoft-url comments";
+                            "\n/gbsubmittime chadsoft-url (comments)";
                         break;
                     }
                 }

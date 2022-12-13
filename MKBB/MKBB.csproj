@@ -312,10 +312,10 @@
     <Compile Include="ClassOrStruct\CouncilJson.cs" />
     <Compile Include="Commands\FunctionalCommands\Misc.cs" />
     <Compile Include="ClassOrStruct\CupInfo.cs" />
-    <Compile Include="ClassOrStruct\PendingPaginator.cs" />
+    <Compile Include="ClassOrStruct\PendingInteraction.cs" />
     <Compile Include="ClassOrStruct\Player.cs" />
     <Compile Include="ClassOrStruct\Href.cs" />
-    <Compile Include="Commands\FunctionalCommands\PlayerManagement.cs" />
+    <Compile Include="Commands\FunctionalCommands\TimeTrialManagement.cs" />
     <Compile Include="ClassOrStruct\Ghost.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>

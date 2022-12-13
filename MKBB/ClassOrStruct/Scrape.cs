@@ -424,7 +424,7 @@ namespace MKBB
             WebClient webClient = new WebClient();
             try
             {
-                var ghostJson = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"http://tt.chadsoft.co.uk{t.LeaderboardLink}?limit=1"));
+                var ghostJson = JsonConvert.DeserializeObject<BKTList>(await webClient.DownloadStringTaskAsync($"http://tt.chadsoft.co.uk{t.LeaderboardLink}?limit=1"));
                 var ghostList = ghostJson.List;
                 if (ghostList.Count > 0)
                 {

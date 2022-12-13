@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace MKBB.Commands
 {
-    public class PlayerManagement : ApplicationCommandModule
+    public class TimeTrialManagement : ApplicationCommandModule
     {
         [SlashCommand("register", "Register your Chadsoft account with the bot.")]
         public async Task RegisterNewPlayerInit(InteractionContext ctx,
@@ -137,7 +137,7 @@ namespace MKBB.Commands
                         Description = $"<:goldstar:1021692357659332689> - {starsJson.Stars.Gold}\n" +
                         $"<:silverstar:1021692359202836480> - {starsJson.Stars.Silver}\n" +
                         $"<:bronzestar:1021692360956059688> - {starsJson.Stars.Bronze}",
-                        Url = $"{playerList[ix].PlayerLink.Substring(0, playerList[ix].PlayerLink.Length-5)}.html",
+                        Url = $"{playerList[ix].PlayerLink.Substring(0, playerList[ix].PlayerLink.Length - 5)}.html",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -266,10 +266,129 @@ namespace MKBB.Commands
 
                         if (embeds.Count() > 1)
                         {
-                            PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                            PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
                             Util.PendingInteractions.Add(pending);
                         }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
+        [SlashCommand("top10", "Gets the top 10 of the track specified.")]
+        public async Task GetTop10(InteractionContext ctx,
+            [Option("track-name", "The track you want to display the leaderboard of.")] string track,
+            [Choice("150cc", "")]
+            [Choice("200cc", "200")]
+            [Option("engine-class", "The engine class of the personal best you want to find .")] string cc = "")
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166 || ctx.Channel.ParentId == 755509221394743467) });
+
+                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(File.ReadAllText($"rts{cc}.json"));
+                foreach (var t in JsonConvert.DeserializeObject<List<Track>>(File.ReadAllText($"cts{cc}.json")))
+                {
+                    trackList.Add(t);
+                }
+                int trackIx = Util.ListNameCheck(trackList, track);
+                if (trackIx < 0)
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Error:**__",
+                        Description = $"*{track} could not be found.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+                else
+                {
+                    var webClient = new WebClient();
+                    Track foundTrack = trackList[trackIx];
+                    List<Track> allTrackCategories = trackList.Where(x => x.SHA1 == foundTrack.SHA1).ToList();
+                    allTrackCategories.OrderBy(x => x.Category);
+
+                    List<List<DiscordEmbedBuilder>> categories = new List<List<DiscordEmbedBuilder>>();
+
+                    for (int i = 0; i < allTrackCategories.Count(); i++)
+                    {
+                        GhostList leaderboard = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{allTrackCategories[i].LeaderboardLink}?limit=1000"));
+
+                        leaderboard.List.RemoveAll(x => !x.IsPB);
+                        try
+                        {
+                            leaderboard.List.RemoveRange(10, leaderboard.List.Count() - 10);
+                        }
+                        catch
+                        {
+                            Console.WriteLine("Already <=10.");
+                        }
+
+                        leaderboard.List.OrderBy(x => x.Category);
+
+                        List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+
+                        foreach (var ghost in leaderboard.List)
+                        {
+                            var ghostJson = await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL}");
+                            ghost.Category = JsonConvert.DeserializeObject<Ghost>(ghostJson).Category;
+                            ghost.CategoryName = JsonConvert.DeserializeObject<Ghost>(ghostJson).CategoryName;
+                            ghost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(ghostJson);
+                            ghost.CategoryName = allTrackCategories.Find(x => x.Category == ghost.Category).CategoryName;
+
+                            var embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**{leaderboard.List.FindIndex(x => x.LinkContainer.Href.URL == ghost.LinkContainer.Href.URL) + 1}) {trackList[trackIx].Name} - {ghost.CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")}:**__",
+                                Description = $"{ghost.ExtraInfo.MiiName}'s fastest time on {trackList[trackIx].Name}:\n\n" +
+                                $"**Time:** {ghost.FinishTimeSimple}\n\n" +
+                                $"**Splits:** {string.Join(" - ", ghost.ExtraInfo.SimpleSplits.ToArray())}\n\n" +
+                                $"**Combo:** {Util.Characters[ghost.DriverID]} on {Util.Vehicles[ghost.VehicleID]}\n\n" +
+                                $"**Date Set:** {ghost.DateSet.Split('T')[0]}\n\n" +
+                                $"**Controller:**\n{Util.Controllers[ghost.ControllerID]}\n\n" +
+                                $"**Extra Details:**\n" +
+                                $"*Exact Finish Time: {ghost.FinishTime}*\n\n" +
+                                $"*Exact Splits: {string.Join(" - ", ghost.ExtraInfo.Splits.ToArray())}*",
+                                Url = $"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL.Substring(0, ghost.LinkContainer.Href.URL.Length - 4)}html",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+
+                            embeds.Add(embed);
+                        }
+
+                        categories.Add(embeds);
+                    }
+
+                    var messageBuilder = new DiscordWebhookBuilder().AddEmbed(categories[0][0]);
+
+                    if (categories.Count() > 1)
+                    {
+                        messageBuilder.AddComponents(Util.GenerateCategorySelectMenu(allTrackCategories, 0));
+                    }
+                    if (categories[0].Count() > 1)
+                    {
+                        messageBuilder.AddComponents(Util.GeneratePageArrows(ctx));
+                    }
+
+                    var message = await ctx.EditResponseAsync(messageBuilder);
+
+                    if (categories[0].Count() > 1)
+                    {
+                        PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, CurrentCategory = 0, MessageId = message.Id, Context = ctx, Categories = categories, Pages = categories[0], CategoryNames = allTrackCategories };
+
+                        Util.PendingInteractions.Add(pending);
                     }
                 }
             }

@@ -70,7 +70,7 @@ namespace MKBB.Commands
 
                     if (embeds.Count > 1)
                     {
-                        PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                        PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
                         Util.PendingInteractions.Add(pending);
                     }
@@ -215,7 +215,7 @@ namespace MKBB.Commands
 
                 if (embeds.Count > 1)
                 {
-                    PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
                     Util.PendingInteractions.Add(pending);
                 }
@@ -921,7 +921,7 @@ namespace MKBB.Commands
                 {
                     var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows(ctx)));
 
-                    PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
                     Util.PendingInteractions.Add(pending);
                 }
@@ -1271,7 +1271,7 @@ namespace MKBB.Commands
                     };
                     var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows(ctx)));
 
-                    PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
                     Util.PendingInteractions.Add(pending);
                 }
@@ -1554,7 +1554,7 @@ namespace MKBB.Commands
 
                     var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows(ctx)));
 
-                    PendingPaginator pending = new PendingPaginator() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
                     Util.PendingInteractions.Add(pending);
                 }

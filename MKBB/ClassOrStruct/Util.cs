@@ -277,7 +277,17 @@ namespace MKBB.Commands
             return new DiscordButtonComponent[] { leftButton, rightButton };
         }
 
-        public static List<PendingPaginator> PendingInteractions = new List<PendingPaginator>();
+        public static DiscordSelectComponent GenerateCategorySelectMenu(List<Track> allTrackCategories, int defaultPage)
+        {
+            var options = new List<DiscordSelectComponentOption>();
+            for (int i = 0; i < allTrackCategories.Count; i++)
+            {
+                options.Add(new DiscordSelectComponentOption(allTrackCategories[i].CategoryName, allTrackCategories[i].CategoryName, isDefault: i == defaultPage));
+            }
+            return new DiscordSelectComponent("category", null, options, false);
+        }
+
+        public static List<PendingInteraction> PendingInteractions = new List<PendingInteraction>();
 
         public static int ListNameCheck(List<Track> list, string comparer, int startIx = 0)
         {

@@ -80,6 +80,12 @@ namespace MKBB.Commands
     public class GhostList
     {
         [JsonProperty("ghosts")]
+        public List<Ghost> List { get; set; }
+    }
+
+    public class BKTList
+    {
+        [JsonProperty("ghosts")]
         public List<BKT> List { get; set; }
     }
 

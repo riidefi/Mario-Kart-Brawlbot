@@ -52,7 +52,7 @@ namespace MKBB.Commands
 
         public async Task ExecuteTimer(InteractionContext ctx)
         {
-            Util.PendingInteractions = new List<PendingPaginator>();
+            Util.PendingInteractions = new List<PendingInteraction>();
             try
             {
                 await CheckStrikesInit(ctx);

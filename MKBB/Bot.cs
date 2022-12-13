@@ -93,10 +93,13 @@ namespace MKBB
                         if (e.Message.Id == p.MessageId)
                         {
                             p.CurrentPage = (p.CurrentPage + 1) % p.Pages.Count;
-                            await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage,
-                                new DiscordInteractionResponseBuilder()
-                                .AddEmbed(p.Pages[p.CurrentPage])
-                                .AddComponents(Util.GeneratePageArrows(Client)));
+                            var responseBuilder = new DiscordInteractionResponseBuilder();
+                            if (p.CategoryNames != null)
+                            {
+                                responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
+                            }
+                            responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows(Client));
+                            await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, responseBuilder);
                         }
                     }
                     else if (e.Id == "leftButton")
@@ -104,10 +107,27 @@ namespace MKBB
                         if (e.Message.Id == p.MessageId)
                         {
                             p.CurrentPage = p.CurrentPage - 1 == -1 ? p.Pages.Count - 1 : p.CurrentPage - 1;
-                            await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage,
-                                new DiscordInteractionResponseBuilder()
-                                .AddEmbed(p.Pages[p.CurrentPage])
-                                .AddComponents(Util.GeneratePageArrows(Client)));
+                            var responseBuilder = new DiscordInteractionResponseBuilder();
+                            if (p.CategoryNames != null)
+                            {
+                                responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
+                            }
+                            responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows(Client));
+                            await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, responseBuilder);
+                        }
+                    }
+                    else if (e.Id == "category")
+                    {
+                        if (e.Message.Id == p.MessageId)
+                        {
+                            p.CurrentPage = 0;
+                            p.CurrentCategory = p.CategoryNames.FindIndex(x => x.CategoryName == e.Values[0]);
+                            p.Pages = p.Categories[p.CurrentCategory];
+
+                            var responseBuilder = new DiscordInteractionResponseBuilder();
+                            responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
+                            responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows(Client));
+                            await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, responseBuilder);
                         }
                     }
                 }
@@ -134,7 +154,7 @@ namespace MKBB
             };
 
             Client = new DiscordClient(config);
-                
+
             Client.Ready += OnClientReady;
 
             Client.UseInteractivity(new InteractivityConfiguration
@@ -156,7 +176,7 @@ namespace MKBB
 
             //SlashCommands.RegisterCommands<Testing>(180306609233330176);
 
-            SlashCommands.RegisterCommands<PlayerManagement>(180306609233330176);
+            SlashCommands.RegisterCommands<TimeTrialManagement>(180306609233330176);
             SlashCommands.RegisterCommands<TextCommands>();
             SlashCommands.RegisterCommands<Update>(180306609233330176);
             SlashCommands.RegisterCommands<Council>(180306609233330176);
