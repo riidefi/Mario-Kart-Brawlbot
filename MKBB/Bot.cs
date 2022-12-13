@@ -23,7 +23,6 @@ namespace MKBB
         public CommandsNextExtension Commands { get; private set; }
         public SlashCommandsExtension SlashCommands { get; private set; }
         public InteractivityExtension Interactivity { get; private set; }
-        public PlayerManagement PlayerMgt { get; private set; }
 
         private async Task Events(SlashCommandsExtension slash)
         {
@@ -165,7 +164,7 @@ namespace MKBB
             SlashCommands.RegisterCommands<Info>();
             SlashCommands.RegisterCommands<Issues>(180306609233330176);
             SlashCommands.RegisterCommands<Threads>(180306609233330176);
-            //SlashCommands.RegisterCommands<Ghostbusters>(180306609233330176);
+            SlashCommands.RegisterCommands<Ghostbusters>(180306609233330176);
 
             await Events(SlashCommands);
 

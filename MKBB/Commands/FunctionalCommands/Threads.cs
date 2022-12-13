@@ -1,18 +1,17 @@
 ﻿using DSharpPlus;
-using DSharpPlus.CommandsNext;
-using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
 using Newtonsoft.Json;
-using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml;
+using static IronPython.Modules.PythonDateTime;
 
 namespace MKBB.Commands
 {
@@ -206,11 +205,11 @@ namespace MKBB.Commands
         [SlashRequireUserPermissions(Permissions.Administrator)]
         public async Task AssignCouncilMembersToThread(InteractionContext ctx)
         {
-            if (ctx.Channel.IsThread && ctx.Channel.ParentId == 369281592407097345)
+            if (ctx.Channel.IsThread && ctx.Channel.ParentId == 1046936322574655578)
             {
                 try
                 {
-                    await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = false });
+                    await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
                     string json = string.Empty;
 
@@ -247,9 +246,11 @@ namespace MKBB.Commands
                         }
                     }
 
+                    DiscordThreadChannel thread = (DiscordThreadChannel)ctx.Channel;
+
                     for (int i = 0; i < ctx.Channel.Name.Split(',').Length; i++)
                     {
-                        int ix = councilJson.FindIndex(x => ctx.Channel.Name.ToLowerInvariant().Contains(x.SheetName.ToLowerInvariant()));
+                        int ix = councilJson.FindIndex(x => x.DiscordId == thread.CreatorId);
                         if (ix != -1)
                         {
                             councilJson.RemoveAt(ix);
@@ -386,17 +387,31 @@ namespace MKBB.Commands
                         recentlyAssigned.Add(m);
                     }
 
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent(
+                    var toBePinned = await ctx.Channel.SendMessageAsync(
                     $"<@{assignedMembers[0].DiscordId}>, " +
                     $"<@{assignedMembers[1].DiscordId}>, " +
                     $"<@{assignedMembers[2].DiscordId}>, " +
                     $"<@{assignedMembers[3].DiscordId}>, and " +
-                    $"<@{assignedMembers[4].DiscordId}> have been assigned to this thread."));
+                    $"<@{assignedMembers[4].DiscordId}> have been assigned to this thread.");
+
+                    await toBePinned.PinAsync();
 
                     string assigned = JsonConvert.SerializeObject(recentlyAssigned);
                     File.WriteAllText("assigned.json", assigned);
                     string council = JsonConvert.SerializeObject(defaultCouncil);
                     File.WriteAllText("council.json", council);
+
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Success:**__",
+                        Description = $"*Council members have been assigned.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                 }
 
                 catch (Exception ex)
@@ -412,7 +427,7 @@ namespace MKBB.Commands
             [Option("member", "The council member you want to remove the thread from.")] DiscordUser member,
             [Option("thread-id", "The id of the thread you wish to remove the specified member from.")] string threadId)
         {
-            if (ctx.Channel.IsThread && ctx.Channel.ParentId == 369281592407097345)
+            if (ctx.Channel.IsThread && ctx.Channel.ParentId == 1046936322574655578 || ctx.Channel.ParentId == 369281592407097345)
             {
                 try
                 {
@@ -542,7 +557,7 @@ namespace MKBB.Commands
             [Option("member", "The council member you want to remove the thread from.")] DiscordUser member,
             [Option("thread-id", "The id of the thread you wish to remove the specified member from.")] string threadId)
         {
-            if (ctx.Channel.IsThread && ctx.Channel.ParentId == 369281592407097345)
+            if (ctx.Channel.IsThread && ctx.Channel.ParentId == 1046936322574655578 || ctx.Channel.ParentId == 369281592407097345)
             {
                 try
                 {
@@ -658,6 +673,79 @@ namespace MKBB.Commands
                         }
                     }
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+                catch (Exception ex)
+                {
+                    await Util.ThrowError(ctx, ex);
+                }
+            }
+        }
+
+        [SlashCommand("pinmessage", "Pin a message in the thread.")]
+        public async Task PinMessage(InteractionContext ctx,
+            [Option("message", "The message to pin in the thread.")] string message,
+            [Option("file", "The file to pin in the thread.")] DiscordAttachment attachment = null)
+        {
+            if (ctx.Channel.IsThread && ctx.Channel.ParentId == 1046936322574655578 || ctx.Channel.ParentId == 369281592407097345)
+            {
+                try
+                {
+                    await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+
+                    DiscordThreadChannel thread = (DiscordThreadChannel)ctx.Channel;
+
+                    if (ctx.Member.Id != thread.CreatorId)
+                    {
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Error:**__",
+                            Description = $"*You are not the thread's creator - pin request denied.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        }));
+                    }
+                    else
+                    {
+                        DiscordMessageBuilder builder = new DiscordMessageBuilder();
+                        if (attachment == null)
+                        {
+                            builder.WithContent(message);
+                        }
+                        else
+                        {
+                            WebClient webClient = new WebClient();
+                            await webClient.DownloadFileTaskAsync(new Uri(attachment.Url, UriKind.Absolute), attachment.FileName);
+                            builder.WithContent(message).WithFile(attachment.FileName, new FileStream(attachment.FileName, FileMode.Open, FileAccess.Read));
+                        }
+
+                        var toBePinned = await ctx.Channel.SendMessageAsync(builder);
+
+                        if (attachment != null)
+                        {
+                            File.Delete(attachment.FileName);
+                        }
+
+                        foreach (var msg in await ctx.Channel.GetPinnedMessagesAsync())
+                        {
+                            await msg.UnpinAsync();
+                        }
+                        await toBePinned.PinAsync();
+
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Success:**__",
+                            Description = $"*Message has been pinned.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                    }
                 }
                 catch (Exception ex)
                 {

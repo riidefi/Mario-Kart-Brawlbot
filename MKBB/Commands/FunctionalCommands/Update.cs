@@ -55,7 +55,7 @@ namespace MKBB.Commands
             Util.PendingInteractions = new List<PendingPaginator>();
             try
             {
-                await CheckStrikes(ctx);
+                await CheckStrikesInit(ctx);
                 await UpdateInit(ctx, "all");
             }
             catch (Exception ex)
@@ -424,7 +424,7 @@ namespace MKBB.Commands
 
         }
 
-        [SlashCommand("checkstrikes", "Checks council spreadsheet for strikes, and also notifies if there is homework due.")]
+        [SlashCommand("checkstrikes", "Checks missed homework and notifies if there is homework due.")]
         [SlashRequireUserPermissions(Permissions.Administrator)]
         public async Task CheckStrikesInit(InteractionContext ctx)
         {
@@ -466,7 +466,6 @@ namespace MKBB.Commands
 
         public async Task CheckStrikes(InteractionContext ctx)
         {
-            List<string> tracks = new List<string>();
             string json;
 
             string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
@@ -503,7 +502,10 @@ namespace MKBB.Commands
                 List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
                 var hwCompleted = new bool?[councilJson.Count];
 
-                List<CouncilMember> consistentMembers = new List<CouncilMember>();
+                List<string> tracks = new List<string>();
+                List<string> dueTracks = new List<string>();
+
+                List<CouncilMember> inconsistentMembers = new List<CouncilMember>();
                 for (int i = 1; i < response.Values.Count; i++)
                 {
                     if (today == int.Parse(response.Values[i][1].ToString()))
@@ -511,37 +513,37 @@ namespace MKBB.Commands
                         tracks.Add(response.Values[i][0].ToString());
                     }
                     int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
-                    if (lastChecked <= int.Parse(response.Values[i][1].ToString()) && today == int.Parse(response.Values[i][1].ToString()) + 1)
+                    if (lastChecked < today && today == int.Parse(response.Values[i][1].ToString()) + 1)
                     {
+                        dueTracks.Add(response.Values[i][0].ToString());
                         for (int j = 12; j < response.Values[0].Count; j++)
                         {
                             int ix = councilJson.FindIndex(x => x.SheetName == response.Values[0][j].ToString());
-                            if (response.Values[i][j].ToString() != "" &&
-                                    response.Values[i][j].ToString().ToLowerInvariant() != "yes" &&
-                                    response.Values[i][j].ToString().ToLowerInvariant() != "no" &&
-                                    response.Values[i][j].ToString().ToLowerInvariant() != "neutral" &&
-                                    response.Values[i][j].ToString().ToLowerInvariant() != "fixes" &&
-                                    response.Values[i][j].ToString().ToLowerInvariant().Contains("yes") ||
-                                    response.Values[i][j].ToString().ToLowerInvariant().Contains("no") ||
-                                    response.Values[i][j].ToString().ToLowerInvariant().Contains("neutral") ||
-                                    response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes") ||
-                                    response.Values[i][j].ToString() == "This member is the author thus cannot vote.")
+                            if (response.Values[i][j].ToString() == "" ||
+                                    response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
+                                    response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
+                                    response.Values[i][j].ToString().ToLowerInvariant() == "neutral" ||
+                                    response.Values[i][j].ToString().ToLowerInvariant() == "fixes" ||
+                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("yes") &&
+                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("no") &&
+                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("neutral") &&
+                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes") &&
+                                    response.Values[i][j].ToString() != "This member is the author thus cannot vote.")
                             {
-                                consistentMembers.Add(councilJson[ix]);
+                                inconsistentMembers.Add(councilJson[ix]);
                             }
                         }
                     }
                 }
-                for (int i = 0; i < consistentMembers.Count; i++)
+                for (int i = 0; i < councilJson.Count; i++)
                 {
-                    int ix = councilJson.FindIndex(x => x.DiscordId == consistentMembers[i].DiscordId);
-                    if (ix > -1)
+                    if (inconsistentMembers.Contains(councilJson[i]))
                     {
-                        hwCompleted[ix] = true;
+                        hwCompleted[i] = false;
                     }
-                    else
+                    else if (dueTracks.Count > 0)
                     {
-                        hwCompleted[ix] = false;
+                        hwCompleted[i] = true;
                     }
                 }
                 for (int i = 0; i < hwCompleted.Length; i++)
@@ -570,7 +572,7 @@ namespace MKBB.Commands
                                     try
                                     {
                                         Console.WriteLine($"DM'd Member: {councilJson[i].SheetName}");
-                                        await member.SendMessageAsync(message).ConfigureAwait(false);
+                                        await member.SendMessageAsync(message);
                                     }
                                     catch (Exception ex)
                                     {
@@ -627,13 +629,13 @@ namespace MKBB.Commands
                 string description = string.Empty;
                 for (int i = 0; i < hwCompleted.Length; i++)
                 {
-                    if (hwCompleted[i] != null)
+                    if (hwCompleted[i] == false)
                     {
-                        description += $"{councilJson[i].SheetName}";
+                        description += $"{councilJson[i].SheetName}\n";
                     }
                 }
 
-                if (hwCompleted.Select(x => x == false).ToArray().Length > 0)
+                if (hwCompleted.Select(x => x == false).ToArray().Length > 0 && dueTracks.Count > 0)
                 {
                     var embed = new DiscordEmbedBuilder
                     {

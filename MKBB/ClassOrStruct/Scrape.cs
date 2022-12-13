@@ -68,27 +68,27 @@ namespace MKBB
             {
                 if (i % 11 - 3 == 0)
                 {
-                    m1s.Add(innerText1[i].InnerHtml);
+                    m1s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 4 == 0)
                 {
-                    m2s.Add(innerText1[i].InnerHtml);
+                    m2s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 5 == 0)
                 {
-                    m3s.Add(innerText1[i].InnerHtml);
+                    m3s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 6 == 0)
                 {
-                    m6s.Add(innerText1[i].InnerHtml);
+                    m6s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 7 == 0)
                 {
-                    m9s.Add(innerText1[i].InnerHtml);
+                    m9s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 8 == 0)
                 {
-                    m12s.Add(innerText1[i].InnerHtml);
+                    m12s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
             }
             Console.WriteLine("Downloading 1st Wiimmfi Page");
@@ -99,27 +99,27 @@ namespace MKBB
             {
                 if (i % 11 - 3 == 0)
                 {
-                    m1s.Add(innerText2[i].InnerHtml);
+                    m1s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
                 }
                 if (i % 11 - 4 == 0)
                 {
-                    m2s.Add(innerText2[i].InnerHtml);
+                    m2s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
                 }
                 if (i % 11 - 5 == 0)
                 {
-                    m3s.Add(innerText2[i].InnerHtml);
+                    m3s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
                 }
                 if (i % 11 - 6 == 0)
                 {
-                    m6s.Add(innerText2[i].InnerHtml);
+                    m6s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
                 }
                 if (i % 11 - 7 == 0)
                 {
-                    m9s.Add(innerText2[i].InnerHtml);
+                    m9s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
                 }
                 if (i % 11 - 8 == 0)
                 {
-                    m12s.Add(innerText2[i].InnerHtml);
+                    m12s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
                 }
             }
             Console.WriteLine("Downloading 2nd Wiimmfi Page");
@@ -130,27 +130,27 @@ namespace MKBB
             {
                 if (i % 11 - 3 == 0)
                 {
-                    m1s.Add(innerText3[i].InnerHtml);
+                    m1s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
                 }
                 if (i % 11 - 4 == 0)
                 {
-                    m2s.Add(innerText3[i].InnerHtml);
+                    m2s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
                 }
                 if (i % 11 - 5 == 0)
                 {
-                    m3s.Add(innerText3[i].InnerHtml);
+                    m3s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
                 }
                 if (i % 11 - 6 == 0)
                 {
-                    m6s.Add(innerText3[i].InnerHtml);
+                    m6s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
                 }
                 if (i % 11 - 7 == 0)
                 {
-                    m9s.Add(innerText3[i].InnerHtml);
+                    m9s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
                 }
                 if (i % 11 - 8 == 0)
                 {
-                    m12s.Add(innerText3[i].InnerHtml);
+                    m12s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
                 }
             }
             Console.WriteLine("Downloading 3rd Wiimmfi Page");
@@ -226,31 +226,31 @@ namespace MKBB
             {
                 if (i % 11 - 2 == 0)
                 {
-                    names.Add(innerText1[i].InnerText);
+                    names.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 3 == 0)
                 {
-                    m1s.Add(innerText1[i].InnerHtml);
+                    m1s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 4 == 0)
                 {
-                    m2s.Add(innerText1[i].InnerHtml);
+                    m2s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 5 == 0)
                 {
-                    m3s.Add(innerText1[i].InnerHtml);
+                    m3s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 6 == 0)
                 {
-                    m6s.Add(innerText1[i].InnerHtml);
+                    m6s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 7 == 0)
                 {
-                    m9s.Add(innerText1[i].InnerHtml);
+                    m9s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
                 if (i % 11 - 8 == 0)
                 {
-                    m12s.Add(innerText1[i].InnerHtml);
+                    m12s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
             }
             for (int i = 0; i < names.Count; i++)

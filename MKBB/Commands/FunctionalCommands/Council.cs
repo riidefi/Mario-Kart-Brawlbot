@@ -1,9 +1,5 @@
 ﻿using DSharpPlus;
-using DSharpPlus.CommandsNext;
-using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
-using DSharpPlus.Interactivity;
-using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
 using Google.Apis.Auth.OAuth2;
@@ -13,10 +9,7 @@ using Google.Apis.Sheets.v4.Data;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -41,6 +34,20 @@ namespace MKBB.Commands
             {
                 string description = string.Empty;
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+                string[] dueMonths = {
+                    "January",
+                    "Feburary",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December"
+                };
 
                 var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
@@ -64,46 +71,6 @@ namespace MKBB.Commands
                 while (due.Day % 10 != 0)
                 {
                     due = due.AddDays(1);
-                }
-                string dueMonth = string.Empty;
-                switch (due.Month)
-                {
-                    case 1:
-                        dueMonth = "January";
-                        break;
-                    case 2:
-                        dueMonth = "Feburary";
-                        break;
-                    case 3:
-                        dueMonth = "March";
-                        break;
-                    case 4:
-                        dueMonth = "April";
-                        break;
-                    case 5:
-                        dueMonth = "May";
-                        break;
-                    case 6:
-                        dueMonth = "June";
-                        break;
-                    case 7:
-                        dueMonth = "July";
-                        break;
-                    case 8:
-                        dueMonth = "August";
-                        break;
-                    case 9:
-                        dueMonth = "September";
-                        break;
-                    case 10:
-                        dueMonth = "October";
-                        break;
-                    case 11:
-                        dueMonth = "November";
-                        break;
-                    case 12:
-                        dueMonth = "December";
-                        break;
                 }
 
                 string dl = string.Empty;
@@ -143,7 +110,7 @@ namespace MKBB.Commands
                 IList<object> obj = new List<object>
                             {
                                 track,
-                                $"{dueMonth} {due.Day}, {due.Year}",
+                                $"{dueMonths[due.Month - 1]} {due.Day}, {due.Year}",
                                 author,
                                 "'" + version,
                                 dl,
@@ -188,7 +155,7 @@ namespace MKBB.Commands
                     }
                 }
 
-                await channel.SendMessageAsync($"<@&608386209655554058> {track} has been added as homework. It is due for {dueMonth} {due.Day}, {due.Year}.\n{notes}");
+                await channel.SendMessageAsync($"<@&608386209655554058> {track} has been added as homework. It is due for {dueMonths[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
             }
             catch (Exception ex)
             {

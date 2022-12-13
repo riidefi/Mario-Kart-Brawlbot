@@ -251,6 +251,16 @@ namespace MKBB.Commands
             return new DiscordLinkButtonComponent(GetCouncilUrl(), "Council Page");
         }
 
+        public static DiscordLinkButtonComponent GetGhostbustersLinkButton()
+        {
+            return new DiscordLinkButtonComponent("https://docs.google.com/spreadsheets/d/13gL6Uc_91tqdEqdNfjMFB-zOXOsTTKlkblkm0DQ4aWg/edit?usp=sharing", "Ghostbusters Page");
+        }
+
+        public static DiscordLinkButtonComponent GetAdminLinkButton()
+        {
+            return new DiscordLinkButtonComponent("https://docs.google.com/spreadsheets/d/1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "Admin Page");
+        }
+
         public static DiscordButtonComponent[] GeneratePageArrows(InteractionContext ctx)
         {
             var leftButton = new DiscordButtonComponent(ButtonStyle.Primary, "leftButton", "", false, new DiscordComponentEmoji(DiscordEmoji.FromName(ctx.Client, ":arrow_backward:")));
