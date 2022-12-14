@@ -96,7 +96,10 @@ namespace MKBB
                             var responseBuilder = new DiscordInteractionResponseBuilder();
                             if (p.CategoryNames != null)
                             {
-                                responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
+                                if (p.CurrentCategory != 1)
+                                {
+                                    responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
+                                }
                             }
                             responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows(Client));
                             await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, responseBuilder);
@@ -110,7 +113,10 @@ namespace MKBB
                             var responseBuilder = new DiscordInteractionResponseBuilder();
                             if (p.CategoryNames != null)
                             {
-                                responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
+                                if (p.CurrentCategory != 1)
+                                {
+                                    responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
+                                }
                             }
                             responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows(Client));
                             await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, responseBuilder);
