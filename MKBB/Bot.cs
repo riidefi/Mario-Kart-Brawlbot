@@ -49,6 +49,14 @@ namespace MKBB
 
         private async Task Interactions(DiscordClient client)
         {
+            client.ThreadCreated += async (s, e) =>
+            {
+                if (e.Thread.ParentId == 1046936322574655578 && e.Thread.LastMessageId == null)
+                {
+                    await e.Thread.SendMessageAsync("<@&877689639111106651> <@&608386209655554058>");
+                }
+            };
+
             client.InteractionCreated += async (s, e) =>
             {
                 DiscordChannel channel = e.Interaction.Channel;
@@ -96,7 +104,7 @@ namespace MKBB
                             var responseBuilder = new DiscordInteractionResponseBuilder();
                             if (p.CategoryNames != null)
                             {
-                                if (p.CurrentCategory != 1)
+                                if (p.CategoryNames.Count != 1)
                                 {
                                     responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
                                 }
@@ -113,7 +121,7 @@ namespace MKBB
                             var responseBuilder = new DiscordInteractionResponseBuilder();
                             if (p.CategoryNames != null)
                             {
-                                if (p.CurrentCategory != 1)
+                                if (p.CategoryNames.Count != 1)
                                 {
                                     responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
                                 }
