@@ -19,7 +19,6 @@ namespace MKBB.Commands
         {
             await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
             string description = "__**Standard Commands:**__" +
-                "\n/bkt track" +
                 "\n/cttp" +
                 "\n/help" +
                 "\n/info track" +
@@ -28,7 +27,7 @@ namespace MKBB.Commands
                 "\n/pop rts/cts/track (stat-duration) (online/tts)" +
                 "\n/rating track" +
                 "\n/source" +
-                "\n/staff track" +
+                "\n/staff track (engine-class)" +
                 "\n/summary track" +
                 "\n/tools name" +
                 "\n/register chadsoft-link" +

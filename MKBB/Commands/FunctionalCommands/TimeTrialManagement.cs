@@ -1,4 +1,5 @@
 ﻿using DSharpPlus;
+using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using Google.Apis.Auth.OAuth2;
@@ -400,6 +401,17 @@ namespace MKBB.Commands
             {
                 await Util.ThrowError(ctx, ex);
             }
+        }
+
+        //top10 alias
+        [SlashCommand("bkt", "Gets the top 10 of the track specified.")]
+        public async Task GetTop10Alias(InteractionContext ctx,
+            [Option("track-name", "The track you want to display the leaderboard of.")] string track,
+            [Choice("150cc", "")]
+            [Choice("200cc", "200")]
+            [Option("engine-class", "The engine class of the personal best you want to find .")] string cc = "")
+        {
+            await GetTop10(ctx, track, cc);
         }
 
         [SlashCommand("staff", "Gets the staff ghosts for the track specified.")]
