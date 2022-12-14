@@ -473,7 +473,8 @@ namespace MKBB.Commands
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Staff ghosts for {trackList[found1].Name} *(First result)*:**__",
-                            Description = $"Easy Staff Ghost on {trackList[found1].Name} by {easyGhost.ExtraInfo.MiiName}:\n\n" +
+                            Description = $"Easy Staff Ghost by {response.Values[found2][1].ToString().Split('[')[1].Split(']')[0]}:\n\n" +
+                                    $"**Mii Name:** {easyGhost.ExtraInfo.MiiName}\n\n" +
                                     $"**Time:** {easyGhost.FinishTimeSimple}\n\n" +
                                     $"**Splits:** {string.Join(" - ", easyGhost.ExtraInfo.SimpleSplits.ToArray())}\n\n" +
                                     $"**Combo:** {Util.Characters[easyGhost.DriverID]} on {Util.Vehicles[easyGhost.VehicleID]}\n\n" +
@@ -492,7 +493,8 @@ namespace MKBB.Commands
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Staff ghosts for {trackList[found1].Name} *(First result)*:**__",
-                            Description = $"Expert Staff Ghost on {trackList[found1].Name} by {expertGhost.ExtraInfo.MiiName}:\n\n" +
+                            Description = $"Expert Staff Ghost by {response.Values[found2][2].ToString().Split('[')[1].Split(']')[0]}:\n\n" +
+                                    $"**Mii Name:** {expertGhost.ExtraInfo.MiiName}\n\n" +
                                     $"**Time:** {expertGhost.FinishTimeSimple}\n\n" +
                                     $"**Splits:** {string.Join(" - ", expertGhost.ExtraInfo.SimpleSplits.ToArray())}\n\n" +
                                     $"**Combo:** {Util.Characters[expertGhost.DriverID]} on {Util.Vehicles[expertGhost.VehicleID]}\n\n" +
