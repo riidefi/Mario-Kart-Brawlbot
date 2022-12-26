@@ -18,7 +18,7 @@ namespace MKBB.Commands
         [SlashCommand("test", "this is a test")]
         public async Task Test(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
+            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
 
             var embed = new DiscordEmbedBuilder
             {

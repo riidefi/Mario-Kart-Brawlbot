@@ -28,7 +28,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166 || ctx.Channel.Id == 842035247734587453) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.Id == 842035247734587453 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
 
                 string json = string.Empty;
                 string maj = string.Empty;
@@ -139,7 +139,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166 || ctx.Channel.Id == 842035247734587453) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.Id == 842035247734587453 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
 
                 string json = string.Empty;
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
@@ -229,7 +229,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166 || ctx.Channel.Id == 842035247734587453) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.Id == 842035247734587453 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
 
                 string json = string.Empty;
                 string description = string.Empty;

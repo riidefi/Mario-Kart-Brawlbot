@@ -718,7 +718,7 @@ namespace MKBB.Commands
                         {
                             WebClient webClient = new WebClient();
                             await webClient.DownloadFileTaskAsync(new Uri(attachment.Url, UriKind.Absolute), attachment.FileName);
-                            builder.WithContent(message).WithFile(attachment.FileName, new FileStream(attachment.FileName, FileMode.Open, FileAccess.Read));
+                            builder.WithContent(message).AddFile(attachment.FileName, new FileStream(attachment.FileName, FileMode.Open, FileAccess.Read));
                         }
 
                         var toBePinned = await ctx.Channel.SendMessageAsync(builder);

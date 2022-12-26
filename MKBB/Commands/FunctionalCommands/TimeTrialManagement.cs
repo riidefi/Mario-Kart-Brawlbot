@@ -24,7 +24,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166 || ctx.Channel.ParentId == 755509221394743467) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
 
                 bool fail = false;
                 string playerUrl = $"https://www.chadsoft.co.uk/time-trials/players/{playerId.Substring(0, 2)}/{playerId.Substring(2)}.json";
@@ -109,7 +109,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166 || ctx.Channel.ParentId == 755509221394743467) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
 
                 string playerListJson = File.ReadAllText("players.json");
                 List<Player> playerList = JsonConvert.DeserializeObject<List<Player>>(playerListJson);
@@ -139,9 +139,9 @@ namespace MKBB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Stars of {playerList[ix].MiiName} ({user.Username}):**__",
-                        Description = $"<:goldstar:1021692357659332689> - {starsJson.Stars.Gold}\n" +
-                        $"<:silverstar:1021692359202836480> - {starsJson.Stars.Silver}\n" +
-                        $"<:bronzestar:1021692360956059688> - {starsJson.Stars.Bronze}",
+                        Description = $"Gold - {starsJson.Stars.Gold}\n" +
+                        $"Silver - {starsJson.Stars.Silver}\n" +
+                        $"Bronze - {starsJson.Stars.Bronze}",
                         Url = $"{playerList[ix].PlayerLink.Substring(0, playerList[ix].PlayerLink.Length - 5)}.html",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
@@ -167,7 +167,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166 || ctx.Channel.ParentId == 755509221394743467) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
                 List<Player> playerList = JsonConvert.DeserializeObject<List<Player>>(File.ReadAllText("players.json"));
                 int playerIx = playerList.FindIndex(x => x.DiscordId == user.Id);
 
@@ -271,9 +271,9 @@ namespace MKBB.Commands
 
                         if (embeds.Count() > 1)
                         {
-                            PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                            PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
-                            Util.PendingInteractions.Add(pending);
+                            Util.PendingPageInteractions.Add(pending);
                         }
                     }
                 }
@@ -293,7 +293,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166 || ctx.Channel.ParentId == 755509221394743467) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
 
                 List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(File.ReadAllText($"rts{cc}.json"));
                 foreach (var t in JsonConvert.DeserializeObject<List<Track>>(File.ReadAllText($"cts{cc}.json")))
@@ -391,9 +391,9 @@ namespace MKBB.Commands
 
                     if (categories[0].Count() > 1)
                     {
-                        PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, CurrentCategory = 0, MessageId = message.Id, Context = ctx, Categories = categories, Pages = categories[0], CategoryNames = allTrackCategories };
+                        PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, CurrentCategory = 0, MessageId = message.Id, Context = ctx, Categories = categories, Pages = categories[0], CategoryNames = allTrackCategories };
 
-                        Util.PendingInteractions.Add(pending);
+                        Util.PendingPageInteractions.Add(pending);
                     }
                 }
             }
@@ -404,7 +404,7 @@ namespace MKBB.Commands
         }
 
         //top10 alias
-        [SlashCommand("bkt", "Gets the top 10 of the track specified.")]
+        [SlashCommand("bkt", "Gets the top 10 of the track specified (alias of top10).")]
         public async Task GetTop10Alias(InteractionContext ctx,
             [Option("track-name", "The track you want to display the leaderboard of.")] string track,
             [Choice("150cc", "")]
@@ -420,7 +420,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166 || ctx.Channel.ParentId == 755509221394743467) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
 
                 var description = string.Empty;
 
@@ -527,110 +527,7 @@ namespace MKBB.Commands
                         .AddEmbed(embeds[0])
                         .AddComponents(Util.GeneratePageArrows(ctx)));
 
-                    Util.PendingInteractions.Add(new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds });
-                }
-            }
-            catch (Exception ex)
-            {
-                await Util.ThrowError(ctx, ex);
-            }
-        }
-
-        //[SlashCommand("bkt", "Gets the bkts (glitch and shortcut categories included) of the track specified.")]
-        public async Task GetBestTimes(InteractionContext ctx,
-            [Option("track-name", "The track that the best-known times are set on.")] string track = "")
-        {
-            try
-            {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Channel.Id == 908709951411716166 || ctx.Channel.ParentId == 755509221394743467 ? false : true });
-                string description = "";
-                string json = File.ReadAllText($"rts.json");
-                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
-                json = File.ReadAllText($"cts.json");
-                foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
-                {
-                    trackList.Add(t);
-                }
-
-                json = File.ReadAllText($"rts200.json");
-                List<Track> trackList200 = JsonConvert.DeserializeObject<List<Track>>(json);
-                json = File.ReadAllText($"cts200.json");
-                foreach (var t in JsonConvert.DeserializeObject<List<Track>>(json))
-                {
-                    trackList200.Add(t);
-                }
-
-                List<Track> trackDisplay = new List<Track>();
-                List<Track> trackDisplay200 = new List<Track>();
-
-                int found = Util.ListNameCheck(trackList, track);
-                if (found > -1)
-                {
-                    trackDisplay.Add(trackList[found]);
-                    foreach (var t in trackList.FindAll(x => x.SHA1 == trackDisplay[0].SHA1 && x.Category != trackDisplay[0].Category))
-                    {
-                        trackDisplay.Add(t);
-                    }
-                }
-
-                found = Util.ListNameCheck(trackList200, track);
-                if (found > -1)
-                {
-                    trackDisplay200.Add(trackList200[found]);
-                    foreach (var t in trackList200.FindAll(x => x.SHA1 == trackDisplay200[0].SHA1 && x.Category != trackDisplay200[0].Category))
-                    {
-                        trackDisplay200.Add(t);
-                    }
-                }
-
-                if (found < 0)
-                {
-                    var embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Error:**__",
-                        Description = $"*{track} could not be found.*",
-                        Url = "https://chadsoft.co.uk/time-trials/",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                }
-                else
-                {
-                    if (trackDisplay.Count > 0)
-                    {
-                        description += "__**150cc:**__";
-                        foreach (var t in trackDisplay)
-                        {
-                            description += $"\n[{t.BestTime}](https://chadsoft.co.uk/time-trials{t.BKTLink.Split('.')[0]}.html) *({t.CategoryName})* - {t.BKTHolder} *({t.BKTUploadTime.Split('T')[0]})*";
-                        }
-                    }
-
-                    if (trackDisplay200.Count > 0)
-                    {
-                        description += "\n__**200cc:**__";
-                        foreach (var t in trackDisplay200)
-                        {
-                            description += $"\n[{t.BestTime}](https://chadsoft.co.uk/time-trials{t.BKTLink.Split('.')[0]}.html) *({t.CategoryName})* - {t.BKTHolder} *({t.BKTUploadTime.Split('T')[0]})*";
-                        }
-                    }
-
-                    var embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Best Times on {trackDisplay[0].Name} *(First result)*:**__",
-                        Description = description,
-                        Url = $"https://chadsoft.co.uk/time-trials/",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-
+                    Util.PendingPageInteractions.Add(new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds });
                 }
             }
             catch (Exception ex)

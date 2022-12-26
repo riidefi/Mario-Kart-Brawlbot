@@ -17,6 +17,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace MKBB
 {
@@ -167,11 +168,11 @@ namespace MKBB
                 {
                     if (t.Name == trackList[i].Name)
                     {
-                        trackList[i].M1 = t.M1; 
-                        trackList[i].M2 = t.M2; 
-                        trackList[i].M3 = t.M3; 
+                        trackList[i].M1 = t.M1;
+                        trackList[i].M2 = t.M2;
+                        trackList[i].M3 = t.M3;
                         trackList[i].M6 = t.M6;
-                        trackList[i].M9 = t.M9; 
+                        trackList[i].M9 = t.M9;
                         trackList[i].M12 = t.M12;
                         trackList[i].WiimmfiName = t.WiimmfiName;
                     }
@@ -184,10 +185,10 @@ namespace MKBB
                     if (t.Name == trackList200[i].Name)
                     {
                         trackList200[i].M1 = t.M1;
-                        trackList200[i].M2 = t.M2; 
-                        trackList200[i].M3 = t.M3; 
+                        trackList200[i].M2 = t.M2;
+                        trackList200[i].M3 = t.M3;
                         trackList200[i].M6 = t.M6;
-                        trackList200[i].M9 = t.M9; 
+                        trackList200[i].M9 = t.M9;
                         trackList200[i].M12 = t.M12;
                         trackList200[i].WiimmfiName = t.WiimmfiName;
                     }
@@ -629,6 +630,32 @@ namespace MKBB
                         Console.WriteLine($"{track.Name} Slot ID: {track.SlotID.Replace("\n", string.Empty)}");
                     }
                 }
+            }
+            await Task.CompletedTask;
+        }
+
+        public async Task GetPlayerInfo(List<Player> playerList)
+        {
+            Parallel.ForEach(playerList, players =>
+            {
+                Task.WaitAll(GetPlayerInfoTask(players));
+            });
+            await Task.CompletedTask;
+        }
+
+        private async Task GetPlayerInfoTask(Player player)
+        {
+            try
+            {
+                WebClient webClient = new WebClient();
+                var playerJson = JsonConvert.DeserializeObject<Player>(await webClient.DownloadStringTaskAsync(player.PlayerLink));
+                player.MiiName = playerJson.MiiName;
+                player.Ghosts = null;
+                Console.WriteLine($"Updating data for {player.MiiName}.");
+            }
+            catch
+            {
+                Console.WriteLine($"Download failed for {player.MiiName}.");
             }
             await Task.CompletedTask;
         }

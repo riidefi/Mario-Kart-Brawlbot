@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace MKBB.Commands
 {
-    public class PendingInteraction
+    public class PendingPagesInteraction
     {
         public ulong MessageId { get; set; }
         public InteractionContext Context { get; set; }
@@ -13,5 +13,10 @@ namespace MKBB.Commands
         public List<Track> CategoryNames { get; set; }
         public int CurrentCategory { get; set; }
         public int CurrentPage { get; set; }
+    }
+    public class PendingChannelConfigInteraction
+    {
+        public ulong MessageId { get; set; }
+        public InteractionContext Context { get; set; }
     }
 }

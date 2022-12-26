@@ -52,7 +52,7 @@ namespace MKBB.Commands
 
         public async Task ExecuteTimer(InteractionContext ctx)
         {
-            Util.PendingInteractions = new List<PendingInteraction>();
+            Util.PendingPageInteractions = new List<PendingPagesInteraction>();
             try
             {
                 await CheckStrikesInit(ctx);
@@ -317,30 +317,34 @@ namespace MKBB.Commands
 
             try
             {
+                Console.WriteLine("Getting Slot IDs.");
                 await Util.Scraper.GetSlotIds(trackListRt, trackListRt200, trackList, trackList200);
             }
             catch
             {
-                Thread.Sleep(300000);
-                await Util.Scraper.GetSlotIds(trackListRt, trackListRt200, trackList, trackList200);
+                Console.WriteLine("Getting IDs failed. Waiting 30 seconds...");
+                Thread.Sleep(30000);
+                Console.WriteLine("Getting Slot IDs.");
+                try
+                {
+                    await Util.Scraper.GetSlotIds(trackListRt, trackListRt200, trackList, trackList200);
+                }
+                catch
+                {
+                    Console.WriteLine("Getting Slot IDs failed.");
+                }
             }
 
             string playerListJson = File.ReadAllText("players.json");
             List<Player> playerList = JsonConvert.DeserializeObject<List<Player>>(playerListJson);
 
-            foreach (var player in playerList)
+            try
             {
-                try
-                {
-                    var playerJson = JsonConvert.DeserializeObject<Player>(await webClient.DownloadStringTaskAsync(player.PlayerLink));
-                    player.MiiName = playerJson.MiiName;
-                    player.Ghosts = null;
-                    Console.WriteLine($"Updating data for {player.MiiName}.");
-                }
-                catch
-                {
-                    Console.WriteLine($"Download failed for {player.MiiName}.");
-                }
+                await Util.Scraper.GetPlayerInfo(playerList);
+            }
+            catch
+            {
+                Console.WriteLine("Player Info retrieval failed.");
             }
 
             playerListJson = JsonConvert.SerializeObject(playerList);

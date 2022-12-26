@@ -282,12 +282,21 @@ namespace MKBB.Commands
             var options = new List<DiscordSelectComponentOption>();
             for (int i = 0; i < allTrackCategories.Count; i++)
             {
-                options.Add(new DiscordSelectComponentOption(allTrackCategories[i].CategoryName, allTrackCategories[i].CategoryName, isDefault: i == defaultPage));
+                options.Add(new DiscordSelectComponentOption(allTrackCategories[i].CategoryName,
+                    allTrackCategories[i].CategoryName,
+                    isDefault: i == defaultPage));
             }
             return new DiscordSelectComponent("category", null, options, false);
         }
 
-        public static List<PendingInteraction> PendingInteractions = new List<PendingInteraction>();
+        public static DiscordChannelSelectComponent GenerateChannelConfigSelectMenu()
+        {
+            return new DiscordChannelSelectComponent("channelConfig", null, minOptions: 1, maxOptions: 5);
+        }
+
+        public static List<PendingPagesInteraction> PendingPageInteractions = new List<PendingPagesInteraction>();
+
+        public static List<PendingChannelConfigInteraction> PendingChannelConfigInteractions = new List<PendingChannelConfigInteraction>();
 
         public static int ListNameCheck(List<Track> list, string comparer, int startIx = 0)
         {
@@ -561,6 +570,27 @@ namespace MKBB.Commands
                 }
             };
             await channel.SendMessageAsync(embed);
+        }
+
+        public static bool CheckEphemeral(InteractionContext ctx)
+        {
+            List<Server> servers = JsonConvert.DeserializeObject<List<Server>>(File.ReadAllText("servers.json"));
+            foreach (var server in servers)
+            {
+                if (server.BotChannelIds == null)
+                {
+                    return true;
+                }
+                if (server.Id == ctx.Guild.Id && server.BotChannelIds.Contains(ctx.Channel.Id))
+                {
+                    return false;
+                }
+                if (server.Id == ctx.Guild.Id && server.BotChannelIds.Contains((ulong)ctx.Channel.ParentId))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public static List<string> Characters = new List<string>

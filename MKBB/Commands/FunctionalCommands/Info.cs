@@ -26,7 +26,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
 
                 string json;
                 using (var fs = File.OpenRead("tools.json"))
@@ -70,9 +70,9 @@ namespace MKBB.Commands
 
                     if (embeds.Count > 1)
                     {
-                        PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                        PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
-                        Util.PendingInteractions.Add(pending);
+                        Util.PendingPageInteractions.Add(pending);
                     }
                 }
                 else
@@ -128,7 +128,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
                 var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
@@ -215,9 +215,9 @@ namespace MKBB.Commands
 
                 if (embeds.Count > 1)
                 {
-                    PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
-                    Util.PendingInteractions.Add(pending);
+                    Util.PendingPageInteractions.Add(pending);
                 }
             }
             catch (Exception ex)
@@ -232,7 +232,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
                 string description = string.Empty;
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
@@ -277,11 +277,11 @@ namespace MKBB.Commands
                     var tally = response.Values[index][1].ToString().split("\n");
                     if (tally[0].ToString() == "✘")
                     {
-                        tally[0] = DiscordEmoji.FromName(ctx.Client, ":No:");
+                        tally[0] = DiscordEmoji.FromName(ctx.Client, ":x:");
                     }
                     else if (tally[0].ToString() == "✔")
                     {
-                        tally[0] = DiscordEmoji.FromName(ctx.Client, ":Yes:");
+                        tally[0] = DiscordEmoji.FromName(ctx.Client, ":white_check_mark:");
                     }
                     if (tally.Count == 1)
                     {
@@ -340,7 +340,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
 
                 string description = string.Empty;
 
@@ -430,7 +430,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
 
                 string json = string.Empty;
                 string description1 = string.Empty;
@@ -739,9 +739,9 @@ namespace MKBB.Commands
                 {
                     var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows(ctx)));
 
-                    PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
-                    Util.PendingInteractions.Add(pending);
+                    Util.PendingPageInteractions.Add(pending);
                 }
                 else
                 {
@@ -771,7 +771,7 @@ namespace MKBB.Commands
         {
             try
             {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
                 string description = "";
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
@@ -1089,9 +1089,9 @@ namespace MKBB.Commands
                     };
                     var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows(ctx)));
 
-                    PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
-                    Util.PendingInteractions.Add(pending);
+                    Util.PendingPageInteractions.Add(pending);
                 }
                 else
                 {
@@ -1267,7 +1267,7 @@ namespace MKBB.Commands
         public async Task GetTrackIssues(InteractionContext ctx,
             [Option("track-name", "The track that the issues were found on.")] string track = "")
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166 || ctx.Channel.Id == 842035247734587453) });
+            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.Id == 842035247734587453 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
 
             var json = string.Empty;
             var description = string.Empty;
@@ -1372,9 +1372,9 @@ namespace MKBB.Commands
 
                     var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows(ctx)));
 
-                    PendingInteraction pending = new PendingInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
-                    Util.PendingInteractions.Add(pending);
+                    Util.PendingPageInteractions.Add(pending);
                 }
                 else
                 {

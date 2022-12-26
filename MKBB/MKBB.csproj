@@ -39,32 +39,32 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ConcurrentCollections, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\ConcurrentHashSet.1.1.0\lib\net461\ConcurrentCollections.dll</HintPath>
+    <Reference Include="ConcurrentCollections, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ConcurrentHashSet.1.2.0\lib\net461\ConcurrentCollections.dll</HintPath>
     </Reference>
     <Reference Include="Costura, Version=5.7.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Costura.Fody.5.7.0\lib\netstandard1.0\Costura.dll</HintPath>
     </Reference>
-    <Reference Include="DSharpPlus, Version=4.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DSharpPlus.4.2.0\lib\netstandard2.0\DSharpPlus.dll</HintPath>
+    <Reference Include="DSharpPlus, Version=4.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DSharpPlus.4.3.0\lib\netstandard2.0\DSharpPlus.dll</HintPath>
     </Reference>
-    <Reference Include="DSharpPlus.CommandsNext, Version=4.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DSharpPlus.CommandsNext.4.2.0\lib\netstandard2.0\DSharpPlus.CommandsNext.dll</HintPath>
+    <Reference Include="DSharpPlus.CommandsNext, Version=4.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DSharpPlus.CommandsNext.4.3.0\lib\netstandard2.0\DSharpPlus.CommandsNext.dll</HintPath>
     </Reference>
-    <Reference Include="DSharpPlus.Interactivity, Version=4.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DSharpPlus.Interactivity.4.2.0\lib\netstandard2.0\DSharpPlus.Interactivity.dll</HintPath>
+    <Reference Include="DSharpPlus.Interactivity, Version=4.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DSharpPlus.Interactivity.4.3.0\lib\netstandard2.0\DSharpPlus.Interactivity.dll</HintPath>
     </Reference>
-    <Reference Include="DSharpPlus.Lavalink, Version=4.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DSharpPlus.Lavalink.4.2.0\lib\netstandard2.0\DSharpPlus.Lavalink.dll</HintPath>
+    <Reference Include="DSharpPlus.Lavalink, Version=4.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DSharpPlus.Lavalink.4.3.0\lib\netstandard2.0\DSharpPlus.Lavalink.dll</HintPath>
     </Reference>
-    <Reference Include="DSharpPlus.Rest, Version=4.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DSharpPlus.Rest.4.2.0\lib\netstandard2.0\DSharpPlus.Rest.dll</HintPath>
+    <Reference Include="DSharpPlus.Rest, Version=4.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DSharpPlus.Rest.4.3.0\lib\netstandard2.0\DSharpPlus.Rest.dll</HintPath>
     </Reference>
-    <Reference Include="DSharpPlus.SlashCommands, Version=4.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DSharpPlus.SlashCommands.4.2.0\lib\netstandard2.0\DSharpPlus.SlashCommands.dll</HintPath>
+    <Reference Include="DSharpPlus.SlashCommands, Version=4.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DSharpPlus.SlashCommands.4.3.0\lib\netstandard2.0\DSharpPlus.SlashCommands.dll</HintPath>
     </Reference>
-    <Reference Include="DSharpPlus.VoiceNext, Version=4.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DSharpPlus.VoiceNext.4.2.0\lib\netstandard2.0\DSharpPlus.VoiceNext.dll</HintPath>
+    <Reference Include="DSharpPlus.VoiceNext, Version=4.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DSharpPlus.VoiceNext.4.3.0\lib\netstandard2.0\DSharpPlus.VoiceNext.dll</HintPath>
     </Reference>
     <Reference Include="Emzi0767.Common, Version=2.6.6.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Emzi0767.Common.2.6.6\lib\netstandard2.0\Emzi0767.Common.dll</HintPath>
@@ -302,6 +302,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bot.cs" />
+    <Compile Include="ClassOrStruct\Server.cs" />
+    <Compile Include="Commands\FunctionalCommands\Config.cs" />
     <Compile Include="Commands\FunctionalCommands\Council.cs" />
     <Compile Include="Commands\FunctionalCommands\Ghostbusters.cs" />
     <Compile Include="Commands\FunctionalCommands\Info.cs" />

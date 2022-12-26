@@ -17,25 +17,25 @@ namespace MKBB.Commands
         [SlashCommand("help", "Gives a list of commands available.")]
         public async Task Help(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
+            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
             string description = "__**Standard Commands:**__" +
                 "\n/cttp" +
                 "\n/help" +
                 "\n/info track" +
                 "\n/issues track" +
                 "\n/nextupdate" +
+                "\n/pb track player (engine-class)" +
                 "\n/pop rts/cts/track (stat-duration) (online/tts)" +
                 "\n/rating track" +
+                "\n/register chadsoft-link" +
                 "\n/source" +
                 "\n/staff track (engine-class)" +
+                "\n/stars" +
                 "\n/summary track" +
                 "\n/tools name" +
-                "\n/register chadsoft-link" +
-                "\n/stars" +
-                "\n/pb track player (engine-class)" +
                 "\n/top10 track (engine-class)";
 
-            if (ctx.Guild.Id == 180306609233330176 && ctx.Channel.Id != 908709951411716166)
+            if (ctx.Guild.Id == 180306609233330176 && Util.CheckEphemeral(ctx))
             {
                 foreach (var role in ctx.Member.Roles)
                 {
@@ -80,12 +80,16 @@ namespace MKBB.Commands
                                 "\n/addtool name creators description download" +
                                 "\n/assign member thread id" +
                                 "\n/assignedthreads member" +
+                                "\n/botchannel no-channels" +
                                 "\n/clearissues track" +
                                 "\n/createtest" +
                                 "\n/delhw track" +
                                 "\n/deltool name" +
                                 "\n/dmrole role message" +
                                 "\n/edittool oldname name creators description download" +
+                                "\n/gbaddsha1 sha1" +
+                                "\n/gbaddtrack track-name sha1" +
+                                "\n/gbremovetrack" +
                                 "\n/lastupdated" +
                                 "\n/randomassign (reset)" +
                                 "\n/removeassignedthread thread id/all" +
@@ -96,14 +100,16 @@ namespace MKBB.Commands
                                 "\n/starttimers" +
                                 "\n/strikes member/all" +
                                 "\n/unassign member thread id" +
-                                "\n/update" +
-                                "\n/gbaddtrack track-name sha1" +
-                                "\n/gbaddsha1 sha1" +
-                                "\n/gbremovetrack";
+                                "\n/update";
                             break;
                         }
                     }
                 }
+            }
+            else if (ctx.Member.Permissions.HasPermission(Permissions.Administrator) && Util.CheckEphemeral(ctx))
+            {
+                description += "\n\n__**Admin Commands:**__" +
+                            "\n/botchannel no-channels";
             }
 
             var embed = new DiscordEmbedBuilder
@@ -119,13 +125,15 @@ namespace MKBB.Commands
 
             var trackTestersInvite = new DiscordLinkButtonComponent("https://discord.gg/sjPzuJ7PwD", "CTGP Track Testers Invite");
 
-            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed).AddComponents(trackTestersInvite));
+            var botInvite = new DiscordLinkButtonComponent("https://discord.com/api/oauth2/authorize?client_id=933390786266017884&permissions=294205385728&scope=bot", "Bot Invite");
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed).AddComponents(trackTestersInvite, botInvite));
         }
 
         [SlashCommand("cttp", "Gives links relating to the Custom Track Test Pack.")]
         public async Task CTTP(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
+            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
             var embed = new DiscordEmbedBuilder
             {
                 Color = new DiscordColor("#FF0000"),
@@ -145,7 +153,7 @@ namespace MKBB.Commands
         [SlashCommand("sheets", "Gives the links to useful spreadsheets.")]
         public async Task Sheets(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
+            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
             string description = "**Backroom Page:** *This page has all of the information on our finalized updates, and is viewable to the public. The first tab outlines what the next few updates will look like, and the second tab contains all the accepted tracks, with the fixes needed (if any).*" +
                 "\n\n**Testing Notes Page:** *This page is what we fill when doing the online tests. It also contains the downloads for all the tracks in the test.*";
             var message = new DiscordWebhookBuilder();
@@ -209,7 +217,7 @@ namespace MKBB.Commands
         [SlashCommand("source", "Gives a link to the source code of this bot.")]
         public async Task SourceCode(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = !(ctx.Channel.Id == 908709951411716166) });
+            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
             var embed = new DiscordEmbedBuilder
             {
                 Color = new DiscordColor("#FF0000"),
