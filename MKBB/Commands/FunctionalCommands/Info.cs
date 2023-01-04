@@ -2,6 +2,7 @@
 using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using Google.Apis.Auth.OAuth2;
+using Google.Apis.Http;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
@@ -484,7 +485,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 1-21 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 1-21 *({month.ToUpper()})*:**__" : $"__**Displaying 1-21:**__",
                             Description = description1,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -495,7 +496,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 22-32 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 22-32 *({month.ToUpper()})*:**__" : $"__**Displaying 22-32:**__",
                             Description = description2,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -556,7 +557,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 1-21 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 1-21 *({month.ToUpper()})*:**__" : $"__**Displaying 1-21:**__",
                             Description = description1,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -567,7 +568,7 @@ namespace MKBB.Commands
                             new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 22-42 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 22-42 *({month.ToUpper()})*:**__" : $"__**Displaying 22-42:**__",
                             Description = description2,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -578,7 +579,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 43-63 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 43-63 *({month.ToUpper()})*:**__" : $"__**Displaying 43-63:**__",
                             Description = description3,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -589,7 +590,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 64-84 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 64-84 *({month.ToUpper()})*:**__" : $"__**Displaying 64-84:**__",
                             Description = description4,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -600,7 +601,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 85-105 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 85-105 *({month.ToUpper()})*:**__" : $"__**Displaying 85-105:**__",
                             Description = description5,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -611,7 +612,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 106-126 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 106-126 *({month.ToUpper()})*:**__" : $"__**Displaying 106-126:**__",
                             Description = description6,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -622,7 +623,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 127-147 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 127-147 *({month.ToUpper()})*:**__" : $"__**Displaying 127-147:**__",
                             Description = description7,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -633,7 +634,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 148-168 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 148-168 *({month.ToUpper()})*:**__" : $"__**Displaying 148-168:**__",
                             Description = description8,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -644,7 +645,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 169-189 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 169-189 *({month.ToUpper()})*:**__" : $"__**Displaying 169-189:**__",
                             Description = description9,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -655,7 +656,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 190-210 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 190-210 *({month.ToUpper()})*:**__" : $"__**Displaying 190-210:**__",
                             Description = description10,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -666,7 +667,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Displaying 211-218 *({month.ToUpper()})*:**__",
+                            Title = metric == "online" ? $"__**Displaying 211-218 *({month.ToUpper()})*:**__" : $"__**Displaying 211-218:**__",
                             Description = description11,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -748,7 +749,7 @@ namespace MKBB.Commands
                     var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Displaying tracks containing *{arg} ({month.ToUpper()})*:**__",
+                        Title = metric == "online" ? $"__**Displaying tracks containing *{arg} ({month.ToUpper()})*:**__" : $"__**Displaying tracks containing *{arg}*:**__",
                         Description = description1,
                         Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -791,9 +792,9 @@ namespace MKBB.Commands
                 List<string> earlyTrackDisplay = new List<string>();
                 List<string> midTrackDisplay = new List<string>();
 
-                bool earlyMid = false;
-                bool early = false;
-                bool mid = false;
+                bool thisYear = false;
+                bool halfLastYear = false;
+                bool lastYear = false;
 
                 try
                 {
@@ -809,7 +810,6 @@ namespace MKBB.Commands
                             if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
                             {
                                 earlyTrackDisplay.Add(response.Values[i][0].ToString());
-                                early = true;
                             }
                         }
 
@@ -822,9 +822,9 @@ namespace MKBB.Commands
                             if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
                             {
                                 midTrackDisplay.Add(response.Values[i][0].ToString());
-                                mid = true;
                             }
                         }
+                        thisYear = true;
                     }
                     else
                     {
@@ -838,7 +838,6 @@ namespace MKBB.Commands
                             if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
                             {
                                 earlyTrackDisplay.Add(response.Values[i][0].ToString());
-                                earlyMid = true;
                             }
                         }
 
@@ -851,47 +850,40 @@ namespace MKBB.Commands
                             if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
                             {
                                 midTrackDisplay.Add(response.Values[i][0].ToString());
-                                early = true;
                             }
                         }
+                        halfLastYear = true;
                     }
                 }
                 catch
                 {
-                    if (DateTime.Now.Month > 6)
+                    request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year - 1} Track Rating Data'!A226:Y443");
+                    response = await request.ExecuteAsync();
+
+                    earlyTrackDisplay = new List<string>();
+
+                    for (int i = 0; i < response.Values.Count; i++)
                     {
-                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Data'!A226:Y443");
-                        response = await request.ExecuteAsync();
-
-                        earlyTrackDisplay = new List<string>();
-
-                        for (int i = 0; i < response.Values.Count; i++)
+                        if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
                         {
-                            if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
-                            {
-                                earlyTrackDisplay.Add(response.Values[i][0].ToString());
-                                early = true;
-                            }
+                            earlyTrackDisplay.Add(response.Values[i][0].ToString());
                         }
                     }
-                    else
+                    request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year - 1} Track Rating Data'!A226:Y443");
+                    response = await request.ExecuteAsync();
+
+                    midTrackDisplay = new List<string>();
+
+                    for (int i = 0; i < response.Values.Count; i++)
                     {
-                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year - 1} Track Rating Data'!A226:Y443");
-                        response = await request.ExecuteAsync();
-
-                        earlyTrackDisplay = new List<string>();
-
-                        for (int i = 0; i < response.Values.Count; i++)
+                        if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
                         {
-                            if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
-                            {
-                                earlyTrackDisplay.Add(response.Values[i][0].ToString());
-                                earlyMid = true;
-                            }
+                            midTrackDisplay.Add(response.Values[i][0].ToString());
                         }
                     }
+                    lastYear = true;
                 }
-                if (!earlyMid && !early && !mid)
+                if (!thisYear && !halfLastYear && !lastYear)
                 {
                     var embed = new DiscordEmbedBuilder
                     {
@@ -1095,13 +1087,17 @@ namespace MKBB.Commands
                 }
                 else
                 {
-                    if (early)
+                    if (thisYear)
                     {
                         request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Graphs'");
                     }
-                    if (earlyMid)
+                    else if (halfLastYear)
                     {
                         request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year - 1} Track Rating Graphs'");
+                    }
+                    else if (lastYear)
+                    {
+                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year - 1} Track Rating Graphs'");
                     }
                     response = await request.ExecuteAsync();
                     foreach (var t in response.Values)
@@ -1124,25 +1120,33 @@ namespace MKBB.Commands
                     }
 
                     string firstAverage = $"{Math.Round((double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}";
-                    if (early)
+                    if (thisYear)
                     {
                         request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Data'!A226:Y443");
                     }
-                    if (earlyMid)
+                    else if (halfLastYear)
                     {
                         request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year - 1} Track Rating Data'!A226:Y443");
+                    }
+                    else if (lastYear)
+                    {
+                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year - 1} Track Rating Data'!A226:Y443");
                     }
                     response = await request.ExecuteAsync();
 
                     if (earlyTrackDisplay.Count > 0)
                     {
-                        if (early)
+                        if (thisYear)
                         {
                             description += $"__**Early {DateTime.Now.Year} Track Rating Data (Average: {firstAverage}%):**__\n";
                         }
-                        if (earlyMid)
+                        else  if (halfLastYear)
                         {
                             description += $"__**Mid {DateTime.Now.Year - 1} Track Rating Data (Average: {firstAverage}%):**__\n";
+                        }
+                        else if (lastYear)
+                        {
+                            description += $"__**Early {DateTime.Now.Year - 1} Track Rating Data (Average: {firstAverage}%):**__\n";
                         }
                         for (int i = 0; i < earlyTrackDisplay.Count; i++)
                         {
@@ -1159,13 +1163,17 @@ namespace MKBB.Commands
                         }
                     }
 
-                    if (mid)
+                    if (thisYear)
                     {
                         request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year} Track Rating Graphs'");
                     }
-                    else if (early)
+                    else if (halfLastYear)
                     {
                         request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Graphs'");
+                    }
+                    else if (lastYear)
+                    {
+                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year - 1} Track Rating Graphs'");
                     }
                     response = await request.ExecuteAsync();
                     foreach (var t in response.Values)
@@ -1189,25 +1197,33 @@ namespace MKBB.Commands
 
                     string secondAverage = $"{Math.Round((double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}/{Math.Round((double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)) / (double.Parse(response.Values[ix][12].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][13].ToString().Replace("%", string.Empty)) + double.Parse(response.Values[ix][14].ToString().Replace("%", string.Empty)))) * 100)}";
 
-                    if (mid)
+                    if (thisYear)
                     {
                         request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year} Track Rating Data'!A226:Y443");
                     }
-                    else if (early)
+                    else if (halfLastYear)
                     {
                         request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Data'!A226:Y443");
+                    }
+                    else if (lastYear)
+                    {
+                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year - 1} Track Rating Data'!A226:Y443");
                     }
                     response = await request.ExecuteAsync();
 
                     if (midTrackDisplay.Count > 0)
                     {
-                        if (mid)
+                        if (thisYear)
                         {
                             description += $"__**Mid {DateTime.Now.Year} Track Rating Data (Average: {secondAverage}%):**__\n";
                         }
-                        else if (early)
+                        else if (halfLastYear)
                         {
                             description += $"__**Early {DateTime.Now.Year} Track Rating Data (Average: {secondAverage}%):**__\n";
+                        }
+                        else if (lastYear)
+                        {
+                            description += $"__**Mid {DateTime.Now.Year - 1} Track Rating Data (Average: {secondAverage}%):**__\n";
                         }
                         for (int i = 0; i < midTrackDisplay.Count; i++)
                         {
@@ -1244,7 +1260,7 @@ namespace MKBB.Commands
                         var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**{DateTime.Now.Year} Track Ratings for {track} (Remove/Indifferent/Keep - Rank):**__",
+                            Title = $"__**Track Ratings for {track} (Remove/Indifferent/Keep - Rank):**__",
                             Description = description,
                             Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=595190106",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
