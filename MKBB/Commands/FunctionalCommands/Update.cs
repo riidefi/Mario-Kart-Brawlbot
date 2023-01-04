@@ -225,6 +225,8 @@ namespace MKBB.Commands
                 }
             }
 
+            bool saveOldData = false;
+
             string oldJson = File.ReadAllText("cts.json");
             List<Track> oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
 
@@ -244,6 +246,30 @@ namespace MKBB.Commands
                     trackList[i].BKTHolder = oldTrackList[ix].BKTHolder;
                     trackList[i].CategoryName = oldTrackList[ix].CategoryName;
                 }
+                if (!saveOldData && ix == -1)
+                {
+                    saveOldData = true;
+                }
+            }
+
+            var processInfo = new ProcessStartInfo();
+            var process = new Process();
+
+            if (saveOldData)
+            {
+                File.WriteAllText($"cts.{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}.json", oldJson);
+                processInfo = new ProcessStartInfo();
+                processInfo.FileName = @"sudo";
+                processInfo.Arguments = $"mv cts.{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}.json /var/www/brawlbox/MKBB/";
+                processInfo.CreateNoWindow = true;
+                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                processInfo.UseShellExecute = false;
+                processInfo.RedirectStandardOutput = true;
+
+                process = new Process();
+                process.StartInfo = processInfo;
+                process.Start();
+                process.WaitForExit();
             }
 
             oldJson = File.ReadAllText("cts200.json");
@@ -265,6 +291,23 @@ namespace MKBB.Commands
                     trackList200[i].BKTHolder = oldTrackList[ix].BKTHolder;
                     trackList200[i].CategoryName = oldTrackList[ix].CategoryName;
                 }
+            }
+
+            if (saveOldData)
+            {
+                File.WriteAllText($"cts200.{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}.json", oldJson);
+                processInfo = new ProcessStartInfo();
+                processInfo.FileName = @"sudo";
+                processInfo.Arguments = $"mv cts200.{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}.json /var/www/brawlbox/MKBB/";
+                processInfo.CreateNoWindow = true;
+                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                processInfo.UseShellExecute = false;
+                processInfo.RedirectStandardOutput = true;
+
+                process = new Process();
+                process.StartInfo = processInfo;
+                process.Start();
+                process.WaitForExit();
             }
 
             try
@@ -366,7 +409,7 @@ namespace MKBB.Commands
             File.WriteAllText("rts200.json", rt200Json);
             File.WriteAllText("cts200.json", ct200Json);
 
-            var processInfo = new ProcessStartInfo();
+            processInfo = new ProcessStartInfo();
             processInfo.FileName = @"sudo";
             processInfo.Arguments = $"cp rts.json /var/www/brawlbox/MKBB/";
             processInfo.CreateNoWindow = true;
@@ -374,7 +417,7 @@ namespace MKBB.Commands
             processInfo.UseShellExecute = false;
             processInfo.RedirectStandardOutput = true;
 
-            var process = new Process();
+            process = new Process();
             process.StartInfo = processInfo;
             process.Start();
             process.WaitForExit();
