@@ -339,6 +339,8 @@ ASALocalRun/
 *.config
 *.xsd
 /MKBB/Properties/AssemblyInfo.cs
+/MKBB/Commands/FunctionalCommands/Testing.cs
+/MKBB/ClassOrStruct/Util.cs
 /MKBB/MKBB.csproj
 /MKBB.sln
 *.p12
@@ -346,4 +348,3 @@ ASALocalRun/
 *.szs
 *.bin
 [Rr]esources/
-MKBB/Commands/FunctionalCommands/Testing.cs
