@@ -577,15 +577,11 @@ namespace MKBB.Commands
             List<Server> servers = JsonConvert.DeserializeObject<List<Server>>(File.ReadAllText("servers.json"));
             foreach (var server in servers)
             {
-                if (server.BotChannelIds == null)
-                {
-                    return true;
-                }
-                if (server.Id == ctx.Guild.Id && server.BotChannelIds.Contains(ctx.Channel.Id))
+                if (server.BotChannelIds != null && server.Id == ctx.Guild.Id && server.BotChannelIds.Contains(ctx.Channel.Id))
                 {
                     return false;
                 }
-                if (server.Id == ctx.Guild.Id && server.BotChannelIds.Contains((ulong)ctx.Channel.ParentId))
+                if (server.BotChannelIds != null && server.Id == ctx.Guild.Id && server.BotChannelIds.Contains((ulong)ctx.Channel.ParentId))
                 {
                     return false;
                 }
