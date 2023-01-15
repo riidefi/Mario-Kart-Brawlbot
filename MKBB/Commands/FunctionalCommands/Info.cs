@@ -485,7 +485,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 1-21 *({month.ToUpper()})*:**__" : $"__**Displaying 1-21:**__",
+                            Title = metric == "online" ? $"__**Displaying 1-21 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 1-21 [Time Trials]:**__",
                             Description = description1,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -496,7 +496,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 22-32 *({month.ToUpper()})*:**__" : $"__**Displaying 22-32:**__",
+                            Title = metric == "online" ? $"__**Displaying 22-32 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 22-32 [Time Trials]:**__",
                             Description = description2,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -557,7 +557,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 1-21 *({month.ToUpper()})*:**__" : $"__**Displaying 1-21:**__",
+                            Title = metric == "online" ? $"__**Displaying 1-21 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 1-21 [Time Trials]:**__",
                             Description = description1,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -568,7 +568,7 @@ namespace MKBB.Commands
                             new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 22-42 *({month.ToUpper()})*:**__" : $"__**Displaying 22-42:**__",
+                            Title = metric == "online" ? $"__**Displaying 22-42 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 22-42 [Time Trials]:**__",
                             Description = description2,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -579,7 +579,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 43-63 *({month.ToUpper()})*:**__" : $"__**Displaying 43-63:**__",
+                            Title = metric == "online" ? $"__**Displaying 43-63 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 43-63 [Time Trials]:**__",
                             Description = description3,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -590,7 +590,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 64-84 *({month.ToUpper()})*:**__" : $"__**Displaying 64-84:**__",
+                            Title = metric == "online" ? $"__**Displaying 64-84 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 64-84 [Time Trials]:**__",
                             Description = description4,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -601,7 +601,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 85-105 *({month.ToUpper()})*:**__" : $"__**Displaying 85-105:**__",
+                            Title = metric == "online" ? $"__**Displaying 85-105 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 85-105 [Time Trials]:**__",
                             Description = description5,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -612,7 +612,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 106-126 *({month.ToUpper()})*:**__" : $"__**Displaying 106-126:**__",
+                            Title = metric == "online" ? $"__**Displaying 106-126 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 106-126 [Time Trials]:**__",
                             Description = description6,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -623,7 +623,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 127-147 *({month.ToUpper()})*:**__" : $"__**Displaying 127-147:**__",
+                            Title = metric == "online" ? $"__**Displaying 127-147 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 127-147 [Time Trials]:**__",
                             Description = description7,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -634,7 +634,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 148-168 *({month.ToUpper()})*:**__" : $"__**Displaying 148-168:**__",
+                            Title = metric == "online" ? $"__**Displaying 148-168 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 148-168 [Time Trials]:**__",
                             Description = description8,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -645,7 +645,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 169-189 *({month.ToUpper()})*:**__" : $"__**Displaying 169-189:**__",
+                            Title = metric == "online" ? $"__**Displaying 169-189 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 169-189 [Time Trials]:**__",
                             Description = description9,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -656,7 +656,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 190-210 *({month.ToUpper()})*:**__" : $"__**Displaying 190-210:**__",
+                            Title = metric == "online" ? $"__**Displaying 190-210 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 190-210 [Time Trials]:**__",
                             Description = description10,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -667,7 +667,7 @@ namespace MKBB.Commands
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = metric == "online" ? $"__**Displaying 211-218 *({month.ToUpper()})*:**__" : $"__**Displaying 211-218:**__",
+                            Title = metric == "online" ? $"__**Displaying 211-218 [Online] *({month.ToUpper()})*:**__" : $"__**Displaying 211-218 [Time Trials]:**__",
                             Description = description11,
                             Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -749,7 +749,7 @@ namespace MKBB.Commands
                     var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
-                        Title = metric == "online" ? $"__**Displaying tracks containing *{arg} ({month.ToUpper()})*:**__" : $"__**Displaying tracks containing *{arg}*:**__",
+                        Title = metric == "online" ? $"__**Displaying tracks containing *{arg} ({month.ToUpper()})* [Online]:**__" : $"__**Displaying tracks containing *{arg}* [Time Trials]:**__",
                         Description = description1,
                         Url = metric == "online" ? "https://wiimmfi.de/stats/track/mv/ctgp?p=std,c2,0" : "https://chadsoft.co.uk/time-trials/",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
