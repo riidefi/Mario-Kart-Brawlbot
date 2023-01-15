@@ -5,6 +5,7 @@ using DSharpPlus.SlashCommands;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
+using Microsoft.Scripting.Utils;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -161,6 +162,9 @@ namespace MKBB.Commands
         public async Task GetPBs(InteractionContext ctx,
             [Option("track-name", "The track you want to display the personal bests of.")] string track,
             [Option("player", "The Discord user of the player you want to the display the personal bests of.")] DiscordUser user,
+            [Choice("Kart", "Kart")]
+            [Choice("Bike", "Bike")]
+            [Option("vehicle-type", "Gets all ghosts based on a specific vehicle")] string vehicleRestriction = "",
             [Choice("150cc", "")]
             [Choice("200cc", "200")]
             [Option("engine-class", "The engine class of the personal best you want to find .")] string cc = "")
@@ -211,7 +215,17 @@ namespace MKBB.Commands
                     Track foundTrack = trackList[trackIx];
                     List<Track> allTrackCategories = trackList.Where(x => x.SHA1 == foundTrack.SHA1).ToList();
                     Player player = JsonConvert.DeserializeObject<Player>(await webClient.DownloadStringTaskAsync(playerList[playerIx].PlayerLink));
-                    List<Ghost> applicableGhosts = player.Ghosts.Where(x => x.TrackID == foundTrack.SHA1 && x.IsPB && x.Is200cc == (cc == "" ? false : true)).ToList();
+                    List<Ghost> applicableGhosts = player.Ghosts.Where(x => x.TrackID == foundTrack.SHA1 && vehicleRestriction == "" ? x.IsPB : true && x.Is200cc == (cc == "" ? false : true)).ToList();
+                    if (vehicleRestriction == "Kart")
+                    {
+                        applicableGhosts.RemoveAll(x => x.VehicleID > 17);
+                        applicableGhosts.RemoveRange(1, applicableGhosts.Count - 1);
+                    }
+                    else if (vehicleRestriction == "Bike")
+                    {
+                        applicableGhosts.RemoveAll(x => x.VehicleID < 18);
+                        applicableGhosts.RemoveRange(1, applicableGhosts.Count - 1);
+                    }
                     if (applicableGhosts.Count == 0)
                     {
                         var embed = new DiscordEmbedBuilder
@@ -229,24 +243,25 @@ namespace MKBB.Commands
                     else
                     {
                         List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
-                        allTrackCategories.OrderBy(x => x.Category);
-                        applicableGhosts.OrderBy(x => x.Category);
+                        allTrackCategories = allTrackCategories.OrderByDescending(x => x.CategoryName).ToList();
+                        applicableGhosts = applicableGhosts.OrderByDescending(x => x.CategoryName).ToList();
 
                         foreach (var ghost in applicableGhosts)
                         {
                             ghost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL}"));
                             ghost.CategoryName = allTrackCategories.Find(x => x.Category == ghost.Category).CategoryName;
 
+                            string controllerId = (ghost.ControllerID != 0 || ghost.ControllerID != 1 || ghost.ControllerID != 2 || ghost.ControllerID != 3) ? "???" : Util.Controllers[ghost.ControllerID];
                             var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
-                                Title = $"__**{trackList[trackIx].Name} - {ghost.CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")}:**__",
+                                Title = $"__**{trackList[trackIx].Name} - {ghost.CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")} {(cc == "" ? "(150cc)" : "(200cc)")}{(vehicleRestriction == "" ? "" : $"[ {vehicleRestriction}]")}:**__",
                                 Description = $"{user.Username}'s fastest time on {trackList[trackIx].Name}:\n\n" +
                                 $"**Time:** {ghost.FinishTimeSimple}\n\n" +
                                 $"**Splits:** {string.Join(" - ", ghost.ExtraInfo.SimpleSplits.ToArray())}\n\n" +
                                 $"**Combo:** {Util.Characters[ghost.DriverID]} on {Util.Vehicles[ghost.VehicleID]}\n\n" +
                                 $"**Date Set:** {ghost.DateSet.Split('T')[0]}\n\n" +
-                                $"**Controller:**\n{Util.Controllers[ghost.ControllerID]}\n\n" +
+                                $"**Controller:**\n{controllerId}\n\n" +
                                 $"**Extra Details:**\n" +
                                 $"*Exact Finish Time: {ghost.FinishTime}*\n\n" +
                                 $"*Exact Splits: {string.Join(" - ", ghost.ExtraInfo.Splits.ToArray())}*",
@@ -287,6 +302,9 @@ namespace MKBB.Commands
         [SlashCommand("top10", "Gets the top 10 of the track specified.")]
         public async Task GetTop10(InteractionContext ctx,
             [Option("track-name", "The track you want to display the leaderboard of.")] string track,
+            [Choice("Kart", "Kart")]
+            [Choice("Bike", "Bike")]
+            [Option("vehicle-type", "Gets all ghosts based on a specific vehicle")] string vehicleRestriction = "",
             [Choice("150cc", "")]
             [Choice("200cc", "200")]
             [Option("engine-class", "The engine class of the personal best you want to find .")] string cc = "")
@@ -320,13 +338,22 @@ namespace MKBB.Commands
                     var webClient = new WebClient();
                     Track foundTrack = trackList[trackIx];
                     List<Track> allTrackCategories = trackList.Where(x => x.SHA1 == foundTrack.SHA1).ToList();
-                    allTrackCategories.OrderBy(x => x.Category);
+                    allTrackCategories = allTrackCategories.OrderByDescending(x => x.CategoryName.Length).ToList();
 
                     List<List<DiscordEmbedBuilder>> categories = new List<List<DiscordEmbedBuilder>>();
 
                     for (int i = 0; i < allTrackCategories.Count(); i++)
                     {
-                        GhostList leaderboard = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{allTrackCategories[i].LeaderboardLink}?limit=1000"));
+                        GhostList leaderboard = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{allTrackCategories[i].LeaderboardLink}?limit=100000"));
+
+                        if (vehicleRestriction == "Kart")
+                        {
+                            leaderboard.List.RemoveAll(x => x.VehicleID > 17);
+                        }
+                        else if (vehicleRestriction == "Bike")
+                        {
+                            leaderboard.List.RemoveAll(x => x.VehicleID < 18);
+                        }
 
                         leaderboard.List.RemoveAll(x => !x.IsPB);
                         try
@@ -338,9 +365,32 @@ namespace MKBB.Commands
                             Console.WriteLine("Already <=10.");
                         }
 
-                        leaderboard.List.OrderBy(x => x.Category);
-
                         List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                        string leaderboardDisplay = "";
+
+                        foreach (var ghost in leaderboard.List)
+                        {
+                            var ghostJson = await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL}");
+                            ghost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(ghostJson);
+
+                            leaderboardDisplay += $"**{leaderboard.List.FindIndex(x => x.LinkContainer.Href.URL == ghost.LinkContainer.Href.URL) + 1})** {ghost.ExtraInfo.MiiName} - {ghost.FinishTimeSimple}\n";
+                        }
+
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**{allTrackCategories[i].Name} - {allTrackCategories[i].CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")}{(vehicleRestriction == "" ? "" : $"[ {vehicleRestriction}]")}:**__",
+                            Description = leaderboardDisplay,
+                            Url = $"https://www.chadsoft.co.uk/time-trials{allTrackCategories[i].LeaderboardLink.Substring(0, allTrackCategories[i].LeaderboardLink.Length - 4)}html",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        if (leaderboardDisplay != "")
+                        {
+                            embeds.Add(embed);
+                        }
 
                         foreach (var ghost in leaderboard.List)
                         {
@@ -350,7 +400,9 @@ namespace MKBB.Commands
                             ghost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(ghostJson);
                             ghost.CategoryName = allTrackCategories.Find(x => x.Category == ghost.Category).CategoryName;
 
-                            var embed = new DiscordEmbedBuilder
+                            string controllerId = (ghost.ControllerID != 0 || ghost.ControllerID != 1 || ghost.ControllerID != 2 || ghost.ControllerID != 3) ? "???" : Util.Controllers[ghost.ControllerID];
+
+                            embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**{leaderboard.List.FindIndex(x => x.LinkContainer.Href.URL == ghost.LinkContainer.Href.URL) + 1}) {trackList[trackIx].Name} - {ghost.CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")}:**__",
@@ -359,7 +411,7 @@ namespace MKBB.Commands
                                 $"**Splits:** {string.Join(" - ", ghost.ExtraInfo.SimpleSplits.ToArray())}\n\n" +
                                 $"**Combo:** {Util.Characters[ghost.DriverID]} on {Util.Vehicles[ghost.VehicleID]}\n\n" +
                                 $"**Date Set:** {ghost.DateSet.Split('T')[0]}\n\n" +
-                                $"**Controller:**\n{Util.Controllers[ghost.ControllerID]}\n\n" +
+                                $"**Controller:**\n{controllerId}\n\n" +
                                 $"**Extra Details:**\n" +
                                 $"*Exact Finish Time: {ghost.FinishTime}*\n\n" +
                                 $"*Exact Splits: {string.Join(" - ", ghost.ExtraInfo.Splits.ToArray())}*",
@@ -369,7 +421,6 @@ namespace MKBB.Commands
                                     Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                                 }
                             };
-
                             embeds.Add(embed);
                         }
 
@@ -407,11 +458,202 @@ namespace MKBB.Commands
         [SlashCommand("bkt", "Gets the top 10 of the track specified (alias of top10).")]
         public async Task GetTop10Alias(InteractionContext ctx,
             [Option("track-name", "The track you want to display the leaderboard of.")] string track,
+            [Choice("Kart", "Kart")]
+            [Choice("Bike", "Bike")]
+            [Option("vehicle-type", "Gets all ghosts based on a specific vehicle")] string vehicleRestriction = "",
             [Choice("150cc", "")]
             [Choice("200cc", "200")]
             [Option("engine-class", "The engine class of the personal best you want to find .")] string cc = "")
         {
-            await GetTop10(ctx, track, cc);
+            await GetTop10(ctx, track, vehicleRestriction, cc);
+        }
+
+        [SlashCommand("servertop10", "Gets the top 10 of the track specified for all players in the server.")]
+        public async Task GetServerTop10(InteractionContext ctx,
+            [Option("track-name", "The track you want to display the leaderboard of.")] string track,
+            [Choice("Kart", "Kart")]
+            [Choice("Bike", "Bike")]
+            [Option("vehicle-type", "Gets all ghosts based on a specific vehicle")] string vehicleRestriction = "",
+            [Choice("150cc", "")]
+            [Choice("200cc", "200")]
+            [Option("engine-class", "The engine class of the personal best you want to find .")] string cc = "")
+        {
+
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
+
+                List<Player> players = JsonConvert.DeserializeObject<List<Player>>(File.ReadAllText("players.json"));
+                var allMembers = ctx.Guild.GetAllMembersAsync().Result;
+                List<ulong> allMemberIds = new List<ulong>();
+                foreach (var member in allMembers)
+                {
+                    allMemberIds.Add(member.Id);
+                }
+                players.RemoveAll(x => !allMemberIds.Contains(x.DiscordId));
+
+                if (players.Count == 0)
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Error:**__",
+                        Description = "*No members in this guild are registered.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+                else
+                {
+                    List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(File.ReadAllText($"rts{cc}.json"));
+                    foreach (var t in JsonConvert.DeserializeObject<List<Track>>(File.ReadAllText($"cts{cc}.json")))
+                    {
+                        trackList.Add(t);
+                    }
+                    int trackIx = Util.ListNameCheck(trackList, track);
+                    if (trackIx < 0)
+                    {
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = $"*{track} could not be found.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                    }
+                    else
+                    {
+                        var webClient = new WebClient();
+                        Track foundTrack = trackList[trackIx];
+                        List<Track> allTrackCategories = trackList.Where(x => x.SHA1 == foundTrack.SHA1).ToList();
+                        allTrackCategories = allTrackCategories.OrderByDescending(x => x.CategoryName.Length).ToList();
+
+                        List<List<DiscordEmbedBuilder>> categories = new List<List<DiscordEmbedBuilder>>();
+
+                        for (int i = 0; i < allTrackCategories.Count(); i++)
+                        {
+                            GhostList leaderboard = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{allTrackCategories[i].LeaderboardLink}?limit=100000"));
+                            List<string> playerIds = new List<string>();
+                            foreach (var player in players)
+                            {
+                                playerIds.Add(player.PlayerId);
+                            }
+                            if (vehicleRestriction == "Kart")
+                            {
+                                leaderboard.List.RemoveAll(x => x.VehicleID > 17);
+                            }
+                            else if (vehicleRestriction == "Bike")
+                            {
+                                leaderboard.List.RemoveAll(x => x.VehicleID < 18);
+                            }
+                            leaderboard.List.RemoveAll(x => !x.IsPB || !playerIds.Contains(x.PlayerId));
+                            try
+                            {
+                                leaderboard.List.RemoveRange(10, leaderboard.List.Count() - 10);
+                            }
+                            catch
+                            {
+                                Console.WriteLine("Already <=10.");
+                            }
+
+                            List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                            string leaderboardDisplay = "";
+
+                            foreach (var ghost in leaderboard.List)
+                            {
+                                var ghostJson = await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL}");
+                                ghost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(ghostJson);
+                                ulong playerId = players.Find(x => x.PlayerId == ghost.PlayerId).DiscordId;
+                                leaderboardDisplay += $"**{leaderboard.List.FindIndex(x => x.LinkContainer.Href.URL == ghost.LinkContainer.Href.URL) + 1})** <@{playerId}> - {ghost.FinishTimeSimple}\n";
+                            }
+
+                            var embed = new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**{allTrackCategories[i].Name} - {allTrackCategories[i].CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")}{(vehicleRestriction == "" ? "" : $" [{vehicleRestriction}]")}:**__",
+                                Description = leaderboardDisplay,
+                                Url = $"https://www.chadsoft.co.uk/time-trials{allTrackCategories[i].LeaderboardLink.Substring(0, allTrackCategories[i].LeaderboardLink.Length - 4)}html",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                }
+                            };
+                            if (leaderboardDisplay != "")
+                            {
+                                embeds.Add(embed);
+                            }
+
+                            foreach (var ghost in leaderboard.List)
+                            {
+                                var ghostJson = await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL}");
+                                ghost.Category = JsonConvert.DeserializeObject<Ghost>(ghostJson).Category;
+                                ghost.CategoryName = JsonConvert.DeserializeObject<Ghost>(ghostJson).CategoryName;
+                                ghost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(ghostJson);
+                                ghost.CategoryName = allTrackCategories.Find(x => x.Category == ghost.Category).CategoryName;
+
+                                string controllerId = (ghost.ControllerID != 0 || ghost.ControllerID != 1 || ghost.ControllerID != 2 || ghost.ControllerID != 3) ? "???" : Util.Controllers[ghost.ControllerID];
+
+                                embed = new DiscordEmbedBuilder
+                                {
+                                    Color = new DiscordColor("#FF0000"),
+                                    Title = $"__**{leaderboard.List.FindIndex(x => x.LinkContainer.Href.URL == ghost.LinkContainer.Href.URL) + 1}) {trackList[trackIx].Name} - {ghost.CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")}:**__",
+                                    Description = $"{ghost.ExtraInfo.MiiName}'s fastest time on {trackList[trackIx].Name}:\n\n" +
+                                    $"**Time:** {ghost.FinishTimeSimple}\n\n" +
+                                    $"**Splits:** {string.Join(" - ", ghost.ExtraInfo.SimpleSplits.ToArray())}\n\n" +
+                                    $"**Combo:** {Util.Characters[ghost.DriverID]} on {Util.Vehicles[ghost.VehicleID]}\n\n" +
+                                    $"**Date Set:** {ghost.DateSet.Split('T')[0]}\n\n" +
+                                    $"**Controller:**\n{controllerId}\n\n" +
+                                    $"**Extra Details:**\n" +
+                                    $"*Exact Finish Time: {ghost.FinishTime}*\n\n" +
+                                    $"*Exact Splits: {string.Join(" - ", ghost.ExtraInfo.Splits.ToArray())}*",
+                                    Url = $"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL.Substring(0, ghost.LinkContainer.Href.URL.Length - 4)}html",
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                                    }
+                                };
+
+                                embeds.Add(embed);
+                            }
+                            if (embeds.Count > 0)
+                            {
+                                categories.Add(embeds);
+                            }
+                        }
+
+                        var messageBuilder = new DiscordWebhookBuilder().AddEmbed(categories[0][0]);
+
+                        if (categories.Count() > 1)
+                        {
+                            messageBuilder.AddComponents(Util.GenerateCategorySelectMenu(allTrackCategories, 0));
+                        }
+                        if (categories[0].Count() > 1)
+                        {
+                            messageBuilder.AddComponents(Util.GeneratePageArrows(ctx));
+                        }
+
+                        var message = await ctx.EditResponseAsync(messageBuilder);
+
+                        if (categories[0].Count() > 1)
+                        {
+                            PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, CurrentCategory = 0, MessageId = message.Id, Context = ctx, Categories = categories, Pages = categories[0], CategoryNames = allTrackCategories };
+
+                            Util.PendingPageInteractions.Add(pending);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
         }
 
         [SlashCommand("staff", "Gets the staff ghosts for the track specified.")]
