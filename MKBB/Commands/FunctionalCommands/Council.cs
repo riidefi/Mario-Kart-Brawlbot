@@ -145,17 +145,24 @@ namespace MKBB.Commands
                 };
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
 
-                DiscordChannel channel = ctx.Channel;
+                DiscordChannel councilAnnouncements = ctx.Channel;
+
+                DiscordChannel announcements = ctx.Channel;
 
                 foreach (var c in ctx.Guild.Channels)
                 {
                     if (c.Value.Id == 635313521487511554)
                     {
-                        channel = c.Value;
+                        councilAnnouncements = c.Value;
+                    }
+                    if (c.Value.Id == 180328109688487937)
+                    {
+                        announcements = c.Value;
                     }
                 }
 
-                await channel.SendMessageAsync($"<@&608386209655554058> {track} has been added as homework. It is due for {dueMonths[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
+                await councilAnnouncements.SendMessageAsync($"<@&608386209655554058> {track} has been added as homework. It is due for {dueMonths[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
+                await announcements.SendMessageAsync($"{track} by {author} is now being reviewed by Track Council. It is due for {dueMonths[due.Month - 1]} {due.Day}, {due.Year}.");
             }
             catch (Exception ex)
             {
