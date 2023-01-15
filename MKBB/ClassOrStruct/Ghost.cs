@@ -27,6 +27,8 @@ namespace MKBB.Commands
         public string TrackID { get; set; }
         [JsonProperty("categoryId")]
         public int Category { get; set; }
+        [JsonProperty("playerId")]
+        public string PlayerId { get; set; }
         public string CategoryName { get; set; }
         [JsonProperty("playersFastest")]
         public bool IsPB { get; set; }
