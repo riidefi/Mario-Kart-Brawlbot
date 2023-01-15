@@ -566,6 +566,7 @@ namespace MKBB.Commands
                         for (int j = 12; j < response.Values[0].Count; j++)
                         {
                             int ix = councilJson.FindIndex(x => x.SheetName == response.Values[0][j].ToString());
+                            int isAuthor = Util.ListNameCheck(response.Values, councilJson[ix].SheetName, ix1: i, ix2: j);
                             if (response.Values[i][j].ToString() == "" ||
                                     response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
                                     response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
@@ -575,7 +576,7 @@ namespace MKBB.Commands
                                     !response.Values[i][j].ToString().ToLowerInvariant().Contains("no") &&
                                     !response.Values[i][j].ToString().ToLowerInvariant().Contains("neutral") &&
                                     !response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes") &&
-                                    response.Values[i][j].ToString() != "This member is the author thus cannot vote.")
+                                    isAuthor == -1)
                             {
                                 inconsistentMembers.Add(councilJson[ix]);
                             }
