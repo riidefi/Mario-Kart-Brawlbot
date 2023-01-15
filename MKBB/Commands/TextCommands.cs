@@ -33,7 +33,8 @@ namespace MKBB.Commands
                 "\n/stars" +
                 "\n/summary track" +
                 "\n/tools name" +
-                "\n/top10 track (engine-class)";
+                "\n/top10 track (vehicle) (engine-class)" +
+                "\n/servertop10 track (vehicle) (engine-class)";
 
             if (ctx.Guild.Id == 180306609233330176 && Util.CheckEphemeral(ctx))
             {
