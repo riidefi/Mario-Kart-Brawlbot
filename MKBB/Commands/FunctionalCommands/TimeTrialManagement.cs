@@ -215,7 +215,7 @@ namespace MKBB.Commands
                     Track foundTrack = trackList[trackIx];
                     List<Track> allTrackCategories = trackList.Where(x => x.SHA1 == foundTrack.SHA1).ToList();
                     Player player = JsonConvert.DeserializeObject<Player>(await webClient.DownloadStringTaskAsync(playerList[playerIx].PlayerLink));
-                    List<Ghost> applicableGhosts = player.Ghosts.Where(x => x.TrackID == foundTrack.SHA1 && vehicleRestriction == "" ? x.IsPB : true && x.Is200cc == (cc == "" ? false : true)).ToList();
+                    List<Ghost> applicableGhosts = player.Ghosts.Where(x => x.TrackID == foundTrack.SHA1 && (vehicleRestriction == "" ? x.IsPB : true) && x.Is200cc == (cc == "" ? false : true)).ToList();
                     if (vehicleRestriction == "Kart")
                     {
                         applicableGhosts.RemoveAll(x => x.VehicleID > 17);
@@ -255,7 +255,7 @@ namespace MKBB.Commands
                             var embed = new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
-                                Title = $"__**{trackList[trackIx].Name} - {ghost.CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")} {(cc == "" ? "(150cc)" : "(200cc)")}{(vehicleRestriction == "" ? "" : $"[ {vehicleRestriction}]")}:**__",
+                                Title = $"__**{trackList[trackIx].Name} - {ghost.CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")}{(vehicleRestriction == "" ? "" : $" [{vehicleRestriction}]")}:**__",
                                 Description = $"{user.Username}'s fastest time on {trackList[trackIx].Name}:\n\n" +
                                 $"**Time:** {ghost.FinishTimeSimple}\n\n" +
                                 $"**Splits:** {string.Join(" - ", ghost.ExtraInfo.SimpleSplits.ToArray())}\n\n" +
@@ -344,7 +344,7 @@ namespace MKBB.Commands
 
                     for (int i = 0; i < allTrackCategories.Count(); i++)
                     {
-                        GhostList leaderboard = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{allTrackCategories[i].LeaderboardLink}?limit=100000"));
+                        GhostList leaderboard = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{allTrackCategories[i].LeaderboardLink}?limit=50000"));
 
                         if (vehicleRestriction == "Kart")
                         {
@@ -539,7 +539,7 @@ namespace MKBB.Commands
 
                         for (int i = 0; i < allTrackCategories.Count(); i++)
                         {
-                            GhostList leaderboard = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{allTrackCategories[i].LeaderboardLink}?limit=100000"));
+                            GhostList leaderboard = JsonConvert.DeserializeObject<GhostList>(await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{allTrackCategories[i].LeaderboardLink}?limit=50000"));
                             List<string> playerIds = new List<string>();
                             foreach (var player in players)
                             {
@@ -590,30 +590,30 @@ namespace MKBB.Commands
                                 embeds.Add(embed);
                             }
 
-                            foreach (var ghost in leaderboard.List)
+                            foreach (var top10Ghost in leaderboard.List)
                             {
-                                var ghostJson = await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL}");
-                                ghost.Category = JsonConvert.DeserializeObject<Ghost>(ghostJson).Category;
-                                ghost.CategoryName = JsonConvert.DeserializeObject<Ghost>(ghostJson).CategoryName;
-                                ghost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(ghostJson);
-                                ghost.CategoryName = allTrackCategories.Find(x => x.Category == ghost.Category).CategoryName;
+                                var ghostJson = await webClient.DownloadStringTaskAsync($"https://www.chadsoft.co.uk/time-trials{top10Ghost.LinkContainer.Href.URL}");
+                                top10Ghost.Category = JsonConvert.DeserializeObject<Ghost>(ghostJson).Category;
+                                top10Ghost.CategoryName = JsonConvert.DeserializeObject<Ghost>(ghostJson).CategoryName;
+                                top10Ghost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(ghostJson);
+                                top10Ghost.CategoryName = allTrackCategories.Find(x => x.Category == top10Ghost.Category).CategoryName;
 
-                                string controllerId = (ghost.ControllerID != 0 || ghost.ControllerID != 1 || ghost.ControllerID != 2 || ghost.ControllerID != 3) ? "???" : Util.Controllers[ghost.ControllerID];
+                                string controllerId = (top10Ghost.ControllerID != 0 && top10Ghost.ControllerID != 1 && top10Ghost.ControllerID != 2 && top10Ghost.ControllerID != 3) ? "???" : Util.Controllers[top10Ghost.ControllerID];
 
                                 embed = new DiscordEmbedBuilder
                                 {
                                     Color = new DiscordColor("#FF0000"),
-                                    Title = $"__**{leaderboard.List.FindIndex(x => x.LinkContainer.Href.URL == ghost.LinkContainer.Href.URL) + 1}) {trackList[trackIx].Name} - {ghost.CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")}:**__",
-                                    Description = $"{ghost.ExtraInfo.MiiName}'s fastest time on {trackList[trackIx].Name}:\n\n" +
-                                    $"**Time:** {ghost.FinishTimeSimple}\n\n" +
-                                    $"**Splits:** {string.Join(" - ", ghost.ExtraInfo.SimpleSplits.ToArray())}\n\n" +
-                                    $"**Combo:** {Util.Characters[ghost.DriverID]} on {Util.Vehicles[ghost.VehicleID]}\n\n" +
-                                    $"**Date Set:** {ghost.DateSet.Split('T')[0]}\n\n" +
+                                    Title = $"__**{leaderboard.List.FindIndex(x => x.LinkContainer.Href.URL == top10Ghost.LinkContainer.Href.URL) + 1}) {trackList[trackIx].Name} - {top10Ghost.CategoryName} {(cc == "" ? "(150cc)" : "(200cc)")}:**__",
+                                    Description = $"{top10Ghost.ExtraInfo.MiiName}'s fastest time on {trackList[trackIx].Name}:\n\n" +
+                                    $"**Time:** {top10Ghost.FinishTimeSimple}\n\n" +
+                                    $"**Splits:** {string.Join(" - ", top10Ghost.ExtraInfo.SimpleSplits.ToArray())}\n\n" +
+                                    $"**Combo:** {Util.Characters[top10Ghost.DriverID]} on {Util.Vehicles[top10Ghost.VehicleID]}\n\n" +
+                                    $"**Date Set:** {top10Ghost.DateSet.Split('T')[0]}\n\n" +
                                     $"**Controller:**\n{controllerId}\n\n" +
                                     $"**Extra Details:**\n" +
-                                    $"*Exact Finish Time: {ghost.FinishTime}*\n\n" +
-                                    $"*Exact Splits: {string.Join(" - ", ghost.ExtraInfo.Splits.ToArray())}*",
-                                    Url = $"https://www.chadsoft.co.uk/time-trials{ghost.LinkContainer.Href.URL.Substring(0, ghost.LinkContainer.Href.URL.Length - 4)}html",
+                                    $"*Exact Finish Time: {top10Ghost.FinishTime}*\n\n" +
+                                    $"*Exact Splits: {string.Join(" - ", top10Ghost.ExtraInfo.Splits.ToArray())}*",
+                                    Url = $"https://www.chadsoft.co.uk/time-trials{top10Ghost.LinkContainer.Href.URL.Substring(0, top10Ghost.LinkContainer.Href.URL.Length - 4)}html",
                                     Footer = new DiscordEmbedBuilder.EmbedFooter
                                     {
                                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
