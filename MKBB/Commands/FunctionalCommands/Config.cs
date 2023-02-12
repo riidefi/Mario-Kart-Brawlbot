@@ -26,7 +26,7 @@ namespace MKBB.Commands
     {
 
         [SlashCommand("botchannel", "Configures the channel(s) in which commands will no longer be ephemeral (requires admin).")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task ConfigureBotChannel(InteractionContext ctx,
             [Choice("True", 1)]
             [Choice("False", 0)]
