@@ -8,13 +8,11 @@ using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
 using Microsoft.Extensions.Logging;
-using Microsoft.Scripting.Utils;
 using MKBB.Commands;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,7 +20,7 @@ namespace MKBB
 {
     public class Bot
     {
-        public DiscordClient Client { get; private set; }
+        public static DiscordClient Client { get; private set; }
         public CommandsNextExtension Commands { get; private set; }
         public SlashCommandsExtension SlashCommands { get; private set; }
         public InteractivityExtension Interactivity { get; private set; }
@@ -35,9 +33,17 @@ namespace MKBB
                 {
                     foreach (var check in slex.FailedChecks)
                     {
-                        if (check is SlashRequireUserPermissionsAttribute att)
+                        if (check is SlashRequireUserPermissionsAttribute rqu)
                         {
-                            await e.Context.CreateResponseAsync($"Only members with {att.Permissions} can run this command!", true);
+                            await e.Context.CreateResponseAsync($"Only members with {rqu.Permissions} can run this command!", true);
+                        }
+                        else if (check is SlashRequireOwnerAttribute rqo)
+                        {
+                            await e.Context.CreateResponseAsync($"Only the owner <@105742694730457088> can run this command!", true);
+                        }
+                        else
+                        {
+                            await e.Context.CreateResponseAsync("An internal error has occured. Please report this to <@105742694730457088> with details of the error.", true);
                         }
                     }
                 }
@@ -275,6 +281,10 @@ namespace MKBB
             activity.Name = $"Bot is currently under maintenance. Please be patient :)";
 
             await Client.ConnectAsync(activity);
+
+            Update update = new Update();
+
+            await update.StartTimers(null);
 
             await Task.Delay(-1);
         }
