@@ -399,48 +399,12 @@ namespace MKBB
 
         public async Task GetBKTLeaderboards(List<Track> trackListRt, List<Track> trackListRt200, List<Track> trackList, List<Track> trackList200)
         {
-            Task.WaitAll(DownloadLeaderboard(trackList),
-                DownloadLeaderboard(trackListRt),
-                DownloadLeaderboard(trackListRt200),
-                DownloadLeaderboard(trackList200));
 
             Task.WaitAll(DownloadBKTInfo(trackList, "cts"),
                  DownloadBKTInfo(trackListRt, "rts"),
                  DownloadBKTInfo(trackListRt200, "rts200"),
                  DownloadBKTInfo(trackList200, "cts200"));
             await Task.CompletedTask;
-        }
-
-        private async Task DownloadLeaderboard(List<Track> trackList)
-        {
-            foreach (var track in trackList)
-            {
-                await DownloadLeaderboardTask(track);
-            }
-            await Task.CompletedTask;
-        }
-
-        private async Task DownloadLeaderboardTask(Track t)
-        {
-            WebClient webClient = new WebClient();
-            try
-            {
-                var ghostJson = JsonConvert.DeserializeObject<BKTList>(await webClient.DownloadStringTaskAsync($"http://tt.chadsoft.co.uk{t.LeaderboardLink}?limit=1"));
-                var ghostList = ghostJson.List;
-                if (ghostList.Count > 0)
-                {
-                    t.BKTLink = ghostList[0].LinkContainer.Href.URL;
-                    t.BKTHolder = ghostList[0].BKTHolder;
-                    t.BKTUploadTime = ghostList[0].DateSet;
-                }
-                Console.WriteLine($"{t.Name} has been downloaded.");
-                webClient.Dispose();
-            }
-            catch
-            {
-                Console.WriteLine($"{t.Name} download failed. Skipping...");
-                webClient.Dispose();
-            }
         }
 
         private async Task DownloadBKTInfo(List<Track> trackList, string type)
@@ -511,97 +475,6 @@ namespace MKBB
             }
 
             Console.WriteLine($"Downloaded BKT info for {t.Name}");
-            await Task.CompletedTask;
-        }
-
-        public async Task Dl200ccBKT(Track t)
-        {
-            string categoryName = string.Empty;
-            if (t.Category == 4)
-            {
-                categoryName = "Shortcut";
-            }
-            if (t.Category == 5)
-            {
-                categoryName = "Glitch";
-            }
-            if (t.Category == 6 || t.Category == 0)
-            {
-                categoryName = "No Shortcut";
-            }
-            try
-            {
-                var webClient = new WebClient();
-
-                webClient.DownloadFile(new Uri($"http://tt.chadsoft.co.uk{t.BKTLink.Split('.')[0]}.rkg"),
-                    $"rkgs/200/{String.Join("", t.Name.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))} - {categoryName} (200cc).rkg");
-                Console.WriteLine($"{t.Name} 200cc {categoryName} has been downloaded");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"No ghosts found for {t.Name} 200cc {categoryName}");
-                Console.WriteLine(ex.ToString());
-            }
-
-            await Task.CompletedTask;
-        }
-
-        public async Task Dl150ccBKT(Track t)
-        {
-            string categoryName = string.Empty;
-            if (t.Name == "Mushroom Gorge" ||
-                t.Name == "Toad's Factory" ||
-                t.Name == "Coconut Mall" ||
-                t.Name == "Grumble Volcano" ||
-                t.Name == "Bowser's Castle" ||
-                t.Name == "DS Desert Hills" ||
-                t.Name == "GBA Bowser Castle 3" ||
-                t.Name == "N64 DK's Jungle Parkway" ||
-                t.Name == "GCN DK Mountain" ||
-                t.Name == "N64 Bowser's Castle")
-            {
-                if (t.Category == 16)
-                {
-                    categoryName = "Shortcut";
-                }
-                if (t.Category == 1)
-                {
-                    categoryName = "Glitch";
-                }
-                if (t.Category == 2)
-                {
-                    categoryName = "No Shortcut";
-                }
-            }
-            else
-            {
-                if (t.Category == 0)
-                {
-                    categoryName = "No Shortcut";
-                }
-                if (t.Category == 1)
-                {
-                    categoryName = "Glitch";
-                }
-                if (t.Category == 2)
-                {
-                    categoryName = "Shortcut";
-                }
-            }
-            try
-            {
-                var webClient = new WebClient();
-
-                webClient.DownloadFile(new Uri($"http://tt.chadsoft.co.uk{t.BKTLink.Split('.')[0]}.rkg"),
-                    $"rkgs/150/{String.Join("", t.Name.Split('\\', '/', ':', '*', '?', '"', '<', '>', '|'))} - {categoryName} (150cc).rkg");
-                Console.WriteLine($"{t.Name} 150cc {categoryName} has been downloaded");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"No ghosts found for {t.Name} 150cc {categoryName}");
-                Console.WriteLine(ex.ToString());
-            }
-
             await Task.CompletedTask;
         }
 
