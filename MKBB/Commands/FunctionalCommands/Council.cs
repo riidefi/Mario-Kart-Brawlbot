@@ -20,7 +20,7 @@ namespace MKBB.Commands
     public class Council : ApplicationCommandModule
     {
         [SlashCommand("addhw", "Adds homework to the council sheet.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task AddHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track being added.")] string track,
             [Option("authors", "The author or authors of the track being added.")] string author,
@@ -172,7 +172,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("delhw", "Deletes homework from the council sheet.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task DeleteHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track being removed.")] string track)
         {
@@ -680,7 +680,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("addstrike", "To increment a council member's missed homework count.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task IncrementStrikes(InteractionContext ctx,
             [Option("member", "The council member you are incrementing the missed homework count of.")] DiscordUser member)
         {
@@ -735,7 +735,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("removestrike", "To decrement a council member's missed homework count.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task DecrementStrikes(InteractionContext ctx,
             [Option("member", "The name of the council member you are decrementing the missed homework count of.")] DiscordUser member)
         {
@@ -790,7 +790,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("resetstrikes", "To reset a council member's, or all of council's missed homework count.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task ResetStrikes(InteractionContext ctx,
             [Option("member", "The name of the council member you are resetting the missed homework count of.")] DiscordUser member)
         {
@@ -895,7 +895,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("allstrikes", "Gets a list of all council member's strikes.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task DisplayAllStrikes(InteractionContext ctx)
         {
             try
