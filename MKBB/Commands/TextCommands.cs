@@ -1,11 +1,6 @@
 ﻿using DSharpPlus;
-using DSharpPlus.CommandsNext;
-using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
-using DSharpPlus.SlashCommands.Attributes;
-using IronPython.Runtime;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -40,7 +35,7 @@ namespace MKBB.Commands
             {
                 foreach (var role in ctx.Member.Roles)
                 {
-                    if (role.Name == "Ghostbusters")
+                    if (role.Name == "Ghostbusters" || ctx.Member.Id == 105742694730457088)
                     {
                         description += "\n\n__**Ghostbusters Commands:**__" +
                             "\n/gblist" +
@@ -50,7 +45,7 @@ namespace MKBB.Commands
                 }
                 foreach (var role in ctx.Member.Roles)
                 {
-                    if (role.Name == "CT Creator")
+                    if (role.Name == "CT Creator" || ctx.Member.Id == 105742694730457088)
                     {
                         description += "\n\n__**Creator Commands:**__" +
                             "\n/pinmessage message (file)";
@@ -59,7 +54,7 @@ namespace MKBB.Commands
                 }
                 foreach (var role in ctx.Member.Roles)
                 {
-                    if (role.Name == "Track Council")
+                    if (role.Name == "Track Council" || ctx.Member.Id == 105742694730457088)
                     {
                         description += "\n\n__**Council Commands:**__" +
                             "\n/assignedthreads" +
@@ -72,18 +67,18 @@ namespace MKBB.Commands
                 }
                 foreach (var role in ctx.Member.Roles)
                 {
-                    if (role.Name == "Admin")
+                    if (role.Name == "Admin" || ctx.Member.Id == 105742694730457088)
                     {
                         {
                             description += "\n\n__**Admin Commands:**__" +
-                                "\n/addhw track author version download link slot-filename speed/lap modifiers notes" +
+                                "\n/addhw track author version download-link slot-filename speed/lap-modifiers notes" +
                                 "\n/addstrike member" +
                                 "\n/addtool name creators description download" +
+                                "\n/allstrikes" +
                                 "\n/assign member thread id" +
                                 "\n/assignedthreads member" +
                                 "\n/botchannel no-channels" +
                                 "\n/clearissues track" +
-                                "\n/createtest" +
                                 "\n/delhw track" +
                                 "\n/deltool name" +
                                 "\n/dmrole role message" +
@@ -91,17 +86,14 @@ namespace MKBB.Commands
                                 "\n/gbaddsha1 sha1" +
                                 "\n/gbaddtrack track-name sha1" +
                                 "\n/gbremovetrack" +
-                                "\n/lastupdated" +
                                 "\n/randomassign (reset)" +
-                                "\n/removeassignedthread thread id/all" +
+                                "\n/removeassignedthread thread-id/all" +
                                 "\n/removestrike member" +
-                                "\n/replaceissues old track new track author version slot laps" +
+                                "\n/replaceissues old-track new-track author version slot laps" +
                                 "\n/reportissue major/minor track -Issue" +
                                 "\n/resetstrikes member" +
-                                "\n/starttimers" +
-                                "\n/strikes member/all" +
-                                "\n/unassign member thread id" +
-                                "\n/update";
+                                "\n/unassign member thread-id" +
+                                "\n/uploadtestpack test-pack-zip";
                             break;
                         }
                     }
@@ -159,7 +151,6 @@ namespace MKBB.Commands
                 "\n\n**Testing Notes Page:** *This page is what we fill when doing the online tests. It also contains the downloads for all the tracks in the test.*";
             var message = new DiscordWebhookBuilder();
             bool admin = false;
-            bool ghostBusters = false;
             bool councilMember = false;
             foreach (var role in ctx.Member.Roles)
             {
@@ -167,15 +158,16 @@ namespace MKBB.Commands
                 {
                     admin = true;
                 }
-                if ((role.Id == 910649941477695549 || role.Id == 228909597090512896) && ctx.Channel.Id != 908709951411716166)
-                {
-                    ghostBusters = true;
-                }
                 if ((role.Id == 608386209655554058 || role.Id == 228909597090512896) && ctx.Channel.Id != 908709951411716166)
                 {
                     councilMember = true;
                 }
-                if (councilMember && ghostBusters && admin)
+                if (ctx.Member.Id == 105742694730457088)
+                {
+                    admin = true;
+                    councilMember = true;
+                }
+                if (councilMember && admin)
                 {
                     break;
                 }
@@ -184,11 +176,6 @@ namespace MKBB.Commands
                 Util.GetBackroomLinkButton(),
                 Util.GetTestingNotesLinkButton()
             };
-            if (ghostBusters)
-            {
-                description += $"\n\n**Ghostbusters Page:** *This page contains all the new tracks being tested, and all the times people have submitted for them.*";
-                buttons.Add(Util.GetGhostbustersLinkButton());
-            }
             if (councilMember)
             {
                 description += $"\n\n**Council Page:** *This page has multiple important things for the Council to keep track of; this is where members review tracks that are submitted. This is also where we vote for members when they apply.*";
