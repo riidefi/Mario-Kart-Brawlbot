@@ -8,6 +8,7 @@ using Google.Apis.Sheets.v4;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -15,6 +16,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace MKBB.Commands
@@ -22,7 +24,7 @@ namespace MKBB.Commands
     public class Misc : ApplicationCommandModule
     {
         //[SlashCommand("createtest", "Creates a test back for CTTP for CTGP track tests.")]
-        //[SlashRequireUserPermissions(Permissions.Administrator)]
+        //[SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task CreateTestPack(InteractionContext ctx)
         {
             try
@@ -640,7 +642,7 @@ namespace MKBB.Commands
                 process.Start();
                 process.WaitForExit();
 
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent($"https://brawlbox.xyz/{(date.Year + "-" + date.Month + "-" + date.Day).Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip"));
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent($"https://brawlbox.co.uk/{(date.Year + "-" + date.Month + "-" + date.Day).Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip"));
 
                 File.Delete($"{(date.Year + "-" + date.Month + "-" + date.Day).Replace(",", string.Empty).Replace(' ', '_')}_Track_Test.zip");
                 Directory.Delete(@"output/", true);
@@ -662,7 +664,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("dmrole", "Direct messages members of a role specified.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task DMRole(InteractionContext ctx,
             [Option("role", "The member role you want to send a direct message to.")] DiscordRole role,
             [Option("message", "The message you would like to send in the direct message.")] string message)
@@ -710,7 +712,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("addtool", "Adds a tool to the list of tools.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task AddTool(InteractionContext ctx,
             [Option("name", "The name of the tool you would like to add.")] string toolName,
             [Option("creators", "The name(s) of the creators of the tool.")] string toolCreators,
@@ -764,7 +766,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("edittool", "Adds a tool to the list of tools.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task EditTool(InteractionContext ctx,
             [Option("old-name", "The name of the tool you would like to edit.")] string oldToolName,
             [Option("name", "The new name for the tool you are editing.")] string toolName = "",
@@ -847,7 +849,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("deltool", "Removes a tool from the list of tools.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task DeleteTool(InteractionContext ctx,
             [Option("name", "The name of the tool you would like to delete.")] string toolName)
         {
@@ -880,6 +882,52 @@ namespace MKBB.Commands
                     }
                 };
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
+        [SlashCommand("uploadtestpack", "Uploads the test pack .zip file (named with the date of the test YYYY-MM-DD)")]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
+        public async Task UploadTestPack(InteractionContext ctx,
+            [Option("test-pack-zip", "The .zip file for the test pack (named with the date of the test YYYY-MM-DD)")] DiscordAttachment file)
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+
+                if (Regex.Match(file.FileName, "\\d\\d\\d\\d-\\d\\d-\\d\\d\\.zip").Success)
+                {
+                    WebClient webClient = new WebClient();
+                    await webClient.DownloadFileTaskAsync(file.Url, $"/var/www/brawlbox/Tests/{file.FileName}");
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Success:**__",
+                        Description = $"*File is now available here: https://brawlbox.co.uk/Tests/{file.FileName}.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+                else
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*File was not named in the correct naming convention: YYYY-MM-DD.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
             }
             catch (Exception ex)
             {
