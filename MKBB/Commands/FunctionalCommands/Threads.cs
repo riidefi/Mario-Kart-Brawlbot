@@ -18,7 +18,7 @@ namespace MKBB.Commands
     public class Threads : ApplicationCommandModule
     {
         [SlashCommand("removeassignedthread", "Remove all council members from a specified thread.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task RemoveThreadAssignment(InteractionContext ctx,
             [Option("thread-id", "The id of the thread you wish to remove all members from.")] string threadId)
         {
@@ -202,7 +202,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("randomassign", "Randomly assign council members to a thread.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task AssignCouncilMembersToThread(InteractionContext ctx)
         {
             if (ctx.Channel.IsThread && ctx.Channel.ParentId == 1046936322574655578)
@@ -422,7 +422,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("assign", "Assign a thread to a council member.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task AssignCouncilMemberToThread(InteractionContext ctx,
             [Option("member", "The council member you want to remove the thread from.")] DiscordUser member,
             [Option("thread-id", "The id of the thread you wish to remove the specified member from.")] string threadId)
@@ -552,7 +552,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("unassign", "Unassign a thread to a council member.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task UnassignCouncilMemberToThread(InteractionContext ctx,
             [Option("member", "The council member you want to remove the thread from.")] DiscordUser member,
             [Option("thread-id", "The id of the thread you wish to remove the specified member from.")] string threadId)
