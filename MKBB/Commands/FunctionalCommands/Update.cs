@@ -24,10 +24,13 @@ namespace MKBB.Commands
     public class Update : ApplicationCommandModule
     {
         [SlashCommand("starttimer", "Starts the timer for updating data for the bot.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireOwner]
         public async Task StartTimers(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+            if (ctx != null)
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+            }
 
             JobManager.Stop();
             JobManager.RemoveAllJobs();
@@ -37,22 +40,26 @@ namespace MKBB.Commands
 
             JobManager.Initialize(Util.ScheduleRegister);
 
-            var embed = new DiscordEmbedBuilder
+            if (ctx != null)
             {
-                Color = new DiscordColor("#FF0000"),
-                Title = $"__**Notice:**__",
-                Description = "Timer has been started.",
-                Footer = new DiscordEmbedBuilder.EmbedFooter
+                var embed = new DiscordEmbedBuilder
                 {
-                    Text = $"Server Time: {DateTime.Now}"
-                }
-            };
-            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Notice:**__",
+                    Description = "Timer has been started.",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Server Time: {DateTime.Now}"
+                    }
+                };
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+            }
         }
 
         public async Task ExecuteTimer(InteractionContext ctx)
         {
             Util.PendingPageInteractions = new List<PendingPagesInteraction>();
+            Util.PendingChannelConfigInteractions = new List<PendingChannelConfigInteraction>();
             try
             {
                 await CheckStrikesInit(ctx);
@@ -60,19 +67,19 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                await Util.ThrowInteractionlessError(ctx, ex);
+                await Util.ThrowInteractionlessError(ex);
             }
         }
 
         [SlashCommand("update", "Updates the database with information from Chadsoft and Wiimmfi.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireOwner]
         public async Task UpdateInit(InteractionContext ctx,
             [Choice("All", "all")]
             [Choice("Wiimmfi", "wiimmfi")]
             [Choice("BKTs", "bkts")]
             [Option("Quantity", "Determines how much data to retrieve.")] string arg = "")
         {
-            if (ctx.CommandName == "update")
+            if (ctx != null && ctx.CommandName == "update")
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
             }
@@ -80,7 +87,7 @@ namespace MKBB.Commands
             try
             {
                 await UpdateJsons(ctx, arg);
-                if (ctx.CommandName == "update")
+                if (ctx != null && ctx.CommandName == "update")
                 {
                     var embed = new DiscordEmbedBuilder
                     {
@@ -98,13 +105,13 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                if (ctx.CommandName == "update")
+                if (ctx != null && ctx.CommandName == "update")
                 {
                     await Util.ThrowError(ctx, ex);
                 }
                 else
                 {
-                    await Util.ThrowInteractionlessError(ctx, ex);
+                    await Util.ThrowInteractionlessError(ex);
                 }
             }
         }
@@ -198,8 +205,6 @@ namespace MKBB.Commands
                     trackListRt[i].M6 = oldRtTrackList[ix].M6;
                     trackListRt[i].M9 = oldRtTrackList[ix].M9;
                     trackListRt[i].M12 = oldRtTrackList[ix].M12;
-                    trackListRt[i].BKTLink = oldRtTrackList[ix].BKTLink;
-                    trackListRt[i].BKTHolder = oldRtTrackList[ix].BKTHolder;
                     trackListRt[i].CategoryName = oldRtTrackList[ix].CategoryName;
                 }
             }
@@ -219,8 +224,6 @@ namespace MKBB.Commands
                     trackListRt200[i].M6 = oldRtTrackList[ix].M6;
                     trackListRt200[i].M9 = oldRtTrackList[ix].M9;
                     trackListRt200[i].M12 = oldRtTrackList[ix].M12;
-                    trackListRt200[i].BKTLink = oldRtTrackList[ix].BKTLink;
-                    trackListRt200[i].BKTHolder = oldRtTrackList[ix].BKTHolder;
                     trackListRt200[i].CategoryName = oldRtTrackList[ix].CategoryName;
                 }
             }
@@ -242,8 +245,6 @@ namespace MKBB.Commands
                     trackList[i].M6 = oldTrackList[ix].M6;
                     trackList[i].M9 = oldTrackList[ix].M9;
                     trackList[i].M12 = oldTrackList[ix].M12;
-                    trackList[i].BKTLink = oldTrackList[ix].BKTLink;
-                    trackList[i].BKTHolder = oldTrackList[ix].BKTHolder;
                     trackList[i].CategoryName = oldTrackList[ix].CategoryName;
                 }
                 if (!saveOldData && ix == -1)
@@ -287,8 +288,6 @@ namespace MKBB.Commands
                     trackList200[i].M6 = oldTrackList[ix].M6;
                     trackList200[i].M9 = oldTrackList[ix].M9;
                     trackList200[i].M12 = oldTrackList[ix].M12;
-                    trackList200[i].BKTLink = oldTrackList[ix].BKTLink;
-                    trackList200[i].BKTHolder = oldTrackList[ix].BKTHolder;
                     trackList200[i].CategoryName = oldTrackList[ix].CategoryName;
                 }
             }
@@ -467,15 +466,15 @@ namespace MKBB.Commands
             DiscordActivity activity = new DiscordActivity();
             activity.Name = $"Last Updated: {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}" +
                 $" | /help";
-            await ctx.Client.UpdateStatusAsync(activity);
+            await Bot.Client.UpdateStatusAsync(activity);
 
         }
 
         [SlashCommand("checkstrikes", "Checks missed homework and notifies if there is homework due.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireOwner]
         public async Task CheckStrikesInit(InteractionContext ctx)
         {
-            if (ctx.CommandName == "checkstrikes")
+            if (ctx != null && ctx.CommandName == "checkstrikes")
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
             }
@@ -483,7 +482,7 @@ namespace MKBB.Commands
             {
                 await CheckStrikes(ctx);
 
-                if (ctx.CommandName == "checkstrikes")
+                if (ctx != null && ctx.CommandName == "checkstrikes")
                 {
                     var embed = new DiscordEmbedBuilder
                     {
@@ -500,13 +499,13 @@ namespace MKBB.Commands
             }
             catch (Exception ex)
             {
-                if (ctx.CommandName == "checkstrikes")
+                if (ctx != null && ctx.CommandName == "checkstrikes")
                 {
                     await Util.ThrowError(ctx, ex);
                 }
                 else
                 {
-                    await Util.ThrowInteractionlessError(ctx, ex);
+                    await Util.ThrowInteractionlessError(ex);
                 }
             }
         }
@@ -712,7 +711,7 @@ namespace MKBB.Commands
             DiscordActivity activity = new DiscordActivity();
             activity.Name = $"Last Updated: {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}" +
                 $" | /help";
-            await ctx.Client.UpdateStatusAsync(activity);
+            await Bot.Client.UpdateStatusAsync(activity);
         }
     }
 }
