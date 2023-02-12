@@ -19,7 +19,7 @@ namespace MKBB.Commands
     public class Ghostbusters : ApplicationCommandModule
     {
         [SlashCommand("gbaddtrack", "Adds a new track for Ghostbusters to set times on.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task AddNewTrack(InteractionContext ctx,
             [Option("track-name", "The name of the track to add.")] string track,
             [Option("track-id", "The id of the track (also known as the SHA1).")] string trackId)
@@ -102,7 +102,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("gbaddsha1", "Edits the information for a track on the Ghostbusters sheet.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task EditNewTrack(InteractionContext ctx,
             [Option("track-name", "The name of the track you want to edit.")] string track,
             [Option("track-id", "The new id of the track (also known as the SHA1).")] string newTrackId)
@@ -187,7 +187,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("gbremovetrack", "Removes a track for Ghostbusters.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task RemoveNewTrack(InteractionContext ctx,
             [Option("track-name", "The name of the track you want to edit.")] string track)
         {
