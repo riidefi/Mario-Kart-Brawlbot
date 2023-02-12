@@ -32,10 +32,6 @@ namespace MKBB.Commands
         public int M9 { get; set; }
         public int M12 { get; set; }
         public string LeaderboardLink { get; set; }
-        public string BKTLink { get; set; }
-        public string BKTHolder { get; set; }
-        [JsonProperty("fastestTimeLastChange")]
-        public string BKTUploadTime { get; set; }
         public string CategoryName { get; set; }
         public string SlotID { get; set; }
 
