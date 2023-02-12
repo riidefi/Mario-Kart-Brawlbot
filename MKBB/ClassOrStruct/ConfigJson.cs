@@ -15,5 +15,7 @@ namespace MKBB
         public string Prefix { get; private set; }
         [JsonProperty("councilUrl")]
         public string CouncilUrl { get; private set; }
+        [JsonProperty("adminUrl")]
+        public string AdminUrl { get; private set; }
     }
 }
