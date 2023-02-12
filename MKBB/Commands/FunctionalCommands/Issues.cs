@@ -18,7 +18,7 @@ namespace MKBB.Commands
     public class Issues : ApplicationCommandModule
     {
         [SlashCommand("reportissue", "Used to report issues on tracks.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task ReportIssue(InteractionContext ctx,
             [Choice("Major", 5)]
             [Choice("Minor", 6)]
@@ -133,7 +133,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("clearissues", "Clears the issues for a given track.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task ClearTrackIssues(InteractionContext ctx,
             [Option("track-name", "The track the issue is being reported on.")] string track)
         {
@@ -218,7 +218,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("replaceissues", "Replaces the track in the issues tab with a new track.")]
-        [SlashRequireUserPermissions(Permissions.Administrator)]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public async Task ReplaceTrackIssues(InteractionContext ctx,
             [Option("track-name", "The name of the track being replaced.")] string track,
             [Option("new-track-name", "The name of the track being added.")] string newTrack,
