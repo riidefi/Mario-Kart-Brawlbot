@@ -19,4 +19,9 @@ namespace MKBB.Commands
         public ulong MessageId { get; set; }
         public InteractionContext Context { get; set; }
     }
+    public class PendingAdminPin
+    {
+        public DiscordMessage Message { get; set; }
+        public DiscordMessage ThreadMessage { get; set; }
+    }
 }
