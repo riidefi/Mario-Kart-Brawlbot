@@ -296,7 +296,7 @@ namespace MKBB.Commands
 
                         if (embeds.Count() > 1)
                         {
-                            messageBuilder.AddComponents(Util.GeneratePageArrows(ctx));
+                            messageBuilder.AddComponents(Util.GeneratePageArrows());
                         }
 
                         var message = await ctx.EditResponseAsync(messageBuilder);
@@ -451,7 +451,7 @@ namespace MKBB.Commands
                     }
                     if (categories[0].Count() > 1)
                     {
-                        messageBuilder.AddComponents(Util.GeneratePageArrows(ctx));
+                        messageBuilder.AddComponents(Util.GeneratePageArrows());
                     }
 
                     var message = await ctx.EditResponseAsync(messageBuilder);
@@ -651,7 +651,7 @@ namespace MKBB.Commands
                         }
                         if (categories[0].Count() > 1)
                         {
-                            messageBuilder.AddComponents(Util.GeneratePageArrows(ctx));
+                            messageBuilder.AddComponents(Util.GeneratePageArrows());
                         }
 
                         var message = await ctx.EditResponseAsync(messageBuilder);
@@ -782,7 +782,7 @@ namespace MKBB.Commands
 
                     var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder()
                         .AddEmbed(embeds[0])
-                        .AddComponents(Util.GeneratePageArrows(ctx)));
+                        .AddComponents(Util.GeneratePageArrows()));
 
                     Util.PendingPageInteractions.Add(new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds });
                 }
