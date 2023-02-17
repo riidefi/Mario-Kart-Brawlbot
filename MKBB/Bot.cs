@@ -13,7 +13,9 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace MKBB
@@ -25,9 +27,120 @@ namespace MKBB
         public SlashCommandsExtension SlashCommands { get; private set; }
         public InteractivityExtension Interactivity { get; private set; }
 
-        private async Task Events(SlashCommandsExtension slash)
+        private async Task Events()
         {
-            slash.SlashCommandErrored += async (s, e) =>
+            Client.MessageReactionAdded += async (s, e) =>
+            {
+                foreach (var papr in Util.PendingAdminPinReactions)
+                {
+                    if (papr.Message.Id == e.Message.Id)
+                    {
+                        if (!e.User.IsBot)
+                        {
+                            if (e.Emoji.Id == 670020961491222531)
+                            {
+                                await papr.Message.ModifyAsync(
+                                    (DiscordEmbed)new DiscordEmbedBuilder
+                                    {
+                                        Color = new DiscordColor("#FF0000"),
+                                        Title = $"__**Pin Accepted:**__",
+                                        Description = $"{papr.ThreadMessage.Channel.Name}" +
+                                        $"\n{papr.ThreadMessage.JumpLink}",
+                                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                                        {
+                                            Text = $"Server Time: {DateTime.Now}"
+                                        }
+                                    }
+                                );
+                                await papr.ThreadMessage.PinAsync();
+                            }
+                            else
+                            {
+                                await papr.Message.ModifyAsync(
+                                    (DiscordEmbed)new DiscordEmbedBuilder
+                                    {
+                                        Color = new DiscordColor("#FF0000"),
+                                        Title = $"__**Pin Rejected:**__",
+                                        Description = $"{papr.ThreadMessage.Channel.Name}" +
+                                        $"\n{papr.ThreadMessage.JumpLink}",
+                                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                                        {
+                                            Text = $"Server Time: {DateTime.Now}"
+                                        }
+                                    }
+                                );
+                            }
+                            foreach (var emoji in Util.GenerateTickAndCrossEmojis())
+                            {
+                                await papr.Message.DeleteReactionsEmojiAsync(emoji);
+                            }
+                            Util.PendingAdminPinReactions.Remove(papr);
+                        }
+                    }
+                }
+            };
+
+            Client.MessageCreated += async (s, e) =>
+            {
+                if (e.Guild.Id == 180306609233330176 &&
+                e.Channel.ParentId == 1046936322574655578 || e.Channel.ParentId == 369281592407097345)
+                {
+                    DiscordThreadChannel thread = (DiscordThreadChannel)e.Channel;
+                    var opPost = thread.GetMessagesAsync(1).Result[0];
+                    if (opPost.Attachments.Count > 0 &&
+                    opPost.Attachments.Any(x => x.FileName.Contains(".szs")))
+                    {
+                        DiscordChannel channel = s.GetGuildAsync(180306609233330176).Result.GetChannel(1071555342829363281);
+                        var message = await channel.SendMessageAsync(
+                            new DiscordEmbedBuilder
+                            {
+                                Color = new DiscordColor("#FF0000"),
+                                Title = $"__**New Pending Pin:**__",
+                                Description = $"{e.Channel.Name}" +
+                                $"\n{e.Message.JumpLink}",
+                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                {
+                                    Text = $"Server Time: {DateTime.Now}"
+                                }
+                            }
+                        );
+                        foreach (var emoji in Util.GenerateTickAndCrossEmojis())
+                        {
+                            await message.CreateReactionAsync(emoji);
+                        }
+                        Util.PendingAdminPinReactions.Add(new PendingAdminPin { Message = message, ThreadMessage = e.Message });
+                    }
+                }
+            };
+
+            Client.GuildCreated += async (s, e) =>
+                {
+                    List<Server> servers = JsonConvert.DeserializeObject<List<Server>>(File.ReadAllText("servers.json"));
+                    servers.Add(new Server()
+                    {
+                        Name = e.Guild.Name,
+                        Id = e.Guild.Id
+                    });
+                    File.WriteAllText("servers.json", JsonConvert.SerializeObject(servers));
+                    await Task.CompletedTask;
+                };
+
+            Client.GuildDeleted += async (s, e) =>
+                    {
+                        List<Server> servers = JsonConvert.DeserializeObject<List<Server>>(File.ReadAllText("servers.json"));
+                        for (int i = 0; i < servers.Count; i++)
+                        {
+                            if (servers[i].Id == e.Guild.Id)
+                            {
+                                servers.RemoveAt(i);
+                                break;
+                            }
+                        }
+                        File.WriteAllText("servers.json", JsonConvert.SerializeObject(servers));
+                        await Task.CompletedTask;
+                    };
+
+            SlashCommands.SlashCommandErrored += async (s, e) =>
             {
                 if (e.Exception is SlashExecutionChecksFailedException slex)
                 {
@@ -53,39 +166,13 @@ namespace MKBB
                 }
                 await Task.CompletedTask;
             };
+
             await Task.CompletedTask;
         }
 
-        private async Task Interactions(DiscordClient client)
+        private async Task Interactions()
         {
-            client.GuildCreated += async (s, e) =>
-            {
-                List<Server> servers = JsonConvert.DeserializeObject<List<Server>>(File.ReadAllText("servers.json"));
-                servers.Add(new Server()
-                {
-                    Name = e.Guild.Name,
-                    Id = e.Guild.Id
-                });
-                File.WriteAllText("servers.json", JsonConvert.SerializeObject(servers));
-                await Task.CompletedTask;
-            };
-
-            client.GuildDeleted += async (s, e) =>
-            {
-                List<Server> servers = JsonConvert.DeserializeObject<List<Server>>(File.ReadAllText("servers.json"));
-                for (int i = 0; i < servers.Count; i++)
-                {
-                    if (servers[i].Id == e.Guild.Id)
-                    {
-                        servers.RemoveAt(i);
-                        break;
-                    }
-                }
-                File.WriteAllText("servers.json", JsonConvert.SerializeObject(servers));
-                await Task.CompletedTask;
-            };
-
-            client.InteractionCreated += async (s, e) =>
+            Client.InteractionCreated += async (s, e) =>
             {
                 if (e.Interaction.Guild.Id == 180306609233330176)
                 {
@@ -123,7 +210,7 @@ namespace MKBB
                 }
             };
 
-            client.ComponentInteractionCreated += async (s, e) =>
+            Client.ComponentInteractionCreated += async (s, e) =>
             {
                 foreach (var p in Util.PendingPageInteractions)
                 {
@@ -140,7 +227,7 @@ namespace MKBB
                                     responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
                                 }
                             }
-                            responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows(Client));
+                            responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows());
                             await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, responseBuilder);
                         }
                     }
@@ -157,7 +244,7 @@ namespace MKBB
                                     responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
                                 }
                             }
-                            responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows(Client));
+                            responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows());
                             await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, responseBuilder);
                         }
                     }
@@ -171,7 +258,7 @@ namespace MKBB
 
                             var responseBuilder = new DiscordInteractionResponseBuilder();
                             responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
-                            responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows(Client));
+                            responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows());
                             await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, responseBuilder);
                         }
                     }
@@ -273,9 +360,9 @@ namespace MKBB
             SlashCommands.RegisterCommands<Threads>(180306609233330176);
             SlashCommands.RegisterCommands<Ghostbusters>(180306609233330176);
 
-            await Events(SlashCommands);
+            await Events();
 
-            await Interactions(Client);
+            await Interactions();
 
             DiscordActivity activity = new DiscordActivity();
             activity.Name = $"Bot is currently under maintenance. Please be patient :)";
