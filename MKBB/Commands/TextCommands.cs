@@ -43,7 +43,7 @@ namespace MKBB.Commands
                         break;
                     }
                 }
-                foreach (var role in ctx.Member.Roles)
+                /*foreach (var role in ctx.Member.Roles)
                 {
                     if (role.Name == "CT Creator" || ctx.Member.Id == 105742694730457088)
                     {
@@ -51,7 +51,7 @@ namespace MKBB.Commands
                             "\n/pinmessage message (file)";
                         break;
                     }
-                }
+                }*/
                 foreach (var role in ctx.Member.Roles)
                 {
                     if (role.Name == "Track Council" || ctx.Member.Id == 105742694730457088)
