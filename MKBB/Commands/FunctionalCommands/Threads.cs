@@ -681,7 +681,7 @@ namespace MKBB.Commands
             }
         }
 
-        [SlashCommand("pinmessage", "Pin a message in the thread.")]
+        //[SlashCommand("pinmessage", "Pin a message in the thread.")]
         public async Task PinMessage(InteractionContext ctx,
             [Option("message", "The message to pin in the thread.")] string message,
             [Option("file", "The file to pin in the thread.")] DiscordAttachment attachment = null)
