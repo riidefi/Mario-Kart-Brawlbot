@@ -6,6 +6,7 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
+using Microsoft.Scripting.Interpreter;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -637,18 +638,26 @@ namespace MKBB.Commands
                         var t = response.Values[i];
                         var tRaw = responseRaw.Values[i];
                         string tally = "*Unreviewed*";
-                        if (today >= int.Parse(t[1].ToString()))
+                        try
                         {
-                            var emote = string.Empty;
-                            if ((double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString())) / (double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString()) + double.Parse(tRaw[11].ToString())) >= 2.0 / 3.0)
+                            if (today >= int.Parse(t[1].ToString()))
                             {
-                                emote = DiscordEmoji.FromName(ctx.Client, ":Yes:");
+                                var emote = string.Empty;
+                                if ((double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString())) / (double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString()) + double.Parse(tRaw[11].ToString())) >= 2.0 / 3.0)
+                                {
+                                    emote = DiscordEmoji.FromName(ctx.Client, ":Yes:");
+                                }
+                                else
+                                {
+                                    emote = DiscordEmoji.FromName(ctx.Client, ":No:");
+                                }
+                                tally = $"{tRaw[8]}/{tRaw[9]}/{tRaw[10]}/{tRaw[11]} {emote}";
                             }
-                            else
-                            {
-                                emote = DiscordEmoji.FromName(ctx.Client, ":No:");
-                            }
-                            tally = $"{tRaw[8]}/{tRaw[9]}/{tRaw[10]}/{tRaw[11]} {emote}";
+                        }
+                        catch
+                        {
+                            tally = "*Date is in incorrect format*";
+                            await Util.ThrowCustomError(ctx, $"{tally}: {t[0]}");
                         }
                         try
                         {
