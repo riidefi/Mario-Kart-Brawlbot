@@ -60,6 +60,7 @@ namespace MKBB.Commands
         {
             Util.PendingPageInteractions = new List<PendingPagesInteraction>();
             Util.PendingChannelConfigInteractions = new List<PendingChannelConfigInteraction>();
+            Util.PendingAdminPinReactions = new List<PendingAdminPin>();
             try
             {
                 await CheckStrikesInit(ctx);
@@ -540,169 +541,176 @@ namespace MKBB.Commands
                 }
             }
 
-            if (response.Values[1][1].ToString() != "")
+            using (var fs = File.OpenRead("council.json"))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+            List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+            var hwCompleted = new bool?[councilJson.Count];
+
+            List<string> tracks = new List<string>();
+            List<string> dueTracks = new List<string>();
+
+            List<CouncilMember> inconsistentMembers = new List<CouncilMember>();
+            for (int i = 1; i < response.Values.Count; i++)
             {
-                using (var fs = File.OpenRead("council.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-                var hwCompleted = new bool?[councilJson.Count];
-
-                List<string> tracks = new List<string>();
-                List<string> dueTracks = new List<string>();
-
-                List<CouncilMember> inconsistentMembers = new List<CouncilMember>();
-                for (int i = 1; i < response.Values.Count; i++)
+                if (response.Values[i][1].ToString() != "")
                 {
-                    if (today == int.Parse(response.Values[i][1].ToString()))
+                    try
                     {
-                        tracks.Add(response.Values[i][0].ToString());
-                    }
-                    int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
-                    if (lastChecked < today && today == int.Parse(response.Values[i][1].ToString()) + 1)
-                    {
-                        dueTracks.Add(response.Values[i][0].ToString());
-                        for (int j = 12; j < response.Values[0].Count; j++)
+                        if (today == int.Parse(response.Values[i][1].ToString()))
                         {
-                            int ix = councilJson.FindIndex(x => x.SheetName == response.Values[0][j].ToString());
-                            int isAuthor = Util.ListNameCheck(response.Values, councilJson[ix].SheetName, ix1: i, ix2: j);
-                            if (response.Values[i][j].ToString() == "" ||
-                                    response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
-                                    response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
-                                    response.Values[i][j].ToString().ToLowerInvariant() == "neutral" ||
-                                    response.Values[i][j].ToString().ToLowerInvariant() == "fixes" ||
-                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("yes") &&
-                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("no") &&
-                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("neutral") &&
-                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes") &&
-                                    isAuthor == -1)
+                            tracks.Add(response.Values[i][0].ToString());
+                        }
+                        int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
+                        if (lastChecked < today && today == int.Parse(response.Values[i][1].ToString()) + 1)
+                        {
+                            dueTracks.Add(response.Values[i][0].ToString());
+                            for (int j = 12; j < response.Values[0].Count; j++)
                             {
-                                inconsistentMembers.Add(councilJson[ix]);
+                                int ix = councilJson.FindIndex(x => x.SheetName == response.Values[0][j].ToString());
+                                int isAuthor = Util.ListNameCheck(response.Values, councilJson[ix].SheetName, ix1: i, ix2: j);
+                                if (response.Values[i][j].ToString() == "" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "neutral" ||
+                                        response.Values[i][j].ToString().ToLowerInvariant() == "fixes" ||
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("yes") &&
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("no") &&
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("neutral") &&
+                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes") &&
+                                        isAuthor == -1)
+                                {
+                                    inconsistentMembers.Add(councilJson[ix]);
+                                }
                             }
                         }
                     }
-                }
-                for (int i = 0; i < councilJson.Count; i++)
-                {
-                    if (inconsistentMembers.Contains(councilJson[i]))
+                    catch
                     {
-                        hwCompleted[i] = false;
-                    }
-                    else if (dueTracks.Count > 0)
-                    {
-                        hwCompleted[i] = true;
+                        await Util.ThrowCustomError(ctx, $"Date is in incorrect format: {response.Values[i][0]}");
                     }
                 }
-                for (int i = 0; i < hwCompleted.Length; i++)
+            }
+            for (int i = 0; i < councilJson.Count; i++)
+            {
+                if (inconsistentMembers.Contains(councilJson[i]))
                 {
-                    if (hwCompleted[i] == true)
+                    hwCompleted[i] = false;
+                }
+                else if (dueTracks.Count > 0)
+                {
+                    hwCompleted[i] = true;
+                }
+            }
+            for (int i = 0; i < hwCompleted.Length; i++)
+            {
+                if (hwCompleted[i] == true)
+                {
+                    councilJson[i].HwInARow++;
+                    if (councilJson[i].HwInARow > 4)
                     {
-                        councilJson[i].HwInARow++;
-                        if (councilJson[i].HwInARow > 4)
-                        {
-                            councilJson[i].TimesMissedHw = 0;
-                        }
+                        councilJson[i].TimesMissedHw = 0;
                     }
-                    else if (hwCompleted[i] == false)
+                }
+                else if (hwCompleted[i] == false)
+                {
+                    councilJson[i].TimesMissedHw++;
+                    councilJson[i].HwInARow = 0;
+                    if (councilJson[i].TimesMissedHw > 0 && councilJson[i].TimesMissedHw % 3 == 0)
                     {
-                        councilJson[i].TimesMissedHw++;
-                        councilJson[i].HwInARow = 0;
-                        if (councilJson[i].TimesMissedHw > 0 && councilJson[i].TimesMissedHw % 3 == 0)
-                        {
-                            string message = $"Hello {councilJson[i].SheetName}. Just to let you know, you appear to have not completed council homework in a while, have been inconsistent with your homework, or are not completing it sufficiently enough. Just to remind you, if you miss homework too many times, admins might have to remove you from council. If you have an issue which stops you from doing homework, please let an admin know.";
+                        string message = $"Hello {councilJson[i].SheetName}. Just to let you know, you appear to have not completed council homework in a while, have been inconsistent with your homework, or are not completing it sufficiently enough. Just to remind you, if you miss homework too many times, admins might have to remove you from council. If you have an issue which stops you from doing homework, please let an admin know.";
 
-                            var members = ctx.Guild.GetAllMembersAsync();
-                            foreach (var member in members.Result)
+                        var members = Bot.Client.GetGuildAsync(180306609233330176).Result.GetAllMembersAsync();
+                        foreach (var member in members.Result)
+                        {
+                            if (member.Id == councilJson[i].DiscordId)
                             {
-                                if (member.Id == councilJson[i].DiscordId)
+                                try
                                 {
-                                    try
-                                    {
-                                        Console.WriteLine($"DM'd Member: {councilJson[i].SheetName}");
-                                        await member.SendMessageAsync(message);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Console.WriteLine(ex.Message);
-                                        Console.WriteLine("DMs are likely closed.");
-                                    }
+                                    Console.WriteLine($"DM'd Member: {councilJson[i].SheetName}");
+                                    await member.SendMessageAsync(message);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine(ex.Message);
+                                    Console.WriteLine("DMs are likely closed.");
                                 }
                             }
                         }
                     }
                 }
+            }
 
-                string council = JsonConvert.SerializeObject(councilJson);
-                File.WriteAllText("council.json", council);
+            string council = JsonConvert.SerializeObject(councilJson);
+            File.WriteAllText("council.json", council);
 
-                DiscordChannel channel = ctx.Channel;
+            DiscordChannel channel = ctx.Channel;
 
+            foreach (var c in ctx.Guild.Channels)
+            {
+                if (c.Value.Id == 635313521487511554)
+                {
+                    channel = c.Value;
+                }
+            }
+
+            string listOfTracks = "";
+            if (tracks.Count > 0)
+            {
+                listOfTracks = tracks[0];
+                for (int i = 1; i < tracks.Count; i++)
+                {
+                    listOfTracks += $", {tracks[i]}";
+                }
+                if (tracks.Count == 1)
+                {
+                    listOfTracks += " is";
+                }
+                else
+                {
+                    listOfTracks += " are";
+                }
+
+                await channel.SendMessageAsync($"<@&608386209655554058> {listOfTracks} due for today.");
+            }
+
+            foreach (var c in ctx.Guild.Channels)
+            {
+                if (c.Value.Id == 935200150710808626)
+                {
+                    channel = c.Value;
+                }
+            }
+
+            string description = string.Empty;
+            for (int i = 0; i < hwCompleted.Length; i++)
+            {
+                if (hwCompleted[i] == false)
+                {
+                    description += $"{councilJson[i].SheetName}\n";
+                }
+            }
+
+            if (hwCompleted.Select(x => x == false).ToArray().Length > 0 && dueTracks.Count > 0)
+            {
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Members who missed homework:**__",
+                    Description = description,
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
                 foreach (var c in ctx.Guild.Channels)
                 {
-                    if (c.Value.Id == 635313521487511554)
+                    if (c.Value.Id == 1019149329556062278)
                     {
                         channel = c.Value;
                     }
                 }
-
-                string listOfTracks = "";
-                if (tracks.Count > 0)
-                {
-                    listOfTracks = tracks[0];
-                    for (int i = 1; i < tracks.Count; i++)
-                    {
-                        listOfTracks += $", {tracks[i]}";
-                    }
-                    if (tracks.Count == 1)
-                    {
-                        listOfTracks += " is";
-                    }
-                    else
-                    {
-                        listOfTracks += " are";
-                    }
-
-                    await channel.SendMessageAsync($"<@&608386209655554058> {listOfTracks} due for today.");
-                }
-
-                foreach (var c in ctx.Guild.Channels)
-                {
-                    if (c.Value.Id == 935200150710808626)
-                    {
-                        channel = c.Value;
-                    }
-                }
-
-                string description = string.Empty;
-                for (int i = 0; i < hwCompleted.Length; i++)
-                {
-                    if (hwCompleted[i] == false)
-                    {
-                        description += $"{councilJson[i].SheetName}\n";
-                    }
-                }
-
-                if (hwCompleted.Select(x => x == false).ToArray().Length > 0 && dueTracks.Count > 0)
-                {
-                    var embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Members who missed homework:**__",
-                        Description = description,
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    foreach (var c in ctx.Guild.Channels)
-                    {
-                        if (c.Value.Id == 1019149329556062278)
-                        {
-                            channel = c.Value;
-                        }
-                    }
-                    await channel.SendMessageAsync(embed);
-                }
+                await channel.SendMessageAsync(embed);
             }
 
             var now = DateTime.Now;
