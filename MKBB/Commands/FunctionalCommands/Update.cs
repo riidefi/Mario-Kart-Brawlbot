@@ -6,18 +6,17 @@ using FluentScheduler;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
+using HtmlAgilityPack;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Scripting.Utils;
+using MKBB.Class;
+using MKBB.Data;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MKBB.Commands
 {
@@ -60,11 +59,10 @@ namespace MKBB.Commands
         {
             Util.PendingPageInteractions = new List<PendingPagesInteraction>();
             Util.PendingChannelConfigInteractions = new List<PendingChannelConfigInteraction>();
-            Util.PendingAdminPinReactions = new List<PendingAdminPin>();
             try
             {
                 await CheckStrikesInit(ctx);
-                await UpdateInit(ctx, "all");
+                await UpdateInit(ctx);
             }
             catch (Exception ex)
             {
@@ -74,11 +72,7 @@ namespace MKBB.Commands
 
         [SlashCommand("update", "Updates the database with information from Chadsoft and Wiimmfi.")]
         [SlashRequireOwner]
-        public async Task UpdateInit(InteractionContext ctx,
-            [Choice("All", "all")]
-            [Choice("Wiimmfi", "wiimmfi")]
-            [Choice("BKTs", "bkts")]
-            [Option("Quantity", "Determines how much data to retrieve.")] string arg = "")
+        public async Task UpdateInit(InteractionContext ctx)
         {
             if (ctx != null && ctx.CommandName == "update")
             {
@@ -87,7 +81,7 @@ namespace MKBB.Commands
 
             try
             {
-                await UpdateJsons(ctx, arg);
+                await UpdateDatabase();
                 if (ctx != null && ctx.CommandName == "update")
                 {
                     var embed = new DiscordEmbedBuilder
@@ -117,7 +111,7 @@ namespace MKBB.Commands
             }
         }
 
-        public async Task UpdateJsons(InteractionContext ctx, string arg)
+        public async Task UpdateDatabase()
         {
             string rtttUrl = "http://tt.chadsoft.co.uk/original-track-leaderboards.json";
             string ctttUrl = "http://tt.chadsoft.co.uk/ctgp-leaderboards.json";
@@ -128,338 +122,365 @@ namespace MKBB.Commands
             string ctwwUrl3 = "https://wiimmfi.de/stats/track/mv/ctgp?m=json&p=std,c2,0,200";
             string wwUrl = "https://wiimmfi.de/stats/track/mv/ww?m=json&p=std,c2,0";
 
+            using var dbCtx = new MKBBContext();
+
             // Leaderboards
 
             var webClient = new WebClient();
+            webClient.Encoding = Encoding.UTF8;
 
-            var rtRawJson = JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(rtttUrl));
-            var ctRawJson = JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(ctttUrl));
-            var rtRaw200Json = JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(rttt200Url));
-            var ctRaw200Json = JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(cttt200Url));
+            var databaseTracks = dbCtx.Tracks.ToList();
+            var oldDatabaseTracks = dbCtx.OldTracks.ToList();
+            var currentTracks = dbCtx.Tracks.ToList();
 
-            foreach (var track in rtRawJson.Leaderboard)
+            // Get most up to date data from Chadsoft
+
+            var newChadsoftData = JsonConvert.DeserializeObject<List<Track>>(JsonConvert.SerializeObject(JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(rtttUrl)).Leaderboard));
+            foreach (var track in JsonConvert.DeserializeObject<List<Track>>(JsonConvert.SerializeObject(JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(ctttUrl)).Leaderboard)))
             {
-                track.LeaderboardLink = track.LinkContainer.Href.URL;
-                track.LinkContainer = null;
+                newChadsoftData.Add(track);
             }
-            foreach (var track in ctRawJson.Leaderboard)
+            foreach (var track in JsonConvert.DeserializeObject<List<Track>>(JsonConvert.SerializeObject(JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(rttt200Url)).Leaderboard)))
             {
-                track.LeaderboardLink = track.LinkContainer.Href.URL;
-                track.LinkContainer = null;
+                newChadsoftData.Add(track);
             }
-            foreach (var track in rtRaw200Json.Leaderboard)
+            foreach (var track in JsonConvert.DeserializeObject<List<Track>>(JsonConvert.SerializeObject(JsonConvert.DeserializeObject<LeaderboardInfo>(await webClient.DownloadStringTaskAsync(cttt200Url)).Leaderboard)))
             {
-                track.LeaderboardLink = track.LinkContainer.Href.URL;
-                track.LinkContainer = null;
-            }
-            foreach (var track in ctRaw200Json.Leaderboard)
-            {
-                track.LeaderboardLink = track.LinkContainer.Href.URL;
-                track.LinkContainer = null;
+                newChadsoftData.Add(track);
             }
 
-            var rtJson = JsonConvert.SerializeObject(rtRawJson.Leaderboard);
-            var ctJson = JsonConvert.SerializeObject(ctRawJson.Leaderboard);
-            var rt200Json = JsonConvert.SerializeObject(rtRaw200Json.Leaderboard);
-            var ct200Json = JsonConvert.SerializeObject(ctRaw200Json.Leaderboard);
-
-            string ctwwDl1 = await webClient.DownloadStringTaskAsync(ctwwUrl1);
-            string ctwwDl2 = await webClient.DownloadStringTaskAsync(ctwwUrl2);
-            string ctwwDl3 = await webClient.DownloadStringTaskAsync(ctwwUrl3);
-            string wwDl = await webClient.DownloadStringTaskAsync(wwUrl);
-
-            List<Track> trackListRt = JsonConvert.DeserializeObject<List<Track>>(rtJson);
-            List<Track> trackListRt200 = JsonConvert.DeserializeObject<List<Track>>(rt200Json);
-            List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(ctJson);
-            List<Track> trackList200 = JsonConvert.DeserializeObject<List<Track>>(ct200Json);
-            List<Track> trackListNc = JsonConvert.DeserializeObject<List<Track>>(ctJson);
-            List<Track> trackList200Nc = JsonConvert.DeserializeObject<List<Track>>(ct200Json);
-            for (int i = 0; i < trackListNc.Count; i++)
+            foreach (var track in newChadsoftData)
             {
-                if (trackListNc[i].Category % 16 != 0)
+                if (databaseTracks.Where(x => x.SHA1 == track.SHA1) != null) // If the track already exists in the database
                 {
-                    trackListNc.RemoveAt(i);
-                    i--;
+                    foreach (var t in databaseTracks.Where(x => x.SHA1 == track.SHA1 && x.LeaderboardLink == track.LinkContainer.Href.URL))
+                    {
+                        t.LastChanged = track.ConvertData().LastChanged;
+                        t.TimeTrialPopularity = track.ConvertData().TimeTrialPopularity;
+                        t.Is200cc = track.ConvertData().Is200cc;
+                    }
                 }
-            }
-            for (int i = 0; i < trackList200Nc.Count; i++)
-            {
-                if (trackList200Nc[i].Category % 16 != 0 || trackList200Nc[i].Category != 4)
+                else // If the track is a new track or an update
                 {
-                    trackList200Nc.RemoveAt(i);
-                    i--;
-                }
-            }
+                    var newTrack = track.ConvertData();
+                    newTrack.LeaderboardLink = track.LinkContainer.Href.URL;
+                    HtmlDocument wikiPage = new HtmlDocument();
+                    wikiPage.LoadHtml(await webClient.DownloadStringTaskAsync("https://wiki.tockdom.com/wiki/CTGP_Revolution"));
+                    var tds = wikiPage.DocumentNode.SelectNodes("//table[@class='textbox grid sortable center'][1]/tbody/tr/td");
+                    for (int i = 0; i < tds.Count; i++)
+                    {
+                        if (tds[i].InnerText == newTrack.Name)
+                        {
+                            newTrack.SlotID = tds[i + 6].InnerText.Replace("\n", string.Empty);
+                            Console.WriteLine(newTrack.Name + ": " + newTrack.SlotID);
+                        }
+                    }
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-            string oldRtJson = File.ReadAllText("rts.json");
-            List<Track> oldRtTrackList = JsonConvert.DeserializeObject<List<Track>>(oldRtJson);
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-            for (int i = 0; i < trackListRt.Count; i++)
-            {
-                int ix = oldRtTrackList.FindIndex(t => t.Name == trackListRt[i].Name && t.Category == trackListRt[i].Category);
-                if (ix != -1)
-                {
-                    trackListRt[i].WiimmfiName = oldRtTrackList[ix].WiimmfiName;
-                    trackListRt[i].M1 = oldRtTrackList[ix].M1;
-                    trackListRt[i].M2 = oldRtTrackList[ix].M2;
-                    trackListRt[i].M3 = oldRtTrackList[ix].M3;
-                    trackListRt[i].M6 = oldRtTrackList[ix].M6;
-                    trackListRt[i].M9 = oldRtTrackList[ix].M9;
-                    trackListRt[i].M12 = oldRtTrackList[ix].M12;
-                    trackListRt[i].CategoryName = oldRtTrackList[ix].CategoryName;
-                }
-            }
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-            oldRtJson = File.ReadAllText("rts200.json");
-            oldRtTrackList = JsonConvert.DeserializeObject<List<Track>>(oldRtJson);
+                    var service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Mario Kart Brawlbot",
+                    });
 
-            for (int i = 0; i < trackListRt200.Count; i++)
-            {
-                int ix = oldRtTrackList.FindIndex(t => t.Name == trackListRt200[i].Name && t.Category == trackListRt200[i].Category);
-                if (ix != -1)
-                {
-                    trackListRt200[i].WiimmfiName = oldRtTrackList[ix].WiimmfiName;
-                    trackListRt200[i].M1 = oldRtTrackList[ix].M1;
-                    trackListRt200[i].M2 = oldRtTrackList[ix].M2;
-                    trackListRt200[i].M3 = oldRtTrackList[ix].M3;
-                    trackListRt200[i].M6 = oldRtTrackList[ix].M6;
-                    trackListRt200[i].M9 = oldRtTrackList[ix].M9;
-                    trackListRt200[i].M12 = oldRtTrackList[ix].M12;
-                    trackListRt200[i].CategoryName = oldRtTrackList[ix].CategoryName;
-                }
-            }
+                    var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Update Queue'");
+                    request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                    var response = await request.ExecuteAsync();
+                    foreach (var c in response.Values)
+                    {
+                        while (c.Count < 11)
+                        {
+                            c.Add("");
+                        }
+                    }
+                    foreach (var v in response.Values)
+                    {
+                        if (Util.Convert3DSTrackName(v[2].ToString()) == newTrack.Name)
+                        {
+                            newTrack.Authors = v[3].ToString();
+                            newTrack.Version = v[4].ToString();
+                            newTrack.TrackSlot = v[6].ToString().Split('/')[0].Trim(' ');
+                            newTrack.MusicSlot = v[6].ToString().Split('/')[1].Trim(' ');
+                            newTrack.SpeedMultiplier = decimal.Parse(v[7].ToString().Split('/')[0].Trim(' '));
+                            newTrack.LapCount = int.Parse(v[7].ToString().Split('/')[1].Trim(' '));
+                            newTrack.EasyStaffSHA1 = v[9].ToString();
+                            newTrack.ExpertStaffSHA1 = v[11].ToString();
+                        }
+                    }
+                    HtmlDocument leaderboardPage = new HtmlDocument();
+                    leaderboardPage.LoadHtml(await webClient.DownloadStringTaskAsync($"https://chadsoft.co.uk/time-trials{newTrack.LeaderboardLink.Replace("json", "html")}"));
+                    Console.WriteLine($"Downloading leaderboard for {newTrack.Name}");
+                    var h1s = leaderboardPage.DocumentNode.SelectNodes("//h1");
+                    foreach (var h1 in h1s)
+                    {
+                        if (!h1.InnerText.Contains("Normal") && !h1.InnerText.Contains("No-shortcut") && !h1.InnerText.Contains("Shortcut") && !h1.InnerText.Contains("Glitch"))
+                        {
+                            newTrack.CategoryName = "Normal";
+                        }
+                        else
+                        {
+                            newTrack.CategoryName = h1.InnerText.Split(' ')[h1.InnerText.Split(' ').Count() - 1];
+                        }
+                    }
+                    foreach (var ct in currentTracks.Where(x => x.SlotID == newTrack.SlotID))
+                    {
+                        oldDatabaseTracks.Add(ct.ConvertToOld());
+                        databaseTracks.Remove(ct);
 
-            bool saveOldData = false;
-
-            string oldJson = File.ReadAllText("cts.json");
-            List<Track> oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
-
-            for (int i = 0; i < trackList.Count; i++)
-            {
-                int ix = oldTrackList.FindIndex(t => t.Name == trackList[i].Name && t.Category == trackList[i].Category);
-                if (ix != -1)
-                {
-                    trackList[i].WiimmfiName = oldTrackList[ix].WiimmfiName;
-                    trackList[i].M1 = oldTrackList[ix].M1;
-                    trackList[i].M2 = oldTrackList[ix].M2;
-                    trackList[i].M3 = oldTrackList[ix].M3;
-                    trackList[i].M6 = oldTrackList[ix].M6;
-                    trackList[i].M9 = oldTrackList[ix].M9;
-                    trackList[i].M12 = oldTrackList[ix].M12;
-                    trackList[i].CategoryName = oldTrackList[ix].CategoryName;
-                }
-                if (!saveOldData && ix == -1)
-                {
-                    saveOldData = true;
-                }
-            }
-
-            var processInfo = new ProcessStartInfo();
-            var process = new Process();
-
-            if (saveOldData)
-            {
-                File.WriteAllText($"cts.{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}.json", oldJson);
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"sudo";
-                processInfo.Arguments = $"mv cts.{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}.json /var/www/brawlbox/MKBB/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-                processInfo.RedirectStandardOutput = true;
-
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-                process.WaitForExit();
-            }
-
-            oldJson = File.ReadAllText("cts200.json");
-            oldTrackList = JsonConvert.DeserializeObject<List<Track>>(oldJson);
-
-            for (int i = 0; i < trackList200.Count; i++)
-            {
-                int ix = oldTrackList.FindIndex(t => t.Name == trackList200[i].Name && t.Category == trackList200[i].Category);
-                if (ix != -1)
-                {
-                    trackList200[i].WiimmfiName = oldTrackList[ix].WiimmfiName;
-                    trackList200[i].M1 = oldTrackList[ix].M1;
-                    trackList200[i].M2 = oldTrackList[ix].M2;
-                    trackList200[i].M3 = oldTrackList[ix].M3;
-                    trackList200[i].M6 = oldTrackList[ix].M6;
-                    trackList200[i].M9 = oldTrackList[ix].M9;
-                    trackList200[i].M12 = oldTrackList[ix].M12;
-                    trackList200[i].CategoryName = oldTrackList[ix].CategoryName;
+                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A2:H219");
+                        request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                        response = await request.ExecuteAsync();
+                        var ix = response.Values.FindIndex(x => x[0].ToString() == ct.Name);
+                        response.Values[ix][0] = newTrack.Name;
+                        response.Values[ix][1] = newTrack.Authors;
+                        response.Values[ix][2] = newTrack.Version;
+                        response.Values[ix][3] = $"{newTrack.TrackSlot} / {newTrack.MusicSlot}";
+                        response.Values[ix][4] = $"{newTrack.SpeedMultiplier} / {newTrack.LapCount}";
+                        response.Values[ix][5] = "";
+                        response.Values[ix][6] = "";
+                        response.Values = response.Values.OrderBy(x => x[0]).ToList();
+                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A2:H219");
+                        updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                        var update = await updateRequest.ExecuteAsync();
+                    }
+                    databaseTracks.Add(newTrack);
                 }
             }
 
-            if (saveOldData)
-            {
-                File.WriteAllText($"cts200.{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}.json", oldJson);
-                processInfo = new ProcessStartInfo();
-                processInfo.FileName = @"sudo";
-                processInfo.Arguments = $"mv cts200.{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}.json /var/www/brawlbox/MKBB/";
-                processInfo.CreateNoWindow = true;
-                processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                processInfo.UseShellExecute = false;
-                processInfo.RedirectStandardOutput = true;
+            // Get most up to date data from Wiimmfi
+            // // Nintendo Tracks
 
-                process = new Process();
-                process.StartInfo = processInfo;
-                process.Start();
-                process.WaitForExit();
-            }
-
-            try
+            HtmlDocument wwHtml = new HtmlDocument();
+            wwHtml.LoadHtml(await webClient.DownloadStringTaskAsync(wwUrl));
+            var innerText1 = wwHtml.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
+            var m1s = new List<string>();
+            var m2s = new List<string>();
+            var m3s = new List<string>();
+            var m6s = new List<string>();
+            var m9s = new List<string>();
+            var m12s = new List<string>();
+            var names = new List<string>();
+            for (int i = 0; i < 32 * 11; i++)
             {
-                if (Util.CompareIncompleteStrings(arg, "wiimmfi") || Util.CompareIncompleteStrings(arg, "all"))
+                if (i % 11 - 2 == 0)
                 {
-                    await Util.Scraper.WiimmfiScrape(rtJson,
-                        rt200Json,
-                        ctwwDl1,
-                        ctwwDl2,
-                        ctwwDl3,
-                        wwDl,
-                        trackListRt,
-                        trackListRt200,
-                        trackList,
-                        trackList200,
-                        trackListNc,
-                        trackList200Nc);
+                    names.Add(innerText1[i].InnerText == "–" ? "0" : innerText1[i].InnerText);
+                }
+                if (i % 11 - 3 == 0)
+                {
+                    m1s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 4 == 0)
+                {
+                    m2s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 5 == 0)
+                {
+                    m3s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 6 == 0)
+                {
+                    m6s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 7 == 0)
+                {
+                    m9s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 8 == 0)
+                {
+                    m12s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
             }
-            catch
+            for (int i = 0; i < names.Count; i++)
             {
-                Thread.Sleep(300000);
-                await Util.Scraper.WiimmfiScrape(rtJson,
-                         rt200Json,
-                         ctwwDl1,
-                         ctwwDl2,
-                         ctwwDl3,
-                         wwDl,
-                         trackListRt,
-                         trackListRt200,
-                         trackList,
-                         trackList200,
-                         trackListNc,
-                         trackList200Nc);
-            }
-
-            try
-            {
-                if (Util.CompareIncompleteStrings(arg, "bkts") || Util.CompareIncompleteStrings(arg, "all"))
+                foreach (var t in databaseTracks)
                 {
-                    await Util.Scraper.GetBKTLeaderboards(trackListRt, trackListRt200, trackList, trackList200);
-                }
-            }
-            catch
-            {
-                Thread.Sleep(300000);
-                await Util.Scraper.GetBKTLeaderboards(trackListRt, trackListRt200, trackList, trackList200);
-            }
-
-            try
-            {
-                Console.WriteLine("Getting Slot IDs.");
-                await Util.Scraper.GetSlotIds(trackListRt, trackListRt200, trackList, trackList200);
-            }
-            catch
-            {
-                Console.WriteLine("Getting IDs failed. Waiting 30 seconds...");
-                Thread.Sleep(30000);
-                Console.WriteLine("Getting Slot IDs.");
-                try
-                {
-                    await Util.Scraper.GetSlotIds(trackListRt, trackListRt200, trackList, trackList200);
-                }
-                catch
-                {
-                    Console.WriteLine("Getting Slot IDs failed.");
+                    if (names[i].Split('(')[0].Replace("Wii", "").Trim(' ') == t.Name && !t.CustomTrack)
+                    {
+                        t.M1 = int.Parse(m1s[i]);
+                        t.M2 = int.Parse(m2s[i]);
+                        t.M3 = int.Parse(m3s[i]);
+                        t.M6 = int.Parse(m6s[i]);
+                        t.M9 = int.Parse(m9s[i]);
+                        t.M12 = int.Parse(m12s[i]);
+                        break;
+                    }
                 }
             }
 
-            string playerListJson = File.ReadAllText("players.json");
-            List<Player> playerList = JsonConvert.DeserializeObject<List<Player>>(playerListJson);
+            // // Custom Tracks
 
-            try
+            HtmlDocument ctwwHtml1 = new HtmlDocument();
+            HtmlDocument ctwwHtml2 = new HtmlDocument();
+            HtmlDocument ctwwHtml3 = new HtmlDocument();
+            ctwwHtml1.LoadHtml(await webClient.DownloadStringTaskAsync(ctwwUrl1));
+            var bodyNodes = ctwwHtml1.DocumentNode.SelectNodes("//td[contains(@class, 'LL')]");
+            innerText1 = ctwwHtml1.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
+            names = new List<string>();
+            m1s = new List<string>();
+            m2s = new List<string>();
+            m3s = new List<string>();
+            m6s = new List<string>();
+            m9s = new List<string>();
+            m12s = new List<string>();
+            for (int i = 0; i < innerText1.Count; i++)
             {
-                await Util.Scraper.GetPlayerInfo(playerList);
+                if (i % 11 - 2 == 0)
+                {
+                    names.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 3 == 0)
+                {
+                    m1s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 4 == 0)
+                {
+                    m2s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 5 == 0)
+                {
+                    m3s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 6 == 0)
+                {
+                    m6s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 7 == 0)
+                {
+                    m9s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
+                if (i % 11 - 8 == 0)
+                {
+                    m12s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                }
             }
-            catch
+            Console.WriteLine("Downloaded 1st Wiimmfi Page");
+            ctwwHtml2.LoadHtml(await webClient.DownloadStringTaskAsync(ctwwUrl2));
+            foreach (var n in ctwwHtml2.DocumentNode.SelectNodes("//td[contains(@class, 'LL')]"))
             {
-                Console.WriteLine("Player Info retrieval failed.");
+                bodyNodes.Add(n);
             }
-
-            playerListJson = JsonConvert.SerializeObject(playerList);
-            File.WriteAllText("players.json", playerListJson);
-
-            JsonSerializerSettings settings = new JsonSerializerSettings()
+            var innerText2 = ctwwHtml2.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
+            for (int i = 0; i < innerText2.Count; i++)
             {
-                DefaultValueHandling = DefaultValueHandling.Ignore
-            };
-
-            ctJson = JsonConvert.SerializeObject(trackList, settings);
-            ct200Json = JsonConvert.SerializeObject(trackList200, settings);
-
-            rtJson = JsonConvert.SerializeObject(trackListRt, settings);
-            rt200Json = JsonConvert.SerializeObject(trackListRt200, settings);
-
-            File.WriteAllText("rts.json", rtJson);
-            File.WriteAllText("cts.json", ctJson);
-            File.WriteAllText("rts200.json", rt200Json);
-            File.WriteAllText("cts200.json", ct200Json);
-
-            processInfo = new ProcessStartInfo();
-            processInfo.FileName = @"sudo";
-            processInfo.Arguments = $"cp rts.json /var/www/brawlbox/MKBB/";
-            processInfo.CreateNoWindow = true;
-            processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            processInfo.UseShellExecute = false;
-            processInfo.RedirectStandardOutput = true;
-
-            process = new Process();
-            process.StartInfo = processInfo;
-            process.Start();
-            process.WaitForExit();
-
-            processInfo = new ProcessStartInfo();
-            processInfo.FileName = @"sudo";
-            processInfo.Arguments = $"cp rts200.json /var/www/brawlbox/MKBB/";
-            processInfo.CreateNoWindow = true;
-            processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            processInfo.UseShellExecute = false;
-            processInfo.RedirectStandardOutput = true;
-
-            process = new Process();
-            process.StartInfo = processInfo;
-            process.Start();
-            process.WaitForExit();
-
-            processInfo = new ProcessStartInfo();
-            processInfo.FileName = @"sudo";
-            processInfo.Arguments = $"cp cts.json /var/www/brawlbox/MKBB/";
-            processInfo.CreateNoWindow = true;
-            processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            processInfo.UseShellExecute = false;
-            processInfo.RedirectStandardOutput = true;
-
-            process = new Process();
-            process.StartInfo = processInfo;
-            process.Start();
-            process.WaitForExit();
-
-            processInfo = new ProcessStartInfo();
-            processInfo.FileName = @"sudo";
-            processInfo.Arguments = $"cp cts200.json /var/www/brawlbox/MKBB/";
-            processInfo.CreateNoWindow = true;
-            processInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            processInfo.UseShellExecute = false;
-            processInfo.RedirectStandardOutput = true;
-
-            process = new Process();
-            process.StartInfo = processInfo;
-            process.Start();
-            process.WaitForExit();
+                if (i % 11 - 2 == 0)
+                {
+                    names.Add(innerText1[i].InnerText == "–" ? "0" : innerText1[i].InnerText);
+                }
+                if (i % 11 - 3 == 0)
+                {
+                    m1s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
+                }
+                if (i % 11 - 4 == 0)
+                {
+                    m2s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
+                }
+                if (i % 11 - 5 == 0)
+                {
+                    m3s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
+                }
+                if (i % 11 - 6 == 0)
+                {
+                    m6s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
+                }
+                if (i % 11 - 7 == 0)
+                {
+                    m9s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
+                }
+                if (i % 11 - 8 == 0)
+                {
+                    m12s.Add(innerText2[i].InnerHtml == "–" ? "0" : innerText2[i].InnerHtml);
+                }
+            }
+            Console.WriteLine("Downloaded 2nd Wiimmfi Page");
+            ctwwHtml3.LoadHtml(await webClient.DownloadStringTaskAsync(ctwwUrl3));
+            foreach (var n in ctwwHtml3.DocumentNode.SelectNodes("//td[contains(@class, 'LL')]"))
+            {
+                bodyNodes.Add(n);
+            }
+            var innerText3 = ctwwHtml3.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
+            for (int i = 0; i < innerText3.Count; i++)
+            {
+                if (i % 11 - 2 == 0)
+                {
+                    names.Add(innerText1[i].InnerText == "–" ? "0" : innerText1[i].InnerText);
+                }
+                if (i % 11 - 3 == 0)
+                {
+                    m1s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
+                }
+                if (i % 11 - 4 == 0)
+                {
+                    m2s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
+                }
+                if (i % 11 - 5 == 0)
+                {
+                    m3s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
+                }
+                if (i % 11 - 6 == 0)
+                {
+                    m6s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
+                }
+                if (i % 11 - 7 == 0)
+                {
+                    m9s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
+                }
+                if (i % 11 - 8 == 0)
+                {
+                    m12s.Add(innerText3[i].InnerHtml == "–" ? "0" : innerText3[i].InnerHtml);
+                }
+            }
+            Console.WriteLine("Downloaded 3rd Wiimmfi Page");
+            for (int i = 0; i < bodyNodes.Count; i++)
+            {
+                if (bodyNodes[i].InnerHtml.Contains("SHA1"))
+                {
+                    foreach (var track in databaseTracks)
+                    {
+                        if (bodyNodes[i].InnerText.Replace("SHA1", "").Trim(' ').ToLowerInvariant() == track.SHA1.ToLowerInvariant() && track.CustomTrack)
+                        {
+                            Console.WriteLine($"Checking SHA1s for {track.Name} from {bodyNodes[i].InnerHtml}");
+                            track.M1 = int.Parse(m1s[i]);
+                            track.M2 = int.Parse(m2s[i]);
+                            track.M3 = int.Parse(m3s[i]);
+                            track.M6 = int.Parse(m6s[i]);
+                            track.M9 = int.Parse(m9s[i]);
+                            track.M12 = int.Parse(m12s[i]);
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    var dl = await webClient.DownloadStringTaskAsync($"{bodyNodes[i].InnerHtml.Split('"')[1]}?m=json");
+                    var trackHtml = new HtmlDocument();
+                    trackHtml.LoadHtml(dl);
+                    var tts = trackHtml.DocumentNode.SelectNodes("//tr/td/tt");
+                    foreach (var tt in tts)
+                    {
+                        foreach (var track in databaseTracks)
+                        {
+                            if (tt.InnerText.ToLowerInvariant() == track.SHA1.ToLowerInvariant() && track.CustomTrack)
+                            {
+                                Console.WriteLine($"Checking SHA1s for {track.Name} from {bodyNodes[i].InnerHtml.Split('"')[1]}");
+                                track.M1 = int.Parse(m1s[i]);
+                                track.M2 = int.Parse(m2s[i]);
+                                track.M3 = int.Parse(m3s[i]);
+                                track.M6 = int.Parse(m6s[i]);
+                                track.M9 = int.Parse(m9s[i]);
+                                track.M12 = int.Parse(m12s[i]);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            dbCtx.SaveChanges();
 
             var today = DateTime.Now;
             File.WriteAllText("lastUpdated.txt", today.ToString());
@@ -533,6 +554,10 @@ namespace MKBB.Commands
             var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
             request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
             var response = await request.ExecuteAsync();
+
+            var tRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+            tRequest.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+            var tResponse = await tRequest.ExecuteAsync();
             foreach (var t in response.Values)
             {
                 while (t.Count < response.Values[0].Count)
@@ -540,17 +565,26 @@ namespace MKBB.Commands
                     t.Add("");
                 }
             }
+            foreach (var t in tResponse.Values)
+            {
+                while (t.Count < tResponse.Values[0].Count)
+                {
+                    t.Add("");
+                }
+            }
 
-            using (var fs = File.OpenRead("council.json"))
-            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                json = await sr.ReadToEndAsync().ConfigureAwait(false);
-            List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+            using var dbCtx = new MKBBContext();
+            List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
             var hwCompleted = new bool?[councilJson.Count];
+            var threadHwCompleted = new bool?[councilJson.Count];
 
             List<string> tracks = new List<string>();
+            List<string> threadTracks = new List<string>();
             List<string> dueTracks = new List<string>();
+            List<string> dueThreadTracks = new List<string>();
 
-            List<CouncilMember> inconsistentMembers = new List<CouncilMember>();
+            List<CouncilMemberData> inconsistentMembers = new List<CouncilMemberData>();
+            List<CouncilMemberData> inconsistentMembersThreads = new List<CouncilMemberData>();
             for (int i = 1; i < response.Values.Count; i++)
             {
                 if (response.Values[i][1].ToString() != "")
@@ -567,8 +601,8 @@ namespace MKBB.Commands
                             dueTracks.Add(response.Values[i][0].ToString());
                             for (int j = 12; j < response.Values[0].Count; j++)
                             {
-                                int ix = councilJson.FindIndex(x => x.SheetName == response.Values[0][j].ToString());
-                                int isAuthor = Util.ListNameCheck(response.Values, councilJson[ix].SheetName, ix1: i, ix2: j);
+                                int ix = councilJson.FindIndex(x => x.Name == response.Values[0][j].ToString());
+                                int isAuthor = Util.ListNameCheck(response.Values, councilJson[ix].Name, ix1: i, ix2: j);
                                 if (response.Values[i][j].ToString() == "" ||
                                         response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
                                         response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
@@ -591,6 +625,39 @@ namespace MKBB.Commands
                     }
                 }
             }
+            for (int i = 1; i < tResponse.Values.Count; i++)
+            {
+                if (tResponse.Values[i][1].ToString() != "")
+                {
+                    try
+                    {
+                        if (today == int.Parse(tResponse.Values[i][1].ToString()))
+                        {
+                            threadTracks.Add(tResponse.Values[i][3].ToString().Split('"')[1].Split('/')[5]);
+                        }
+                        int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
+                        if (lastChecked < today && today == int.Parse(tResponse.Values[i][1].ToString()) + 1)
+                        {
+                            dueThreadTracks.Add(tResponse.Values[i][0].ToString());
+                            for (int j = 7; j < tResponse.Values[0].Count; j++)
+                            {
+                                int ix = councilJson.FindIndex(x => x.Name == tResponse.Values[0][j].ToString());
+                                int isAuthor = Util.ListNameCheck(tResponse.Values, councilJson[ix].Name, ix1: i, ix2: j);
+                                if (tResponse.Values[i][j].ToString() == "" ||
+                                        isAuthor != -1)
+                                {
+                                    inconsistentMembersThreads.Add(councilJson[ix]);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                        //await Util.ThrowCustomError(ctx, $"Date is in incorrect format: {tResponse.Values[i][0]}");
+                    }
+                }
+            }
             for (int i = 0; i < councilJson.Count; i++)
             {
                 if (inconsistentMembers.Contains(councilJson[i]))
@@ -601,34 +668,53 @@ namespace MKBB.Commands
                 {
                     hwCompleted[i] = true;
                 }
-            }
-            for (int i = 0; i < hwCompleted.Length; i++)
-            {
-                if (hwCompleted[i] == true)
+                if (inconsistentMembersThreads.Contains(councilJson[i]))
                 {
-                    councilJson[i].HwInARow++;
-                    if (councilJson[i].HwInARow > 4)
+                    if (councilJson[i].MissedThreadHW > 2)
                     {
-                        councilJson[i].TimesMissedHw = 0;
+                        threadHwCompleted[i] = false;
+                    }
+                    else
+                    {
+                        councilJson[i].MissedThreadHW++;
                     }
                 }
-                else if (hwCompleted[i] == false)
+                else if (dueThreadTracks.Count > 0)
                 {
-                    councilJson[i].TimesMissedHw++;
-                    councilJson[i].HwInARow = 0;
-                    if (councilJson[i].TimesMissedHw > 0 && councilJson[i].TimesMissedHw % 3 == 0)
+                    threadHwCompleted[i] = true;
+                    councilJson[i].MissedThreadHW = 0;
+                }
+            }
+            for (int i = 0; i < councilJson.Count; i++)
+            {
+                if (hwCompleted[i] == true && threadHwCompleted[i] == true)
+                {
+                    councilJson[i].CompletedHW++;
+                    if (councilJson[i].CompletedHW > 4)
                     {
-                        string message = $"Hello {councilJson[i].SheetName}. Just to let you know, you appear to have not completed council homework in a while, have been inconsistent with your homework, or are not completing it sufficiently enough. Just to remind you, if you miss homework too many times, admins might have to remove you from council. If you have an issue which stops you from doing homework, please let an admin know.";
+                        councilJson[i].Strikes = 0;
+                    }
+                }
+                else if (hwCompleted[i] == false && threadHwCompleted[i] == false)
+                {
+                    councilJson[i].Strikes++;
+                    councilJson[i].CompletedHW = 0;
+                    if (councilJson[i].Strikes > 2)
+                    {
+                        string message = $"Hello {councilJson[i].Name}. Just to let you know, you appear to have not completed council homework in a while, have been inconsistent with your homework, or are not completing it sufficiently enough. Just to remind you, if you miss homework too many times, admins might have to remove you from council. If you have an issue which stops you from doing homework, please let an admin know.";
 
                         var members = Bot.Client.GetGuildAsync(180306609233330176).Result.GetAllMembersAsync();
                         foreach (var member in members.Result)
                         {
-                            if (member.Id == councilJson[i].DiscordId)
+                            if (member.Id.ToString() == councilJson[i].DiscordID)
                             {
                                 try
                                 {
-                                    Console.WriteLine($"DM'd Member: {councilJson[i].SheetName}");
-                                    await member.SendMessageAsync(message);
+                                    Console.WriteLine($"DM'd Member: {councilJson[i].Name}");
+
+#if RELEASE
+    await member.SendMessageAsync(message);
+#endif
                                 }
                                 catch (Exception ex)
                                 {
@@ -641,18 +727,9 @@ namespace MKBB.Commands
                 }
             }
 
-            string council = JsonConvert.SerializeObject(councilJson);
-            File.WriteAllText("council.json", council);
+            await dbCtx.SaveChangesAsync();
 
-            DiscordChannel channel = ctx.Channel;
-
-            foreach (var c in ctx.Guild.Channels)
-            {
-                if (c.Value.Id == 635313521487511554)
-                {
-                    channel = c.Value;
-                }
-            }
+            DiscordChannel channel = await Bot.Client.GetChannelAsync(635313521487511554);
 
             string listOfTracks = "";
             if (tracks.Count > 0)
@@ -670,24 +747,42 @@ namespace MKBB.Commands
                 {
                     listOfTracks += " are";
                 }
-
-                await channel.SendMessageAsync($"<@&608386209655554058> {listOfTracks} due for today.");
+                var ping = "";
+#if RELEASE
+    ping = "<@&608386209655554058> ";
+#endif
+                await channel.SendMessageAsync($"__**Submissions**__\n{ping}{listOfTracks} due for today.");
             }
-
-            foreach (var c in ctx.Guild.Channels)
+            if (threadTracks.Count > 0)
             {
-                if (c.Value.Id == 935200150710808626)
+                listOfTracks = $"<#{threadTracks[0]}>";
+                for (int i = 1; i < threadTracks.Count; i++)
                 {
-                    channel = c.Value;
+                    listOfTracks += $", <#{threadTracks[i]}>";
                 }
+                if (tracks.Count == 1)
+                {
+                    listOfTracks += " is";
+                }
+                else
+                {
+                    listOfTracks += " are";
+                }
+                var ping = "";
+#if RELEASE
+    ping = "<@&608386209655554058> ";
+#endif
+                await channel.SendMessageAsync($"__**Threads**__\n{ping}{listOfTracks} due for today.");
             }
+
+            channel = await Bot.Client.GetChannelAsync(935200150710808626);
 
             string description = string.Empty;
             for (int i = 0; i < hwCompleted.Length; i++)
             {
                 if (hwCompleted[i] == false)
                 {
-                    description += $"{councilJson[i].SheetName}\n";
+                    description += $"{councilJson[i].Name}\n";
                 }
             }
 
@@ -703,13 +798,32 @@ namespace MKBB.Commands
                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                     }
                 };
-                foreach (var c in ctx.Guild.Channels)
+                channel = await Bot.Client.GetChannelAsync(1081666132244697118);
+                await channel.SendMessageAsync(embed);
+            }
+
+            description = string.Empty;
+            for (int i = 0; i < threadHwCompleted.Length; i++)
+            {
+                if (threadHwCompleted[i] == false)
                 {
-                    if (c.Value.Id == 1019149329556062278)
-                    {
-                        channel = c.Value;
-                    }
+                    description += $"{councilJson[i].Name}\n";
                 }
+            }
+
+            if (threadHwCompleted.Select(x => x == false).ToArray().Length > 0 && dueThreadTracks.Count > 0)
+            {
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Members who missed homework:**__",
+                    Description = description,
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                channel = await Bot.Client.GetChannelAsync(1081666132244697118);
                 await channel.SendMessageAsync(embed);
             }
 

@@ -1,18 +1,14 @@
 ﻿using Newtonsoft.Json;
-using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
-namespace MKBB.Commands
+namespace MKBB.Data
 {
-    public class Player
+    public class PlayerData
     {
-        [JsonProperty("playerId")]
-        public string PlayerId { get; set; }
-        [JsonProperty("miiName")]
-        public string MiiName { get; set; }
-        public ulong DiscordId { get; set; }
+        [Key] public int ID { get; set; }
+        public string PlayerID { get; set; }
+        public ulong DiscordID { get; set; }
         public string PlayerLink { get; set; }
-        [JsonProperty("ghosts")]
-        public List<Ghost> Ghosts { get; set; }
     }
 
     public class GetStars

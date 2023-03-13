@@ -7,6 +7,8 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 using IronPython.Runtime.Operations;
+using MKBB.Class;
+using MKBB.Data;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -29,11 +31,8 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
 
-                string json;
-                using (var fs = File.OpenRead("tools.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                List<Tool> toolList = JsonConvert.DeserializeObject<List<Tool>>(json);
+                using var dbCtx = new MKBBContext();
+                List<ToolData> toolList = dbCtx.Tools.ToList();
 
                 if (toolName == "")
                 {
@@ -342,43 +341,15 @@ namespace MKBB.Commands
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
+                track = Util.Convert3DSTrackName(track);
+                using var dbCtx = new MKBBContext();
+                List<TrackData> trackList = dbCtx.Tracks.ToList();
 
-                string description = string.Empty;
+                int ix = Util.ListNameCheck(trackList, track);
 
-                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+                string description = $"**Author:**\n*{trackList[ix].Authors}*\n**Version:**\n*{trackList[ix].Version}*\n**Track/Music Slots:**\n*{trackList[ix].TrackSlot} / {trackList[ix].MusicSlot}*\n**Speed/Lap Count:**\n*{trackList[ix].SpeedMultiplier} / {trackList[ix].LapCount}*";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                ServiceAccountCredential credential = new ServiceAccountCredential(
-                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                var service = new SheetsService(new BaseClientService.Initializer()
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "Mario Kart Brawlbot",
-                });
-
-                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
-                var response = await request.ExecuteAsync();
-                foreach (var t in response.Values)
-                {
-                    while (t.Count < 7)
-                    {
-                        t.Add("");
-                    }
-                }
-
-                string json = File.ReadAllText("cts.json");
-                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
-
-                Track trackDisplay = new Track();
-                int found1 = Util.ListNameCheck(trackList, track);
-                int found2 = Util.ListNameCheck(response.Values, track, ix2: 0);
-
-                description = $"**Author:**\n*{response.Values[found2][1]}*\n**Version:**\n*{response.Values[found2][2]}*\n**Track/Music Slots:**\n*{response.Values[found2][3]}*\n**Speed/Lap Count:**\n*{response.Values[found2][4]}*";
-                trackDisplay = trackList[found1];
-
-                if (found1 < 0 || found2 < 0)
+                if (ix < 0)
                 {
                     var embed = new DiscordEmbedBuilder
                     {
@@ -398,7 +369,7 @@ namespace MKBB.Commands
                     var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
-                        Title = $"__**{trackDisplay.Name} *(First result)*:**__",
+                        Title = $"__**{trackList[ix].Name} *(First result)*:**__",
                         Description = description,
                         Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -416,7 +387,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("pop", "Gets the amount of times a track has been played on Wiimmfi for the last 3 months")]
-        public async Task WWPopularityRequest(InteractionContext ctx,
+        public async Task PopularityRequest(InteractionContext ctx,
             [Option("search", "Can use rts/cts to get a leaderboard, or input a track name to get the popularity for it.")] string arg,
             [Choice("M1", "m1")]
             [Choice("M2", "m2")]
@@ -432,8 +403,8 @@ namespace MKBB.Commands
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
+                arg = Util.Convert3DSTrackName(arg);
 
-                string json = string.Empty;
                 string description1 = string.Empty;
                 string description2 = string.Empty;
                 string description3 = string.Empty;
@@ -445,29 +416,19 @@ namespace MKBB.Commands
                 string description9 = string.Empty;
                 string description10 = string.Empty;
                 string description11 = string.Empty;
-                json = File.ReadAllText($"cts.json");
-                List<Track> trackListCts = JsonConvert.DeserializeObject<List<Track>>(json);
-                for (int i = 0; i < trackListCts.Count; i++)
-                {
-                    if (trackListCts[i].Category % 16 != 0)
-                    {
-                        trackListCts.RemoveAt(i);
-                        i--;
-                    }
-                }
-                trackListCts = trackListCts.OrderByDescending(a => metric == "online" ? a.ReturnOnlinePopularity(month) : a.TimeTrialScore).ToList();
 
-                json = File.ReadAllText($"rts.json");
-                List<Track> trackListRts = JsonConvert.DeserializeObject<List<Track>>(json);
-                for (int i = 0; i < trackListRts.Count; i++)
-                {
-                    if (trackListRts[i].Category % 16 != 0)
-                    {
-                        trackListRts.RemoveAt(i);
-                        i--;
-                    }
-                }
-                trackListRts = trackListRts.OrderByDescending(a => metric == "online" ? a.ReturnOnlinePopularity(month) : a.TimeTrialScore).ToList();
+                using var dbCtx = new MKBBContext();
+                List<TrackData> trackListCts = dbCtx.Tracks.AsEnumerable()
+                    .Where(x=>(x.CategoryName == "Normal" || x.CategoryName == "No-shortcut") && x.CustomTrack && !x.Is200cc)
+                    .DistinctBy(x=>x.Name)
+                    .OrderByDescending(x => metric == "online" ? x.ReturnOnlinePopularity(month) : x.TimeTrialPopularity)
+                    .ToList();
+
+                List<TrackData> trackListRts = dbCtx.Tracks.AsEnumerable()
+                    .Where(x => (x.CategoryName == "Normal" || x.CategoryName == "No-shortcut") && !x.CustomTrack && !x.Is200cc)
+                    .DistinctBy(x => x.Name)
+                    .OrderByDescending(x => metric == "online" ? x.ReturnOnlinePopularity(month) : x.TimeTrialPopularity)
+                    .ToList();
 
                 List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
 
@@ -475,11 +436,11 @@ namespace MKBB.Commands
                 {
                     for (int i = 0; i < 21; i++)
                     {
-                        description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialScore)})*\n";
+                        description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 21; i < 32; i++)
                     {
-                        description2 = description2 + $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialScore)})*\n";
+                        description2 = description2 + $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialPopularity)})*\n";
                     }
                     embeds = new List<DiscordEmbedBuilder>{
                         new DiscordEmbedBuilder
@@ -511,47 +472,47 @@ namespace MKBB.Commands
                 {
                     for (int i = 0; i < 21; i++)
                     {
-                        description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                        description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 21; i < 42; i++)
                     {
-                        description2 = description2 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                        description2 = description2 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 42; i < 63; i++)
                     {
-                        description3 = description3 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                        description3 = description3 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 63; i < 84; i++)
                     {
-                        description4 = description4 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                        description4 = description4 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 84; i < 105; i++)
                     {
-                        description5 = description5 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                        description5 = description5 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 105; i < 126; i++)
                     {
-                        description6 = description6 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                        description6 = description6 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 126; i < 147; i++)
                     {
-                        description7 = description7 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                        description7 = description7 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 147; i < 168; i++)
                     {
-                        description8 = description8 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                        description8 = description8 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 168; i < 189; i++)
                     {
-                        description9 = description9 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                        description9 = description9 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 189; i < 210; i++)
                     {
-                        description10 = description10 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                        description10 = description10 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 210; i < 218; i++)
                     {
-                        description11 = description11 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                        description11 = description11 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     embeds = new List<DiscordEmbedBuilder>{
                         new DiscordEmbedBuilder
@@ -687,7 +648,7 @@ namespace MKBB.Commands
                     {
                         if (Util.CompareStrings(trackListRts[i].Name, arg) || Util.CompareIncompleteStrings(trackListRts[i].Name, arg) || Util.CompareStringAbbreviation(arg, trackListRts[i].Name) || Util.CompareStringsLevenshteinDistance(arg, trackListRts[i].Name))
                         {
-                            description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialScore)})*\n";
+                            description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialPopularity)})*\n";
                         }
                     }
                     if (description1 == $"__**Nintendo Tracks**__:\n")
@@ -704,7 +665,7 @@ namespace MKBB.Commands
                     {
                         if (Util.CompareStrings(trackListCts[i].Name, arg) || Util.CompareIncompleteStrings(trackListCts[i].Name, arg) || Util.CompareStringAbbreviation(arg, trackListCts[i].Name) || Util.CompareStringsLevenshteinDistance(arg, trackListCts[i].Name))
                         {
-                            description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialScore)})*\n";
+                            description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                             c++;
                         }
                     }
@@ -773,6 +734,8 @@ namespace MKBB.Commands
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
+                track = Util.Convert3DSTrackName(track);
+
                 string description = "";
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
@@ -1284,6 +1247,7 @@ namespace MKBB.Commands
             [Option("track-name", "The track that the issues were found on.")] string track = "")
         {
             await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.Id == 842035247734587453 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
+            track = Util.Convert3DSTrackName(track);
 
             var json = string.Empty;
             var description = string.Empty;
@@ -1313,10 +1277,6 @@ namespace MKBB.Commands
 
             try
             {
-                json = File.ReadAllText("cts.json");
-                List<Track> trackList = JsonConvert.DeserializeObject<List<Track>>(json);
-
-                Track trackDisplay = new Track();
                 string maj = string.Empty;
                 string min = string.Empty;
 
@@ -1341,7 +1301,7 @@ namespace MKBB.Commands
                             issueCount.Add(v[0].ToString(), count);
                         }
                     }
-                    issueCount = issueCount.OrderByDescending(a => a.Value).ToDictionary(a => a.Key, a => a.Value);
+                    issueCount = issueCount.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
 
                     List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
 
@@ -1394,32 +1354,30 @@ namespace MKBB.Commands
                 }
                 else
                 {
-                    int index1 = Util.ListNameCheck(trackList, track);
-                    int index2 = Util.ListNameCheck(response.Values, track, ix2: 0);
+                    int ix = Util.ListNameCheck(response.Values, track, ix2: 0);
 
-                    if (index1 > -1 && index2 > -1)
+                    if (ix > -1)
                     {
-                        if (response.Values[index2][5].ToString() == "")
+                        if (response.Values[ix][5].ToString() == "")
                         {
                             maj = "-No reported bugs";
                         }
                         else
                         {
-                            maj = response.Values[index2][5].ToString();
+                            maj = response.Values[ix][5].ToString();
                         }
-                        if (response.Values[index2][6].ToString() == "")
+                        if (response.Values[ix][6].ToString() == "")
                         {
                             min = "-No reported bugs";
                         }
                         else
                         {
-                            min = response.Values[index2][6].ToString();
+                            min = response.Values[ix][6].ToString();
                         }
                         description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*";
-                        trackDisplay = trackList[index1];
                     }
 
-                    if (index1 < 0 || index2 < 0)
+                    if (ix < 0)
                     {
                         var embed = new DiscordEmbedBuilder
                         {
@@ -1439,7 +1397,7 @@ namespace MKBB.Commands
                         var embed = new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__**Known issues on {trackDisplay.Name} *(First result)*:**__",
+                            Title = $"__**Known issues on {response.Values[ix][0]} *(First result)*:**__",
                             Description = description,
                             Url = "https://docs.google.com/spreadsheets/d/1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM/edit#gid=1971102004",
                             Footer = new DiscordEmbedBuilder.EmbedFooter

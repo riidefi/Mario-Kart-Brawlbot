@@ -7,6 +7,8 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 using Microsoft.Scripting.Interpreter;
+using MKBB.Class;
+using MKBB.Data;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -35,20 +37,6 @@ namespace MKBB.Commands
             {
                 string description = string.Empty;
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-                string[] dueMonths = {
-                    "January",
-                    "Feburary",
-                    "March",
-                    "April",
-                    "May",
-                    "June",
-                    "July",
-                    "August",
-                    "September",
-                    "October",
-                    "November",
-                    "December"
-                };
 
                 var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
@@ -68,10 +56,20 @@ namespace MKBB.Commands
 
                 var due = DateTime.Today;
 
-                due = due.AddDays(10);
-                while (due.Day % 10 != 0)
+                if (due.Month == 2 && due.Day > 11 && due.Day < 20)
                 {
-                    due = due.AddDays(1);
+                    while (due.Month != 3)
+                    {
+                        due = due.AddDays(1);
+                    }
+                }
+                else
+                {
+                    due = due.AddDays(10);
+                    while (due.Day % 10 != 0)
+                    {
+                        due = due.AddDays(1);
+                    }
                 }
 
                 string dl = string.Empty;
@@ -111,7 +109,7 @@ namespace MKBB.Commands
                 IList<object> obj = new List<object>
                             {
                                 track,
-                                $"{dueMonths[due.Month - 1]} {due.Day}, {due.Year}",
+                                $"{Util.Months[due.Month - 1]} {due.Day}, {due.Year}",
                                 author,
                                 "'" + version,
                                 dl,
@@ -161,9 +159,12 @@ namespace MKBB.Commands
                         announcements = c.Value;
                     }
                 }
-
-                await councilAnnouncements.SendMessageAsync($"<@&608386209655554058> {track} has been added as homework. It is due for {dueMonths[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
-                await announcements.SendMessageAsync($"{track} by {author} is now being reviewed by Track Council. It is due for {dueMonths[due.Month - 1]} {due.Day}, {due.Year}.");
+                var ping = "";
+#if RELEASE
+    ping = "<@&608386209655554058> ";
+#endif
+                await councilAnnouncements.SendMessageAsync($"{ping}{track} has been added as homework. It is due for {Util.Months[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
+                await announcements.SendMessageAsync($"{track} by {author} is now being reviewed by Track Council. It is due for {Util.Months[due.Month - 1]} {due.Day}, {due.Year}.");
             }
             catch (Exception ex)
             {
@@ -182,19 +183,6 @@ namespace MKBB.Commands
                 string description = string.Empty;
                 string json = string.Empty;
                 string member = string.Empty;
-
-                using (var fs = File.OpenRead("council.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
-
-                foreach (var m in councilJson)
-                {
-                    if (m.DiscordId == ctx.Member.Id)
-                    {
-                        member = m.SheetName;
-                    }
-                }
 
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
@@ -299,16 +287,14 @@ namespace MKBB.Commands
                 string json = string.Empty;
                 string member = string.Empty;
 
-                using (var fs = File.OpenRead("council.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+                using var dbCtx = new MKBBContext();
+                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
                 foreach (var m in councilJson)
                 {
-                    if (m.DiscordId == ctx.Member.Id)
+                    if (m.DiscordID == ctx.Member.Id.ToString())
                     {
-                        member = m.SheetName;
+                        member = m.Name;
                     }
                 }
 
@@ -339,9 +325,6 @@ namespace MKBB.Commands
                         col = i;
                     }
                 }
-
-                int j = 0;
-
                 for (int i = 0; i < response.Values.Count; i++)
                 {
                     while (response.Values[i].Count < response.Values[0].Count)
@@ -352,22 +335,11 @@ namespace MKBB.Commands
                     {
                         row = i;
                         response.Values[row][col] = vote + "\n" + feedback;
-                        j++;
                         break;
                     }
                 }
 
-                ValueRange updateValueRange = new ValueRange();
-                updateValueRange.Values = new List<IList<object>>()
-                {
-                    new List<object>(){ response.Values[row][col] }
-                };
-
-                var updateRequest = service.Spreadsheets.Values.Update(updateValueRange, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!{Util.ConvertToSheetRange(row, col)}");
-                updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-                var update = await updateRequest.ExecuteAsync();
-
-                if (j == 0)
+                if (row == -1)
                 {
                     var embed = new DiscordEmbedBuilder
                     {
@@ -382,8 +354,20 @@ namespace MKBB.Commands
                     };
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                 }
+
                 else
                 {
+
+                    ValueRange updateValueRange = new ValueRange();
+                    updateValueRange.Values = new List<IList<object>>()
+                {
+                    new List<object>(){ response.Values[row][col] }
+                };
+
+                    var updateRequest = service.Spreadsheets.Values.Update(updateValueRange, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!{Util.ConvertToSheetRange(row, col)}");
+                    updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+                    var update = await updateRequest.ExecuteAsync();
+
                     var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
@@ -413,13 +397,10 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
-                string json;
-                using (var fs = File.OpenRead("council.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+                using var dbCtx = new MKBBContext();
+                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
-                int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
+                int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
 
                 string description = string.Empty;
 
@@ -469,7 +450,7 @@ namespace MKBB.Commands
 
                     for (int i = 12; i < response.Values[0].Count; i++)
                     {
-                        if (Util.CompareStrings(councilJson[ix].SheetName, response.Values[0][i].ToString()))
+                        if (Util.CompareStrings(councilJson[ix].Name, response.Values[0][i].ToString()))
                         {
                             sheetIx = i;
                         }
@@ -482,7 +463,7 @@ namespace MKBB.Commands
 
                     foreach (var m in response.Values[0])
                     {
-                        if (m.ToString() == councilJson[ix].SheetName)
+                        if (m.ToString() == councilJson[ix].Name)
                         {
                             k++;
                         }
@@ -583,7 +564,6 @@ namespace MKBB.Commands
         {
             try
             {
-                string description = string.Empty;
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
@@ -608,6 +588,12 @@ namespace MKBB.Commands
 
                 request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
                 var response = await request.ExecuteAsync();
+
+                var tRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                var tResponseRaw = await tRequest.ExecuteAsync();
+
+                tRequest.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                var tResponse = await tRequest.ExecuteAsync();
                 foreach (var t in response.Values)
                 {
                     while (t.Count < response.Values[0].Count)
@@ -615,8 +601,15 @@ namespace MKBB.Commands
                         t.Add("");
                     }
                 }
+                foreach (var t in tResponse.Values)
+                {
+                    while (t.Count < tResponse.Values[0].Count)
+                    {
+                        t.Add("");
+                    }
+                }
 
-                if (response.Values[1][0].ToString() == "")
+                if ((response.Values.Count < 2 || response.Values[1][0].ToString() == "") && (tResponse.Values.Count < 2 || tResponse.Values[1][0].ToString() == ""))
                 {
                     var embed = new DiscordEmbedBuilder
                     {
@@ -633,8 +626,10 @@ namespace MKBB.Commands
                 }
                 else
                 {
+                    string description = string.Empty;
                     for (int i = 1; i < response.Values.Count; i++)
                     {
+                        description += "__**Submissions**__\n";
                         var t = response.Values[i];
                         var tRaw = responseRaw.Values[i];
                         string tally = "*Unreviewed*";
@@ -668,6 +663,13 @@ namespace MKBB.Commands
                             description += $"{t[0]} | {tRaw[1]} | *Check spreadsheet for download* | {tally}\n";
                         }
                     }
+                    description += "__**Threads**__\n";
+                    for (int i = 1; i < tResponse.Values.Count; i++)
+                    {
+                        var t = tResponse.Values[i];
+                        var tRaw = tResponseRaw.Values[i];
+                        description += $"{t[0]} | {tRaw[1]} | [Thread]({t[3].ToString().Split('"')[1]})\n";
+                    }
                     var embed = new DiscordEmbedBuilder
                     {
                         Color = new DiscordColor("#FF0000"),
@@ -696,14 +698,11 @@ namespace MKBB.Commands
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-                string json;
-                using (var fs = File.OpenRead("council.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+                using var dbCtx = new MKBBContext();
+                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
-                int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
-                councilJson[ix].TimesMissedHw++;
+                int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
+                councilJson[ix].Strikes++;
                 var embed = new DiscordEmbedBuilder();
                 if (ix < 0)
                 {
@@ -734,8 +733,7 @@ namespace MKBB.Commands
                     };
                 }
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                string council = JsonConvert.SerializeObject(councilJson);
-                File.WriteAllText("council.json", council);
+                await dbCtx.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -751,14 +749,11 @@ namespace MKBB.Commands
             await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
             try
             {
-                string json;
-                using (var fs = File.OpenRead("council.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+                using var dbCtx = new MKBBContext();
+                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
-                int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
-                councilJson[ix].TimesMissedHw--;
+                int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
+                councilJson[ix].Strikes--;
                 var embed = new DiscordEmbedBuilder();
                 if (ix < 0)
                 {
@@ -788,8 +783,7 @@ namespace MKBB.Commands
                         }
                     };
                 }
-                string council = JsonConvert.SerializeObject(councilJson);
-                File.WriteAllText("council.json", council);
+                await dbCtx.SaveChangesAsync();
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
             }
             catch (Exception ex)
@@ -806,14 +800,11 @@ namespace MKBB.Commands
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-                string json;
-                using (var fs = File.OpenRead("council.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+                using var dbCtx = new MKBBContext();
+                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
-                int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
-                councilJson[ix].TimesMissedHw = 0;
+                int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
+                councilJson[ix].Strikes = 0;
                 var embed = new DiscordEmbedBuilder();
                 if (ix < 0)
                 {
@@ -844,8 +835,7 @@ namespace MKBB.Commands
                     };
                 }
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                string council = JsonConvert.SerializeObject(councilJson);
-                File.WriteAllText("council.json", council);
+                await dbCtx.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -860,14 +850,11 @@ namespace MKBB.Commands
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-                string json;
-                using (var fs = File.OpenRead("council.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+                using var dbCtx = new MKBBContext();
+                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
 
-                int ix = councilJson.FindIndex(x => x.DiscordId == member.Id);
+                int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
                 var embed = new DiscordEmbedBuilder();
                 if (ix < 0)
                 {
@@ -888,7 +875,7 @@ namespace MKBB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Council Members Strike Count:**__",
-                        Description = $"*{councilJson[ix].SheetName}: {councilJson[ix].TimesMissedHw}*",
+                        Description = $"*{councilJson[ix].Name}: {councilJson[ix].Strikes}*",
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
                             Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -910,17 +897,14 @@ namespace MKBB.Commands
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-                string json;
-                using (var fs = File.OpenRead("council.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                List<CouncilMember> councilJson = JsonConvert.DeserializeObject<List<CouncilMember>>(json);
+                using var dbCtx = new MKBBContext();
+                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
                 string description = string.Empty;
 
                 foreach (var m in councilJson)
                 {
-                    description += $"*{m.SheetName}: {m.TimesMissedHw}*\n";
+                    description += $"*{m.Name}: {m.Strikes}*\n";
                 }
 
                 var embed = new DiscordEmbedBuilder
@@ -934,6 +918,491 @@ namespace MKBB.Commands
                     }
                 };
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
+        [SlashCommand("addthreadhw", "Adds thread homework to the council sheet.")]
+        public async Task AddThreadHomework(InteractionContext ctx,
+            [Option("track-name", "The name of the track being added.")] string track,
+            [Option("authors", "The author or authors of the track being added.")] string author,
+            [Option("thread", "The thread of the track being added.")] DiscordChannel thread,
+            [Option("slot", "The track slot of the track being added e.g. 'Luigi Circuit - beginner_course'")] string slot,
+            [Option("lap-and-speed-modifiers", "The lap and speed modifiers of the track being added, the most common being '1 / 3'.")] string lapSpeed,
+            [Option("notes", "Any additional notes for council members.")] string notes = "")
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+
+                if (thread.ParentId != 369281592407097345 && thread.ParentId != 1046936322574655578)
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Error:**__",
+                        Description = $"*Thread inputted is not a valid thread.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+                else
+                {
+                    string description = string.Empty;
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                    var service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Mario Kart Brawlbot",
+                    });
+
+                    var countRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                    var countResponse = await countRequest.ExecuteAsync();
+
+                    var due = DateTime.Today.AddDays(5);
+
+                    IList<object> obj = new List<object>
+                            {
+                                track,
+                                $"{Util.Months[due.Month - 1]} {due.Day}, {due.Year}",
+                                author,
+                                $"=HYPERLINK(\"https://discord.com/channels/{thread.GuildId}/{thread.Id}\", \"Discord\")",
+                                slot,
+                                lapSpeed,
+                                notes
+                            };
+                    IList<IList<object>> values = new List<IList<object>> { obj };
+
+                    var appendRequest = service.Spreadsheets.Values.Append(new ValueRange() { Values = values }, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                    appendRequest.InsertDataOption = SpreadsheetsResource.ValuesResource.AppendRequest.InsertDataOptionEnum.INSERTROWS;
+                    appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+                    appendRequest.ResponseValueRenderOption = SpreadsheetsResource.ValuesResource.AppendRequest.ResponseValueRenderOptionEnum.FORMULA;
+                    var appendResponse = await appendRequest.ExecuteAsync();
+
+                    notes = notes != "" ? $"*{notes}*" : notes;
+
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Success:**__",
+                        Description = $"*{track} has been added as homework.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+
+                    DiscordChannel councilAnnouncements = ctx.Channel;
+
+                    DiscordChannel announcements = ctx.Channel;
+
+                    foreach (var c in ctx.Guild.Channels)
+                    {
+                        if (c.Value.Id == 635313521487511554)
+                        {
+                            councilAnnouncements = c.Value;
+                        }
+                    }
+                    var ping = "";
+#if RELEASE
+    ping = "<@&608386209655554058> ";
+#endif
+                    await councilAnnouncements.SendMessageAsync($"{ping}{track} has been added as thread homework. It is due for {Util.Months[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+
+            }
+        }
+
+        [SlashCommand("delthreadhw", "Deletes thread homework from the council sheet.")]
+        [SlashRequireUserPermissions(Permissions.ManageGuild)]
+        public async Task DeleteThreadHomework(InteractionContext ctx,
+            [Option("track-name", "The name of the track being removed.")] string track)
+        {
+            try
+            {
+                string description = string.Empty;
+                string json = string.Empty;
+                string member = string.Empty;
+
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+
+                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                ServiceAccountCredential credential = new ServiceAccountCredential(
+                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                var service = new SheetsService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "Mario Kart Brawlbot",
+                });
+
+                var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                var response = await request.ExecuteAsync();
+
+                int ix = -1;
+
+                string trackDisplay = string.Empty;
+
+                for (int i = 0; i < response.Values.Count; i++)
+                {
+                    if (Util.CompareStrings(response.Values[i][0].ToString(), track))
+                    {
+                        ix = i;
+                        trackDisplay = response.Values[i][0].ToString();
+                    }
+                }
+                if (ix < 0)
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{track} could not be found.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+                else
+                {
+                    var req = new Request
+                    {
+                        DeleteDimension = new DeleteDimensionRequest
+                        {
+                            Range = new DimensionRange
+                            {
+                                SheetId = 623915292,
+                                Dimension = "ROWS",
+                                StartIndex = ix,
+                                EndIndex = ix + 1
+                            }
+                        }
+                    };
+
+                    var deleteRequest = new BatchUpdateSpreadsheetRequest { Requests = new List<Request> { req } };
+                    var deleteResponse = service.Spreadsheets.BatchUpdate(deleteRequest, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss").Execute();
+
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Success:**__",
+                        Description = $"*{trackDisplay} has been deleted from homework.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
+        [SlashCommand("submitthreadhw", "For council to submit feedback on threads.")]
+        public async Task SubmitTheadHomework(InteractionContext ctx,
+            [Option("track-name", "The name of the track you're adding feedback to.")] string track,
+            [Option("feedback", "Evidence of your feedback to the author.")] string feedback)
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+
+                string description = string.Empty;
+                string json = string.Empty;
+                string member = string.Empty;
+
+                using var dbCtx = new MKBBContext();
+                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
+
+                foreach (var m in councilJson)
+                {
+                    if (m.DiscordID == ctx.Member.Id.ToString())
+                    {
+                        member = m.Name;
+                    }
+                }
+
+                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                ServiceAccountCredential credential = new ServiceAccountCredential(
+                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                var service = new SheetsService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "Mario Kart Brawlbot",
+                });
+
+                var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                var response = await request.ExecuteAsync();
+
+                int row = -1;
+                int col = -1;
+
+                for (int i = 0; i < response.Values[0].Count; i++)
+                {
+                    if (Util.CompareStrings(response.Values[0][i].ToString(), member))
+                    {
+                        col = i;
+                    }
+                }
+
+                for (int i = 0; i < response.Values.Count; i++)
+                {
+                    while (response.Values[i].Count < response.Values[0].Count)
+                    {
+                        response.Values[i].Add("");
+                    }
+                    if (Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                    {
+                        row = i;
+                        response.Values[row][col] = feedback;
+                        break;
+                    }
+                }
+
+                if (row == -1)
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{track} could not be found.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+                else
+                {
+
+                    ValueRange updateValueRange = new ValueRange();
+                    updateValueRange.Values = new List<IList<object>>()
+                    {
+                        new List<object>(){ response.Values[row][col] }
+                    };
+
+                    var updateRequest = service.Spreadsheets.Values.Update(updateValueRange, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Thread Homework'!{Util.ConvertToSheetRange(row, col)}");
+                    updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+                    var update = await updateRequest.ExecuteAsync();
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Success:**__",
+                        Description = $"*Thread homework for {track} has been submitted successfully.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
+        [SlashCommand("getthreadhw", "For council and admins to get thread homework.")]
+        public async Task GetSpecificThreadHomework(InteractionContext ctx,
+            [Option("track-name", "The name of the track you're requesting feedback of.")] string track,
+            [Option("member", "The council member you are requesting the feedback of.")] DiscordUser member)
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+                using var dbCtx = new MKBBContext();
+                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
+
+                int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
+
+                string description = string.Empty;
+
+                if (ix < 0)
+                {
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Error:**__",
+                        Description = $"*{member.Mention} could not be found on council.*",
+                        Url = Util.GetCouncilUrl(),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+                else
+                {
+                    string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+
+                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+
+                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                       new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
+
+                    var service = new SheetsService(new BaseClientService.Initializer()
+                    {
+                        HttpClientInitializer = credential,
+                        ApplicationName = "Mario Kart Brawlbot",
+                    });
+
+                    var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                    request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                    var response = await request.ExecuteAsync();
+
+                    for (int i = 0; i < response.Values.Count; i++)
+                    {
+                        while (response.Values[i].Count < response.Values[0].Count)
+                        {
+                            response.Values[i].Add("");
+                        }
+                    }
+
+                    int sheetIx = -1;
+
+                    for (int i = 7; i < response.Values[0].Count; i++)
+                    {
+                        if (Util.CompareStrings(councilJson[ix].Name, response.Values[0][i].ToString()))
+                        {
+                            sheetIx = i;
+                        }
+                    }
+
+                    int j = 0;
+                    int k = 0;
+                    int l = 0;
+                    string trackDisplay = string.Empty;
+
+                    foreach (var m in response.Values[0])
+                    {
+                        if (m.ToString() == councilJson[ix].Name)
+                        {
+                            k++;
+                        }
+                    }
+
+                    List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+
+                    if (sheetIx > 0)
+                    {
+                        foreach (var t in response.Values)
+                        {
+                            while (t.Count < response.Values[0].Count)
+                            {
+                                t.Add("");
+                            }
+                            if (j < 1)
+                            {
+                                j++;
+                            }
+                            else if (Util.CompareIncompleteStrings(t[0].ToString(), track) || Util.CompareStrings(t[0].ToString(), track))
+                            {
+                                if (t[sheetIx].ToString() == "")
+                                {
+                                    description = $"*{member.Mention} has not done their thread homework yet.*";
+                                }
+                                else
+                                {
+                                    if (t[sheetIx].ToString().ToCharArray().Length > 3500)
+                                    {
+                                        description = $"**Thread homework of {member.Mention}:**\n{t[sheetIx].ToString().Remove(3499)}...\n\n*For full feedback go to the [Track Council Sheet](https://docs.google.com/spreadsheets/d/1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss/edit#gid=906385082).*";
+                                    }
+                                    else
+                                    {
+                                        description = $"**Thread homework of {member.Mention}:**\n{t[sheetIx]}";
+                                    }
+                                }
+                                trackDisplay = t[0].ToString();
+                                l++;
+                            }
+                        }
+                    }
+
+                    if (sheetIx < 0)
+                    {
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = $"*{member.Mention} could not be found on council.*",
+                            Url = Util.GetCouncilUrl(),
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                    }
+                    else if (l == 0)
+                    {
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Error:**__",
+                            Description = $"*{track} could not be found.*",
+                            Url = Util.GetCouncilUrl(),
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                    }
+                    else
+                    {
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**{trackDisplay}**__",
+                            Description = description,
+                            Url = Util.GetCouncilUrl(),
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                    }
+                }
             }
             catch (Exception ex)
             {

@@ -5,6 +5,7 @@ using DSharpPlus.SlashCommands.Attributes;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
+using MKBB.Class;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

@@ -1,16 +1,14 @@
 ﻿using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
 
-namespace MKBB.Commands
+namespace MKBB.Data
 {
-    public class Tool
+    public class ToolData
     {
-        [JsonProperty("name")]
+        [Key] public int ID { get; set; }
         public string Name { get; set; }
-        [JsonProperty("creators")]
         public string Creators { get; set; }
-        [JsonProperty("description")]
         public string Description { get; set; }
-        [JsonProperty("download")]
         public string Download { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
+using MKBB.Class;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -59,9 +60,11 @@ namespace MKBB.Commands
                         description += "\n\n__**Council Commands:**__" +
                             "\n/assignedthreads" +
                             "\n/gethw track member" +
+                            "\n/getthreadhw track member" +
                             "\n/hw" +
                             "\n/strikes member" +
-                            "\n/submithw yes/fixes/neutral/no track feedback";
+                            "\n/submithw yes/fixes/neutral/no track feedback" +
+                            "\n/submitthreadhw track feedback";
                         break;
                     }
                 }
@@ -75,24 +78,15 @@ namespace MKBB.Commands
                                 "\n/addstrike member" +
                                 "\n/addtool name creators description download" +
                                 "\n/allstrikes" +
-                                "\n/assign member thread id" +
-                                "\n/assignedthreads member" +
                                 "\n/botchannel no-channels" +
-                                "\n/clearissues track" +
                                 "\n/delhw track" +
                                 "\n/deltool name" +
-                                "\n/dmrole role message" +
                                 "\n/edittool oldname name creators description download" +
                                 "\n/gbaddsha1 sha1" +
                                 "\n/gbaddtrack track-name sha1" +
                                 "\n/gbremovetrack" +
-                                "\n/randomassign (reset)" +
-                                "\n/removeassignedthread thread-id/all" +
                                 "\n/removestrike member" +
-                                "\n/replaceissues old-track new-track author version slot laps" +
-                                "\n/reportissue major/minor track -Issue" +
                                 "\n/resetstrikes member" +
-                                "\n/unassign member thread-id" +
                                 "\n/uploadtestpack test-pack-zip";
                             break;
                         }

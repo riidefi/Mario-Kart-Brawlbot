@@ -2,6 +2,8 @@
 using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
+using MKBB.Class;
+using MKBB.Data;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -26,16 +28,16 @@ namespace MKBB.Commands
 
                 if (noChannels)
                 {
-                    List<Server> servers = JsonConvert.DeserializeObject<List<Server>>(File.ReadAllText("servers.json"));
+                    using var dbCtx = new MKBBContext();
+                    List<ServerData> servers = dbCtx.Servers.ToList();
                     foreach (var server in servers)
                     {
-                        if (ctx.Guild.Id == server.Id)
+                        if (ctx.Guild.Id == server.ServerID)
                         {
-                            server.BotChannelIds = new List<ulong>();
+                            server.BotChannelIDs = null;
                             break;
                         }
                     }
-                    File.WriteAllText("servers.json", JsonConvert.SerializeObject(servers));
 
                     var embed = new DiscordEmbedBuilder
                     {

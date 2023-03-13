@@ -348,3 +348,5 @@ ASALocalRun/
 *.szs
 *.bin
 [Rr]esources/
+MKBB/Util.cs
+.editorconfig

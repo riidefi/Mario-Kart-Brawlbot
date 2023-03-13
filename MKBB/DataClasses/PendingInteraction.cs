@@ -1,8 +1,8 @@
 ﻿using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
-using System.Collections.Generic;
+using MKBB.Class;
 
-namespace MKBB.Commands
+namespace MKBB.Data
 {
     public class PendingPagesInteraction
     {
@@ -10,7 +10,7 @@ namespace MKBB.Commands
         public InteractionContext Context { get; set; }
         public List<List<DiscordEmbedBuilder>> Categories { get; set; }
         public List<DiscordEmbedBuilder> Pages { get; set; }
-        public List<Track> CategoryNames { get; set; }
+        public List<TrackData> CategoryNames { get; set; }
         public int CurrentCategory { get; set; }
         public int CurrentPage { get; set; }
     }

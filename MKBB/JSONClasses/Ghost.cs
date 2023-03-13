@@ -1,12 +1,13 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MKBB.Data;
+using Newtonsoft.Json;
 
-namespace MKBB.Commands
+namespace MKBB.Class
 {
+    public class GhostHolder
+    {
+        [JsonProperty("ghosts")]
+        public List<Ghost> Ghosts { get; set; }
+    }
     public class Ghost
     {
         [JsonProperty("_links")]
@@ -27,13 +28,15 @@ namespace MKBB.Commands
         public string TrackID { get; set; }
         [JsonProperty("categoryId")]
         public int Category { get; set; }
+        public string CategoryName { get; set; }
         [JsonProperty("playerId")]
         public string PlayerId { get; set; }
-        public string CategoryName { get; set; }
         [JsonProperty("playersFastest")]
-        public bool IsPB { get; set; }
+        public bool PersonalBest { get; set; }
         [JsonProperty("200cc")]
         public bool Is200cc { get; set; }
+        [JsonProperty("href")]
+        public string URL { get; set; }
         public ExtraInfo ExtraInfo { get; set; }
     }
 
@@ -44,6 +47,6 @@ namespace MKBB.Commands
         [JsonProperty("splits")]
         public List<string> Splits { get; set; }
         [JsonProperty("splitsSimple")]
-        public List<string> SimpleSplits { get; set; }
+        public List<string> SplitsSimple { get; set; }
     }
 }

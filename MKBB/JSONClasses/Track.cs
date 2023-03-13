@@ -1,19 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using HtmlAgilityPack;
+﻿using MKBB.Data;
 using Newtonsoft.Json;
 
-namespace MKBB.Commands
+namespace MKBB.Class
 {
     public class Track
     {
         [JsonProperty("_links")]
         public Link LinkContainer { get; set; }
         [JsonProperty("categoryId")]
-        public int Category { get; set; }
+        public int? Category { get; set; }
         [JsonProperty("name")]
         public string Name { get; set; }
         [JsonProperty("trackId")]
@@ -34,6 +29,31 @@ namespace MKBB.Commands
         public string LeaderboardLink { get; set; }
         public string CategoryName { get; set; }
         public string SlotID { get; set; }
+        public bool CustomTrack { get; set; }
+        [JsonProperty("200cc")]
+        public bool Is200cc { get; set; }
+
+        public TrackData ConvertData()
+        {
+            return new TrackData()
+            {
+                Name = Name,
+                SHA1 = SHA1,
+                LastChanged = TrackAdded,
+                TimeTrialPopularity = TimeTrialScore,
+                M1 = M1,
+                M2 = M2,
+                M3 = M3,
+                M6 = M6,
+                M9 = M9,
+                M12 = M12,
+                LeaderboardLink = LeaderboardLink,
+                CategoryName = CategoryName,
+                SlotID = SlotID,
+                CustomTrack = CustomTrack,
+                Is200cc = Is200cc
+            };
+        }
 
         public int ReturnOnlinePopularity(string month)
         {
@@ -56,42 +76,21 @@ namespace MKBB.Commands
         }
     }
 
-    public class NewTracks {
-        [JsonProperty("name")]
-        public string Name { get; set; }
-        [JsonProperty("trackid")]
-        public string SHA1 { get; set; }
-        [JsonProperty("ghosts")]
-        public List<Ghost> Ghosts { get; set; }
-        [JsonProperty("average")]
-        public string AverageTime { get; set; }
-    }
-
     public class LeaderboardInfo
     {
         [JsonProperty("leaderboards")]
         public List<Track> Leaderboard { get; set; }
     }
 
-    public class GhostList
+    public class Link
     {
-        [JsonProperty("ghosts")]
-        public List<Ghost> List { get; set; }
+        [JsonProperty("item")]
+        public Href Href { get; set; }
     }
 
-    public class BKTList
+    public class Href
     {
-        [JsonProperty("ghosts")]
-        public List<BKT> List { get; set; }
-    }
-
-    public class BKT
-    {
-        [JsonProperty("_links")]
-        public Link LinkContainer { get; set; }
-        [JsonProperty("player")]
-        public string BKTHolder { get; set; }
-        [JsonProperty("dateSet")]
-        public string DateSet { get; set; }
+        [JsonProperty("href")]
+        public string URL { get; set; }
     }
 }

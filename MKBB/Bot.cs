@@ -7,16 +7,11 @@ using DSharpPlus.Interactivity.Enums;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
-using Microsoft.Extensions.Logging;
+using MKBB.Class;
 using MKBB.Commands;
+using MKBB.Data;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Channels;
-using System.Threading.Tasks;
 
 namespace MKBB
 {
@@ -115,29 +110,29 @@ namespace MKBB
 
             Client.GuildCreated += async (s, e) =>
                 {
-                    List<Server> servers = JsonConvert.DeserializeObject<List<Server>>(File.ReadAllText("servers.json"));
-                    servers.Add(new Server()
+                    using var dbCtx = new MKBBContext();
+                    List<ServerData> servers = dbCtx.Servers.ToList();
+                    servers.Add(new ServerData()
                     {
                         Name = e.Guild.Name,
-                        Id = e.Guild.Id
+                        ServerID = e.Guild.Id
                     });
-                    File.WriteAllText("servers.json", JsonConvert.SerializeObject(servers));
-                    await Task.CompletedTask;
+                    await dbCtx.SaveChangesAsync();
                 };
 
             Client.GuildDeleted += async (s, e) =>
                     {
-                        List<Server> servers = JsonConvert.DeserializeObject<List<Server>>(File.ReadAllText("servers.json"));
+                        using var dbCtx = new MKBBContext();
+                        List<ServerData> servers = dbCtx.Servers.ToList();
                         for (int i = 0; i < servers.Count; i++)
                         {
-                            if (servers[i].Id == e.Guild.Id)
+                            if (servers[i].ServerID == e.Guild.Id)
                             {
                                 servers.RemoveAt(i);
                                 break;
                             }
                         }
-                        File.WriteAllText("servers.json", JsonConvert.SerializeObject(servers));
-                        await Task.CompletedTask;
+                        await dbCtx.SaveChangesAsync();
                     };
 
             SlashCommands.SlashCommandErrored += async (s, e) =>
@@ -174,40 +169,29 @@ namespace MKBB
         {
             Client.InteractionCreated += async (s, e) =>
             {
-                if (e.Interaction.Guild.Id == 180306609233330176)
+                DiscordChannel channel = Client.GetGuildAsync(180306609233330176).Result.GetChannel(1019149329556062278);
+
+                string options = "";
+
+                if (e.Interaction.Data.Options != null)
                 {
-                    DiscordChannel channel = e.Interaction.Channel;
-
-                    foreach (var c in e.Interaction.Guild.Channels)
+                    foreach (var option in e.Interaction.Data.Options)
                     {
-                        if (c.Value.Id == 1019149329556062278)
-                        {
-                            channel = c.Value;
-                        }
+                        options += $" {option.Name}: *{option.Value}*";
                     }
-
-                    string options = "";
-
-                    if (e.Interaction.Data.Options != null)
-                    {
-                        foreach (var option in e.Interaction.Data.Options)
-                        {
-                            options += $" {option.Name}: *{option.Value}*";
-                        }
-                    }
-
-                    var embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Notice:**__",
-                        Description = $"'/{e.Interaction.Data.Name}{options}' was used by <@{e.Interaction.User.Id}>.",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Server Time: {DateTime.Now}"
-                        }
-                    };
-                    await channel.SendMessageAsync(embed);
                 }
+
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Notice:**__",
+                    Description = $"'/{e.Interaction.Data.Name}{options}' was used by <@{e.Interaction.User.Id}> in {e.Interaction.Guild.Name}.",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Server Time: {DateTime.Now}"
+                    }
+                };
+                await channel.SendMessageAsync(embed);
             };
 
             Client.ComponentInteractionCreated += async (s, e) =>
@@ -267,25 +251,27 @@ namespace MKBB
                 {
                     if (e.Message.Id == p.MessageId)
                     {
-                        List<ulong> ids = new List<ulong>();
+                        using var dbCtx = new MKBBContext();
+                        List<ServerData> servers = dbCtx.Servers.ToList();
+                        var ids = "";
                         foreach (var value in e.Values)
                         {
-                            ids.Add(ulong.Parse(value));
+                            ids += $"{value}, ";
                         }
-                        List<Server> servers = JsonConvert.DeserializeObject<List<Server>>(File.ReadAllText("servers.json"));
+                        ids = ids.Remove(ids.Length - 2, 2);
                         foreach (var server in servers)
                         {
-                            if (server.Id == e.Guild.Id)
+                            if (server.ServerID == e.Guild.Id)
                             {
-                                server.BotChannelIds = ids;
+                                server.BotChannelIDs = ids;
                                 break;
                             }
                         }
-                        File.WriteAllText("servers.json", JsonConvert.SerializeObject(servers));
+                        await dbCtx.SaveChangesAsync();
                         string channelsDisplay = "";
-                        foreach (var id in ids)
+                        foreach (var id in ids.Split(',').ToList())
                         {
-                            channelsDisplay += $"<#{id}>\n";
+                            channelsDisplay += $"<#{id.Trim(' ')}>\n";
                         }
 
                         var embed = new DiscordEmbedBuilder
@@ -346,9 +332,9 @@ namespace MKBB
             };
 
             SlashCommands = Client.UseSlashCommands();
-
-            //SlashCommands.RegisterCommands<Testing>(180306609233330176);
-
+#if DEBUG
+            SlashCommands.RegisterCommands<Testing>(180306609233330176);
+#endif
             SlashCommands.RegisterCommands<Config>();
             SlashCommands.RegisterCommands<TimeTrialManagement>();
             SlashCommands.RegisterCommands<TextCommands>();
@@ -356,8 +342,6 @@ namespace MKBB
             SlashCommands.RegisterCommands<Council>(180306609233330176);
             SlashCommands.RegisterCommands<Misc>(180306609233330176);
             SlashCommands.RegisterCommands<Info>();
-            SlashCommands.RegisterCommands<Issues>(180306609233330176);
-            SlashCommands.RegisterCommands<Threads>(180306609233330176);
             SlashCommands.RegisterCommands<Ghostbusters>(180306609233330176);
 
             await Events();
@@ -372,6 +356,12 @@ namespace MKBB
             Update update = new Update();
 
             await update.StartTimers(null);
+
+            using var dbCtx = new MKBBContext();
+
+            //await dbCtx.Database.EnsureCreatedAsync();
+
+            //await dbCtx.SaveChangesAsync();
 
             await Task.Delay(-1);
         }
