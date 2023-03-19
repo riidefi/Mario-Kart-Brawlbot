@@ -75,7 +75,6 @@ namespace MKBB.Commands
                         {
                             description += "\n\n__**Admin Commands:**__" +
                                 "\n/addhw track author version download-link slot-filename speed/lap-modifiers notes" +
-                                "\n/addstrike member" +
                                 "\n/addtool name creators description download" +
                                 "\n/allstrikes" +
                                 "\n/botchannel no-channels" +
@@ -85,8 +84,6 @@ namespace MKBB.Commands
                                 "\n/gbaddsha1 sha1" +
                                 "\n/gbaddtrack track-name sha1" +
                                 "\n/gbremovetrack" +
-                                "\n/removestrike member" +
-                                "\n/resetstrikes member" +
                                 "\n/uploadtestpack test-pack-zip";
                             break;
                         }

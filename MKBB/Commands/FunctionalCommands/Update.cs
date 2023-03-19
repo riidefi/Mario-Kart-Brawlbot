@@ -166,13 +166,14 @@ namespace MKBB.Commands
                     newTrack.LeaderboardLink = track.LinkContainer.Href.URL;
                     HtmlDocument wikiPage = new HtmlDocument();
                     wikiPage.LoadHtml(await webClient.DownloadStringTaskAsync("https://wiki.tockdom.com/wiki/CTGP_Revolution"));
-                    var tds = wikiPage.DocumentNode.SelectNodes("//table[@class='textbox grid sortable center'][1]/tbody/tr/td");
+                    var tds = wikiPage.DocumentNode.SelectNodes("//table/tbody/tr/td");
                     for (int i = 0; i < tds.Count; i++)
                     {
-                        if (tds[i].InnerText == newTrack.Name)
+                        if (tds[i].InnerText.Replace("\n", "") == newTrack.Name)
                         {
                             newTrack.SlotID = tds[i + 6].InnerText.Replace("\n", string.Empty);
                             Console.WriteLine(newTrack.Name + ": " + newTrack.SlotID);
+                            break;
                         }
                     }
                     string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
@@ -483,7 +484,7 @@ namespace MKBB.Commands
             dbCtx.SaveChanges();
 
             var today = DateTime.Now;
-            File.WriteAllText("lastUpdated.txt", today.ToString());
+            File.WriteAllText("lastUpdated.txt", today.ToString("dd/MM/yyyy HH:mm:ss"));
 
             DiscordActivity activity = new DiscordActivity();
             activity.Name = $"Last Updated: {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}" +
@@ -595,7 +596,7 @@ namespace MKBB.Commands
                         {
                             tracks.Add(response.Values[i][0].ToString());
                         }
-                        int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
+                        int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.CurrentCulture)).TotalDays);
                         if (lastChecked < today && today == int.Parse(response.Values[i][1].ToString()) + 1)
                         {
                             dueTracks.Add(response.Values[i][0].ToString());
@@ -635,7 +636,7 @@ namespace MKBB.Commands
                         {
                             threadTracks.Add(tResponse.Values[i][3].ToString().Split('"')[1].Split('/')[5]);
                         }
-                        int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.InvariantCulture)).TotalDays);
+                        int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.CurrentCulture)).TotalDays);
                         if (lastChecked < today && today == int.Parse(tResponse.Values[i][1].ToString()) + 1)
                         {
                             dueThreadTracks.Add(tResponse.Values[i][0].ToString());
@@ -654,7 +655,7 @@ namespace MKBB.Commands
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex);
-                        //await Util.ThrowCustomError(ctx, $"Date is in incorrect format: {tResponse.Values[i][0]}");
+                        await Util.ThrowCustomError(ctx, $"Date is in incorrect format: {tResponse.Values[i][0]}");
                     }
                 }
             }
@@ -760,7 +761,7 @@ namespace MKBB.Commands
                 {
                     listOfTracks += $", <#{threadTracks[i]}>";
                 }
-                if (tracks.Count == 1)
+                if (threadTracks.Count == 1)
                 {
                     listOfTracks += " is";
                 }
@@ -828,7 +829,7 @@ namespace MKBB.Commands
             }
 
             var now = DateTime.Now;
-            File.WriteAllText("lastUpdated.txt", now.ToString());
+            File.WriteAllText("lastUpdated.txt", now.ToString("dd/MM/yyyy HH:mm:ss"));
 
             DiscordActivity activity = new DiscordActivity();
             activity.Name = $"Last Updated: {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}" +

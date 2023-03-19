@@ -350,3 +350,5 @@ ASALocalRun/
 [Rr]esources/
 MKBB/Util.cs
 .editorconfig
+MKBB/lastUpdated.txt
+MKBB/Settings.job

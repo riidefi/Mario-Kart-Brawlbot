@@ -7,6 +7,7 @@ using DSharpPlus.Interactivity.Enums;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
+using Microsoft.Extensions.Logging;
 using MKBB.Class;
 using MKBB.Commands;
 using MKBB.Data;

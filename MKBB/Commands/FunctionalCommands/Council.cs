@@ -38,7 +38,7 @@ namespace MKBB.Commands
                 string description = string.Empty;
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
                 ServiceAccountCredential credential = new ServiceAccountCredential(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
@@ -188,7 +188,7 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
                 ServiceAccountCredential credential = new ServiceAccountCredential(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
@@ -300,7 +300,7 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
                 ServiceAccountCredential credential = new ServiceAccountCredential(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
@@ -423,7 +423,7 @@ namespace MKBB.Commands
                 {
                     string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                    var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
                     ServiceAccountCredential credential = new ServiceAccountCredential(
                        new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
@@ -568,7 +568,7 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                var certificate = new X509Certificate2("key.p12", "notasecret");
 
                 ServiceAccountCredential credential = new ServiceAccountCredential(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
@@ -626,10 +626,9 @@ namespace MKBB.Commands
                 }
                 else
                 {
-                    string description = string.Empty;
+                    string description = "__**Submissions**__\n";
                     for (int i = 1; i < response.Values.Count; i++)
                     {
-                        description += "__**Submissions**__\n";
                         var t = response.Values[i];
                         var tRaw = responseRaw.Values[i];
                         string tally = "*Unreviewed*";
@@ -683,159 +682,6 @@ namespace MKBB.Commands
                     };
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                 }
-            }
-            catch (Exception ex)
-            {
-                await Util.ThrowError(ctx, ex);
-            }
-        }
-
-        [SlashCommand("addstrike", "To increment a council member's missed homework count.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task IncrementStrikes(InteractionContext ctx,
-            [Option("member", "The council member you are incrementing the missed homework count of.")] DiscordUser member)
-        {
-            try
-            {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-                using var dbCtx = new MKBBContext();
-                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
-
-                int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
-                councilJson[ix].Strikes++;
-                var embed = new DiscordEmbedBuilder();
-                if (ix < 0)
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Error:**__",
-                        Description = $"*{member.Mention} could not be found on council.*",
-                        Url = Util.GetCouncilUrl(),
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                }
-                else
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Notice:**__",
-                        Description = $"*Strike count for {member.Mention} has been incremented.*",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                }
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                await dbCtx.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                await Util.ThrowError(ctx, ex);
-            }
-        }
-
-        [SlashCommand("removestrike", "To decrement a council member's missed homework count.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task DecrementStrikes(InteractionContext ctx,
-            [Option("member", "The name of the council member you are decrementing the missed homework count of.")] DiscordUser member)
-        {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-            try
-            {
-                using var dbCtx = new MKBBContext();
-                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
-
-                int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
-                councilJson[ix].Strikes--;
-                var embed = new DiscordEmbedBuilder();
-                if (ix < 0)
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Error:**__",
-                        Description = $"*{member.Mention} could not be found on council.*",
-                        Url = Util.GetCouncilUrl(),
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                }
-                else
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Notice:**__",
-                        Description = $"*Strike count for {member.Mention} has been decremented.*",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                }
-                await dbCtx.SaveChangesAsync();
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-            }
-            catch (Exception ex)
-            {
-                await Util.ThrowError(ctx, ex);
-            }
-        }
-
-        [SlashCommand("resetstrikes", "To reset a council member's, or all of council's missed homework count.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task ResetStrikes(InteractionContext ctx,
-            [Option("member", "The name of the council member you are resetting the missed homework count of.")] DiscordUser member)
-        {
-            try
-            {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-                using var dbCtx = new MKBBContext();
-                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
-
-                int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
-                councilJson[ix].Strikes = 0;
-                var embed = new DiscordEmbedBuilder();
-                if (ix < 0)
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__**Error:**__",
-                        Description = $"*{member.Mention} could not be found on council.*",
-                        Url = Util.GetCouncilUrl(),
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                }
-                else
-                {
-                    embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Notice:**__",
-                        Description = $"*Strike count for {member.Mention} has been reset.*",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                }
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                await dbCtx.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -958,7 +804,7 @@ namespace MKBB.Commands
                     string description = string.Empty;
                     string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                    var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
                     ServiceAccountCredential credential = new ServiceAccountCredential(
                        new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
@@ -998,7 +844,7 @@ namespace MKBB.Commands
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Success:**__",
-                        Description = $"*{track} has been added as homework.*",
+                        Description = $"*<#{thread.Id}> has been added as homework.*",
                         Url = Util.GetCouncilUrl(),
                         Footer = new DiscordEmbedBuilder.EmbedFooter
                         {
@@ -1047,7 +893,7 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
                 ServiceAccountCredential credential = new ServiceAccountCredential(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
@@ -1153,7 +999,7 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
                 ServiceAccountCredential credential = new ServiceAccountCredential(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
@@ -1274,7 +1120,7 @@ namespace MKBB.Commands
                 {
                     string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                    var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
                     ServiceAccountCredential credential = new ServiceAccountCredential(
                        new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
