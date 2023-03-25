@@ -590,39 +590,32 @@ namespace MKBB.Commands
             {
                 if (response.Values[i][1].ToString() != "")
                 {
-                    try
+                    if (today == int.Parse(response.Values[i][1].ToString()))
                     {
-                        if (today == int.Parse(response.Values[i][1].ToString()))
+                        tracks.Add(response.Values[i][0].ToString());
+                    }
+                    int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.CurrentCulture)).TotalDays);
+                    if (lastChecked < today && today == int.Parse(response.Values[i][1].ToString()) + 1)
+                    {
+                        dueTracks.Add(response.Values[i][0].ToString());
+                        for (int j = 12; j < response.Values[0].Count; j++)
                         {
-                            tracks.Add(response.Values[i][0].ToString());
-                        }
-                        int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.CurrentCulture)).TotalDays);
-                        if (lastChecked < today && today == int.Parse(response.Values[i][1].ToString()) + 1)
-                        {
-                            dueTracks.Add(response.Values[i][0].ToString());
-                            for (int j = 12; j < response.Values[0].Count; j++)
+                            int ix = councilJson.FindIndex(x => x.Name == response.Values[0][j].ToString());
+                            bool isAuthor = response.Values[0][j].ToString() == councilJson[ix].Name ? true : false;
+                            if (response.Values[i][j].ToString() == "" ||
+                                    response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
+                                    response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
+                                    response.Values[i][j].ToString().ToLowerInvariant() == "neutral" ||
+                                    response.Values[i][j].ToString().ToLowerInvariant() == "fixes" ||
+                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("yes") &&
+                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("no") &&
+                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("neutral") &&
+                                    !response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes") &&
+                                    isAuthor == false)
                             {
-                                int ix = councilJson.FindIndex(x => x.Name == response.Values[0][j].ToString());
-                                int isAuthor = Util.ListNameCheck(response.Values, councilJson[ix].Name, ix1: i, ix2: j);
-                                if (response.Values[i][j].ToString() == "" ||
-                                        response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
-                                        response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
-                                        response.Values[i][j].ToString().ToLowerInvariant() == "neutral" ||
-                                        response.Values[i][j].ToString().ToLowerInvariant() == "fixes" ||
-                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("yes") &&
-                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("no") &&
-                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("neutral") &&
-                                        !response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes") &&
-                                        isAuthor == -1)
-                                {
-                                    inconsistentMembers.Add(councilJson[ix]);
-                                }
+                                inconsistentMembers.Add(councilJson[ix]);
                             }
                         }
-                    }
-                    catch
-                    {
-                        await Util.ThrowCustomError(ctx, $"Date is in incorrect format: {response.Values[i][0]}");
                     }
                 }
             }
@@ -630,32 +623,24 @@ namespace MKBB.Commands
             {
                 if (tResponse.Values[i][1].ToString() != "")
                 {
-                    try
+                    if (today == int.Parse(tResponse.Values[i][1].ToString()))
                     {
-                        if (today == int.Parse(tResponse.Values[i][1].ToString()))
+                        threadTracks.Add(tResponse.Values[i][3].ToString().Split('"')[1].Split('/')[5]);
+                    }
+                    int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.CurrentCulture)).TotalDays);
+                    if (lastChecked < today && today == int.Parse(tResponse.Values[i][1].ToString()) + 1)
+                    {
+                        dueThreadTracks.Add(tResponse.Values[i][0].ToString());
+                        for (int j = 7; j < tResponse.Values[0].Count; j++)
                         {
-                            threadTracks.Add(tResponse.Values[i][3].ToString().Split('"')[1].Split('/')[5]);
-                        }
-                        int lastChecked = Convert.ToInt32(DateTime.Parse(File.ReadAllText("lastUpdated.txt")).Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.CurrentCulture)).TotalDays);
-                        if (lastChecked < today && today == int.Parse(tResponse.Values[i][1].ToString()) + 1)
-                        {
-                            dueThreadTracks.Add(tResponse.Values[i][0].ToString());
-                            for (int j = 7; j < tResponse.Values[0].Count; j++)
+                            int ix = councilJson.FindIndex(x => x.Name == tResponse.Values[0][j].ToString());
+                            bool isAuthor = tResponse.Values[0][j].ToString() == councilJson[ix].Name ? true : false;
+                            if (tResponse.Values[i][j].ToString() == "" &&
+                                    isAuthor == false)
                             {
-                                int ix = councilJson.FindIndex(x => x.Name == tResponse.Values[0][j].ToString());
-                                int isAuthor = Util.ListNameCheck(tResponse.Values, councilJson[ix].Name, ix1: i, ix2: j);
-                                if (tResponse.Values[i][j].ToString() == "" ||
-                                        isAuthor != -1)
-                                {
-                                    inconsistentMembersThreads.Add(councilJson[ix]);
-                                }
+                                inconsistentMembersThreads.Add(councilJson[ix]);
                             }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                        await Util.ThrowCustomError(ctx, $"Date is in incorrect format: {tResponse.Values[i][0]}");
                     }
                 }
             }
@@ -727,8 +712,9 @@ namespace MKBB.Commands
                     }
                 }
             }
-
+#if RELEASE
             await dbCtx.SaveChangesAsync();
+#endif
 
             DiscordChannel channel = await Bot.Client.GetChannelAsync(635313521487511554);
 
