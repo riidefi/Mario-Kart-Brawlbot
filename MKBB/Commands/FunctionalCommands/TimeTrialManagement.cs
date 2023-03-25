@@ -732,7 +732,7 @@ namespace MKBB.Commands
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
                 track = Util.Convert3DSTrackName(track);
                 using var dbCtx = new MKBBContext();
-                List<TrackData> trackList = dbCtx.Tracks.ToList();
+                List<TrackData> trackList = dbCtx.Tracks.Where(x=>x.EasyStaffSHA1 != null && x.ExpertStaffSHA1 != null).ToList();
 
                 int ix = Util.ListNameCheck(trackList, track);
 

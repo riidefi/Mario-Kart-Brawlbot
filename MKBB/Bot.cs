@@ -33,7 +33,7 @@ namespace MKBB
                     {
                         if (!e.User.IsBot)
                         {
-                            if (e.Emoji.Id == 670020961491222531)
+                            if (e.Emoji.Id == 1088583759844081664)
                             {
                                 await papr.Message.ModifyAsync(
                                     (DiscordEmbed)new DiscordEmbedBuilder
