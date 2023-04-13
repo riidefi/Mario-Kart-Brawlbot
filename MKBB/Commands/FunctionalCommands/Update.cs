@@ -17,6 +17,7 @@ using System.Globalization;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MKBB.Commands
 {
@@ -164,8 +165,9 @@ namespace MKBB.Commands
                 {
                     var newTrack = track.ConvertData();
                     newTrack.LeaderboardLink = track.LinkContainer.Href.URL;
-                    HtmlDocument wikiPage = new HtmlDocument();
-                    wikiPage.LoadHtml(await webClient.DownloadStringTaskAsync("https://wiki.tockdom.com/wiki/CTGP_Revolution"));
+                    var web = new HtmlWeb();
+                    web.UserAgent = Util.GetUserAgent();
+                    HtmlDocument wikiPage = await web.LoadFromWebAsync("https://wiki.tockdom.com/wiki/CTGP_Revolution");
                     var tds = wikiPage.DocumentNode.SelectNodes("//table/tbody/tr/td");
                     for (int i = 0; i < tds.Count; i++)
                     {
@@ -206,7 +208,7 @@ namespace MKBB.Commands
                             newTrack.Authors = v[3].ToString();
                             newTrack.Version = v[4].ToString();
                             newTrack.TrackSlot = v[6].ToString().Split('/')[0].Trim(' ');
-                            newTrack.MusicSlot = v[6].ToString().Split('/')[1].Trim(' ');
+                            newTrack.MusicSlot = Regex.Replace(v[6].ToString().Split('/')[1], @"\s+", "");
                             newTrack.SpeedMultiplier = decimal.Parse(v[7].ToString().Split('/')[0].Trim(' '));
                             newTrack.LapCount = int.Parse(v[7].ToString().Split('/')[1].Trim(' '));
                             newTrack.EasyStaffSHA1 = v[9].ToString();
@@ -483,6 +485,11 @@ namespace MKBB.Commands
             }
             dbCtx.SaveChanges();
 
+            File.WriteAllText(@"C:\WebApps\MKBB\wwwroot\api\rts.json", JsonConvert.SerializeObject(dbCtx.Tracks.Where(x => !x.CustomTrack && !x.Is200cc).ToList()));
+            File.WriteAllText(@"C:\WebApps\MKBB\wwwroot\api\rts200.json", JsonConvert.SerializeObject(dbCtx.Tracks.Where(x => !x.CustomTrack && x.Is200cc).ToList()));
+            File.WriteAllText(@"C:\WebApps\MKBB\wwwroot\api\cts.json", JsonConvert.SerializeObject(dbCtx.Tracks.Where(x => x.CustomTrack && !x.Is200cc).ToList()));
+            File.WriteAllText(@"C:\WebApps\MKBB\wwwroot\api\cts200.json", JsonConvert.SerializeObject(dbCtx.Tracks.Where(x => x.CustomTrack && x.Is200cc).ToList()));
+
             var today = DateTime.Now;
             File.WriteAllText("lastUpdated.txt", today.ToString("dd/MM/yyyy HH:mm:ss"));
 
@@ -578,14 +585,15 @@ namespace MKBB.Commands
             List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
             var hwCompleted = new bool?[councilJson.Count];
             var threadHwCompleted = new bool?[councilJson.Count];
+            var threadHwCompleted3 = new bool?[councilJson.Count];
 
             List<string> tracks = new List<string>();
             List<string> threadTracks = new List<string>();
             List<string> dueTracks = new List<string>();
             List<string> dueThreadTracks = new List<string>();
 
-            List<CouncilMemberData> inconsistentMembers = new List<CouncilMemberData>();
-            List<CouncilMemberData> inconsistentMembersThreads = new List<CouncilMemberData>();
+            List<string> inconsistentMembers = new List<string>();
+            List<string> inconsistentMembersThreads = new List<string>();
             for (int i = 1; i < response.Values.Count; i++)
             {
                 if (response.Values[i][1].ToString() != "")
@@ -613,7 +621,7 @@ namespace MKBB.Commands
                                     !response.Values[i][j].ToString().ToLowerInvariant().Contains("fixes") &&
                                     isAuthor == false)
                             {
-                                inconsistentMembers.Add(councilJson[ix]);
+                                inconsistentMembers.Add(councilJson[ix].DiscordID);
                             }
                         }
                     }
@@ -638,7 +646,7 @@ namespace MKBB.Commands
                             if (tResponse.Values[i][j].ToString() == "" &&
                                     isAuthor == false)
                             {
-                                inconsistentMembersThreads.Add(councilJson[ix]);
+                                inconsistentMembersThreads.Add(councilJson[ix].DiscordID);
                             }
                         }
                     }
@@ -646,7 +654,7 @@ namespace MKBB.Commands
             }
             for (int i = 0; i < councilJson.Count; i++)
             {
-                if (inconsistentMembers.Contains(councilJson[i]))
+                if (inconsistentMembers.Contains(councilJson[i].DiscordID))
                 {
                     hwCompleted[i] = false;
                 }
@@ -654,11 +662,12 @@ namespace MKBB.Commands
                 {
                     hwCompleted[i] = true;
                 }
-                if (inconsistentMembersThreads.Contains(councilJson[i]))
+                if (inconsistentMembersThreads.Contains(councilJson[i].DiscordID))
                 {
+                    threadHwCompleted[i] = false;
                     if (councilJson[i].MissedThreadHW > 2)
                     {
-                        threadHwCompleted[i] = false;
+                        threadHwCompleted3[i] = false;
                     }
                     else
                     {
@@ -667,13 +676,14 @@ namespace MKBB.Commands
                 }
                 else if (dueThreadTracks.Count > 0)
                 {
+                    threadHwCompleted3[i] = true;
                     threadHwCompleted[i] = true;
                     councilJson[i].MissedThreadHW = 0;
                 }
             }
             for (int i = 0; i < councilJson.Count; i++)
             {
-                if (hwCompleted[i] == true && threadHwCompleted[i] == true)
+                if (hwCompleted[i] == true && threadHwCompleted3[i] == true)
                 {
                     councilJson[i].CompletedHW++;
                     if (councilJson[i].CompletedHW > 4)
@@ -681,7 +691,7 @@ namespace MKBB.Commands
                         councilJson[i].Strikes = 0;
                     }
                 }
-                else if (hwCompleted[i] == false && threadHwCompleted[i] == false)
+                else if (hwCompleted[i] == false || threadHwCompleted3[i] == false)
                 {
                     councilJson[i].Strikes++;
                     councilJson[i].CompletedHW = 0;
@@ -713,10 +723,10 @@ namespace MKBB.Commands
                 }
             }
 #if RELEASE
-            await dbCtx.SaveChangesAsync();
+            dbCtx.SaveChanges();
 #endif
 
-            DiscordChannel channel = await Bot.Client.GetChannelAsync(635313521487511554);
+            DiscordChannel councilAnnouncements = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(635313521487511554);
 
             string listOfTracks = "";
             if (tracks.Count > 0)
@@ -738,7 +748,7 @@ namespace MKBB.Commands
 #if RELEASE
     ping = "<@&608386209655554058> ";
 #endif
-                await channel.SendMessageAsync($"__**Submissions**__\n{ping}{listOfTracks} due for today.");
+                await councilAnnouncements.SendMessageAsync($"__**Submissions**__\n{ping}{listOfTracks} due for today.");
             }
             if (threadTracks.Count > 0)
             {
@@ -759,10 +769,11 @@ namespace MKBB.Commands
 #if RELEASE
     ping = "<@&608386209655554058> ";
 #endif
-                await channel.SendMessageAsync($"__**Threads**__\n{ping}{listOfTracks} due for today.");
+                await councilAnnouncements.SendMessageAsync($"__**Threads**__\n{ping}{listOfTracks} due for today.");
             }
 
-            channel = await Bot.Client.GetChannelAsync(935200150710808626);
+            DiscordChannel strikeAnnouncements = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(1019149329556062278);
+            DiscordChannel strikeLogs = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402229491581061);
 
             string description = string.Empty;
             for (int i = 0; i < hwCompleted.Length; i++)
@@ -773,7 +784,7 @@ namespace MKBB.Commands
                 }
             }
 
-            if (hwCompleted.Select(x => x == false).ToArray().Length > 0 && dueTracks.Count > 0)
+            if (hwCompleted.Select(x => x == false).ToArray().Length > 0 && dueTracks.Count > 0 && description != string.Empty)
             {
                 var embed = new DiscordEmbedBuilder
                 {
@@ -785,8 +796,8 @@ namespace MKBB.Commands
                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                     }
                 };
-                channel = await Bot.Client.GetChannelAsync(1081666132244697118);
-                await channel.SendMessageAsync(embed);
+                await strikeAnnouncements.SendMessageAsync(embed);
+                await strikeLogs.SendMessageAsync(embed);
             }
 
             description = string.Empty;
@@ -798,20 +809,45 @@ namespace MKBB.Commands
                 }
             }
 
-            if (threadHwCompleted.Select(x => x == false).ToArray().Length > 0 && dueThreadTracks.Count > 0)
+            if (threadHwCompleted.Select(x => x == false).ToArray().Length > 0 && dueThreadTracks.Count > 0 && description != string.Empty)
             {
                 var embed = new DiscordEmbedBuilder
                 {
                     Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Members who missed homework:**__",
+                    Title = $"__**Members who missed thread homework:**__",
                     Description = description,
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                     }
                 };
-                channel = await Bot.Client.GetChannelAsync(1081666132244697118);
-                await channel.SendMessageAsync(embed);
+                await strikeAnnouncements.SendMessageAsync(embed);
+                await strikeLogs.SendMessageAsync(embed);
+            }
+
+            description = string.Empty;
+            for (int i = 0; i < threadHwCompleted3.Length; i++)
+            {
+                if (threadHwCompleted3[i] == false)
+                {
+                    description += $"{councilJson[i].Name}\n";
+                }
+            }
+
+            if (threadHwCompleted3.Select(x => x == false).ToArray().Length > 0 && dueThreadTracks.Count > 0 && description != string.Empty)
+            {
+                var embed = new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Members who missed 3 thread homeworks in a row:**__",
+                    Description = description,
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await strikeAnnouncements.SendMessageAsync(embed);
+                await strikeLogs.SendMessageAsync(embed);
             }
 
             var now = DateTime.Now;

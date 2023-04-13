@@ -12,10 +12,12 @@ using MKBB.Data;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
+using static IronPython.SQLite.PythonSQLite;
 
 namespace MKBB.Commands
 {
@@ -52,6 +54,7 @@ namespace MKBB.Commands
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
                 var countRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                countRequest.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
                 var countResponse = await countRequest.ExecuteAsync();
 
                 var due = DateTime.Today;
@@ -70,6 +73,22 @@ namespace MKBB.Commands
                     {
                         due = due.AddDays(1);
                     }
+                }
+
+                check:
+                var sameDueCount = 0;
+                for (int i = 1; i < countResponse.Values.Count; i++)
+                {
+                    if (int.Parse(countResponse.Values[i][1].ToString()) == Convert.ToInt32(due.Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.CurrentCulture)).TotalDays+1))
+                    {
+                        sameDueCount++;
+                    }
+                }
+                if (sameDueCount > 4)
+                {
+                    due = due.AddDays(10);
+                    sameDueCount = 0;
+                    goto check;
                 }
 
                 string dl = string.Empty;
@@ -144,32 +163,20 @@ namespace MKBB.Commands
                 };
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
 
-                DiscordChannel councilAnnouncements = ctx.Channel;
-
-                DiscordChannel announcements = ctx.Channel;
-
-                foreach (var c in ctx.Guild.Channels)
-                {
-                    if (c.Value.Id == 635313521487511554)
-                    {
-                        councilAnnouncements = c.Value;
-                    }
-                    if (c.Value.Id == 180328109688487937)
-                    {
-                        announcements = c.Value;
-                    }
-                }
+                DiscordChannel councilAnnouncements = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(635313521487511554);
+                DiscordChannel councilLogs = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402229491581061);
+                DiscordChannel announcements = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402229491581061);
                 var ping = "";
 #if RELEASE
     ping = "<@&608386209655554058> ";
 #endif
-                await councilAnnouncements.SendMessageAsync($"{ping}{track} has been added as homework. It is due for {Util.Months[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
-                await announcements.SendMessageAsync($"{track} by {author} is now being reviewed by Track Council. It is due for {Util.Months[due.Month - 1]} {due.Day}, {due.Year}.");
+                await councilAnnouncements.SendMessageAsync($"{ping}{track} has been submitted to CTGP for evaluation. It is due for {Util.Months[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
+                await councilLogs.SendMessageAsync($"{track} has been submitted to CTGP for evaluation. It is due for {Util.Months[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
+                await announcements.SendMessageAsync($"{track} by {author} has been submitted to CTGP for evaluation.");
             }
             catch (Exception ex)
             {
                 await Util.ThrowError(ctx, ex);
-
             }
         }
 
@@ -853,22 +860,15 @@ namespace MKBB.Commands
                     };
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
 
-                    DiscordChannel councilAnnouncements = ctx.Channel;
 
-                    DiscordChannel announcements = ctx.Channel;
-
-                    foreach (var c in ctx.Guild.Channels)
-                    {
-                        if (c.Value.Id == 635313521487511554)
-                        {
-                            councilAnnouncements = c.Value;
-                        }
-                    }
+                    DiscordChannel councilAnnouncements = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(635313521487511554);
+                    DiscordChannel councilLogs = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402229491581061);
                     var ping = "";
 #if RELEASE
     ping = "<@&608386209655554058> ";
 #endif
-                    await councilAnnouncements.SendMessageAsync($"{ping}{track} has been added as thread homework. It is due for {Util.Months[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
+                    await councilAnnouncements.SendMessageAsync($"{ping}<#{thread.Id}> has been assigned as thread homework. Provide feedback by {Util.Months[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
+                    await councilLogs.SendMessageAsync($"{thread.Name} has been assigned as thread homework. Provide feedback by {Util.Months[due.Month - 1]} {due.Day}, {due.Year}.\n{notes}");
                 }
             }
             catch (Exception ex)

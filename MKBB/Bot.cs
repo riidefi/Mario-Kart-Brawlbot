@@ -170,7 +170,7 @@ namespace MKBB
         {
             Client.InteractionCreated += async (s, e) =>
             {
-                DiscordChannel channel = Client.GetGuildAsync(180306609233330176).Result.GetChannel(1019149329556062278);
+                DiscordChannel channel = Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402077338996846);
 
                 string options = "";
 
@@ -334,16 +334,21 @@ namespace MKBB
 
             SlashCommands = Client.UseSlashCommands();
 #if DEBUG
-            SlashCommands.RegisterCommands<Testing>(180306609233330176);
+            SlashCommands.RegisterCommands<Testing>(1095401690120851558);
 #endif
             SlashCommands.RegisterCommands<Config>();
             SlashCommands.RegisterCommands<TimeTrialManagement>();
             SlashCommands.RegisterCommands<TextCommands>();
+            SlashCommands.RegisterCommands<Info>();
+
             SlashCommands.RegisterCommands<Update>(180306609233330176);
             SlashCommands.RegisterCommands<Council>(180306609233330176);
             SlashCommands.RegisterCommands<Misc>(180306609233330176);
-            SlashCommands.RegisterCommands<Info>();
             SlashCommands.RegisterCommands<Ghostbusters>(180306609233330176);
+
+            //SlashCommands.RegisterCommands<Update>(1095401690120851558);
+            //SlashCommands.RegisterCommands<Council>(1095401690120851558);
+            //SlashCommands.RegisterCommands<Ghostbusters>(1095401690120851558);
 
             await Events();
 
