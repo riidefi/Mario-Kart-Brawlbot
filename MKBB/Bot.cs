@@ -7,6 +7,7 @@ using DSharpPlus.Interactivity.Enums;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MKBB.Class;
 using MKBB.Commands;
@@ -112,13 +113,13 @@ namespace MKBB
             Client.GuildCreated += async (s, e) =>
                 {
                     using var dbCtx = new MKBBContext();
-                    List<ServerData> servers = dbCtx.Servers.ToList();
-                    servers.Add(new ServerData()
+                    dbCtx.Servers.Add(new ServerData()
                     {
                         Name = e.Guild.Name,
                         ServerID = e.Guild.Id
                     });
-                    await dbCtx.SaveChangesAsync();
+                    bool hasChanges = dbCtx.ChangeTracker.HasChanges();
+                    dbCtx.SaveChanges();
                 };
 
             Client.GuildDeleted += async (s, e) =>
@@ -129,11 +130,12 @@ namespace MKBB
                         {
                             if (servers[i].ServerID == e.Guild.Id)
                             {
-                                servers.RemoveAt(i);
+                                dbCtx.Servers.Remove(servers[i]);
                                 break;
                             }
                         }
-                        await dbCtx.SaveChangesAsync();
+                        bool hasChanges = dbCtx.ChangeTracker.HasChanges();
+                        dbCtx.SaveChanges();
                     };
 
             SlashCommands.SlashCommandErrored += async (s, e) =>

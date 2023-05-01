@@ -164,7 +164,7 @@ namespace MKBB.Commands
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
 
                 DiscordChannel councilAnnouncements = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(635313521487511554);
-                DiscordChannel councilLogs = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402229491581061);
+                DiscordChannel councilLogs = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402205231730698);
                 DiscordChannel announcements = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402229491581061);
                 var ping = "";
 #if RELEASE
@@ -646,11 +646,11 @@ namespace MKBB.Commands
                                 var emote = string.Empty;
                                 if ((double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString())) / (double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString()) + double.Parse(tRaw[11].ToString())) >= 2.0 / 3.0)
                                 {
-                                    emote = DiscordEmoji.FromName(ctx.Client, ":Yes:");
+                                    emote = DiscordEmoji.FromName(ctx.Client, ":yes:");
                                 }
                                 else
                                 {
-                                    emote = DiscordEmoji.FromName(ctx.Client, ":No:");
+                                    emote = DiscordEmoji.FromName(ctx.Client, ":no:");
                                 }
                                 tally = $"{tRaw[8]}/{tRaw[9]}/{tRaw[10]}/{tRaw[11]} {emote}";
                             }
@@ -862,7 +862,7 @@ namespace MKBB.Commands
 
 
                     DiscordChannel councilAnnouncements = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(635313521487511554);
-                    DiscordChannel councilLogs = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402229491581061);
+                    DiscordChannel councilLogs = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402205231730698);
                     var ping = "";
 #if RELEASE
     ping = "<@&608386209655554058> ";

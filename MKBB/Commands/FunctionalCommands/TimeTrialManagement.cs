@@ -52,13 +52,27 @@ namespace MKBB.Commands
                     using var dbCtx = new MKBBContext();
                     List<PlayerData> playerList = dbCtx.Players.ToList();
 
-                    int ix = playerList.FindIndex(x => x.DiscordID == player.DiscordID);
+                    int ix = playerList.FindIndex(x => x.PlayerID == player.PlayerID);
+                    int ix2 = playerList.FindIndex(x => x.DiscordID == player.DiscordID);
 
-                    if (ix < 0)
+                    if (ix2 > -1)
                     {
-                        playerList.Add(player);
-
-                        await dbCtx.SaveChangesAsync();
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Notice:**__",
+                            Description = $"*You have already registered a profile. If you think this is a mistake, or would like this amended, please contact <@105742694730457088>.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                    }
+                    else if (ix < 0)
+                    {
+                        dbCtx.Players.Add(player);
+                        dbCtx.SaveChanges();
 
                         var embed = new DiscordEmbedBuilder
                         {
@@ -166,7 +180,7 @@ namespace MKBB.Commands
                 List<PlayerData> playerList = dbCtx.Players.ToList();
                 int playerIx = playerList.FindIndex(x => x.DiscordID == user.Id);
 
-                List<TrackData> trackList = dbCtx.Tracks.Where(x=>x.Is200cc == cc).ToList();
+                List<TrackData> trackList = dbCtx.Tracks.Where(x => x.Is200cc == cc).ToList();
 
                 int trackIx = Util.ListNameCheck(trackList, track);
                 if (playerIx < 0)
@@ -366,7 +380,7 @@ namespace MKBB.Commands
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
                 track = Util.Convert3DSTrackName(track);
                 using var dbCtx = new MKBBContext();
-                List<TrackData> trackList = dbCtx.Tracks.Where(x=>x.Is200cc == cc).ToList();
+                List<TrackData> trackList = dbCtx.Tracks.Where(x => x.Is200cc == cc).ToList();
 
                 int trackIx = Util.ListNameCheck(trackList, track);
                 if (trackIx < 0)
@@ -387,7 +401,7 @@ namespace MKBB.Commands
                 {
                     var webClient = new WebClient();
                     TrackData foundTrack = trackList[trackIx];
-                    List<TrackData> allTrackCategories = trackList.Where(x => x.SHA1 == foundTrack.SHA1).DistinctBy(x=>x.CategoryName).ToList();
+                    List<TrackData> allTrackCategories = trackList.Where(x => x.SHA1 == foundTrack.SHA1).DistinctBy(x => x.CategoryName).ToList();
                     allTrackCategories = allTrackCategories.OrderByDescending(x => x.CategoryName.Length).ToList();
 
                     List<List<DiscordEmbedBuilder>> categories = new List<List<DiscordEmbedBuilder>>();
@@ -567,7 +581,7 @@ namespace MKBB.Commands
                 }
                 else
                 {
-                    List<TrackData> trackList = dbCtx.Tracks.Where(x=>x.Is200cc == cc).ToList();
+                    List<TrackData> trackList = dbCtx.Tracks.Where(x => x.Is200cc == cc).ToList();
                     int trackIx = Util.ListNameCheck(trackList, track);
                     if (trackIx < 0)
                     {
@@ -732,7 +746,7 @@ namespace MKBB.Commands
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
                 track = Util.Convert3DSTrackName(track);
                 using var dbCtx = new MKBBContext();
-                List<TrackData> trackList = dbCtx.Tracks.Where(x=>x.EasyStaffSHA1 != null && x.ExpertStaffSHA1 != null).ToList();
+                List<TrackData> trackList = dbCtx.Tracks.Where(x => x.EasyStaffSHA1 != null && x.ExpertStaffSHA1 != null).ToList();
 
                 int ix = Util.ListNameCheck(trackList, track);
 
