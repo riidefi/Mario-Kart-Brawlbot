@@ -15,6 +15,7 @@ namespace MKBB.Data
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
             options.UseSqlServer(Util.GetDBConnectionString("MKBB"));
+            options.EnableSensitiveDataLogging(true);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

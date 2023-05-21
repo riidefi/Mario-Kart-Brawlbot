@@ -6,18 +6,10 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
-using Microsoft.Scripting.Interpreter;
 using MKBB.Class;
 using MKBB.Data;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
-using static IronPython.SQLite.PythonSQLite;
 
 namespace MKBB.Commands
 {

@@ -85,7 +85,7 @@ namespace MKBB
                     DiscordThreadChannel thread = (DiscordThreadChannel)e.Channel;
                     var opPost = thread.GetMessagesAsync(1).Result[0];
                     if (opPost.Attachments.Count > 0 &&
-                    opPost.Attachments.Any(x => x.FileName.Contains(".szs")))
+                    opPost.Attachments.Any(x => x.FileName.EndsWith(".szs")))
                     {
                         DiscordChannel channel = s.GetGuildAsync(180306609233330176).Result.GetChannel(1071555342829363281);
                         var message = await channel.SendMessageAsync(
@@ -118,7 +118,6 @@ namespace MKBB
                         Name = e.Guild.Name,
                         ServerID = e.Guild.Id
                     });
-                    bool hasChanges = dbCtx.ChangeTracker.HasChanges();
                     dbCtx.SaveChanges();
                 };
 
@@ -134,7 +133,6 @@ namespace MKBB
                                 break;
                             }
                         }
-                        bool hasChanges = dbCtx.ChangeTracker.HasChanges();
                         dbCtx.SaveChanges();
                     };
 

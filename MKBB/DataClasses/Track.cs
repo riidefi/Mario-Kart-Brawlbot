@@ -34,6 +34,7 @@ namespace MKBB.Data
         {
             return new OldTrackData()
             {
+                ID = ID,
                 Name = Name,
                 Authors = Authors,
                 Version = Version,

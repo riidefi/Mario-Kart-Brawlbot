@@ -8,6 +8,7 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Scripting.Utils;
 using MKBB.Class;
 using MKBB.Data;
@@ -130,8 +131,6 @@ namespace MKBB.Commands
             var webClient = new WebClient();
             webClient.Encoding = Encoding.UTF8;
 
-            var databaseTracks = dbCtx.Tracks.ToList();
-            var oldDatabaseTracks = dbCtx.OldTracks.ToList();
             var currentTracks = dbCtx.Tracks.ToList();
 
             // Get most up to date data from Chadsoft
@@ -152,9 +151,9 @@ namespace MKBB.Commands
 
             foreach (var track in newChadsoftData)
             {
-                if (databaseTracks.Where(x => x.SHA1 == track.SHA1) != null) // If the track already exists in the database
+                if (currentTracks.Where(x => x.SHA1 == track.SHA1).Count() != 0) // If the track already exists in the database
                 {
-                    foreach (var t in databaseTracks.Where(x => x.SHA1 == track.SHA1 && x.LeaderboardLink == track.LinkContainer.Href.URL))
+                    foreach (var t in dbCtx.Tracks.Where(x => x.SHA1 == track.SHA1 && x.LeaderboardLink == track.LinkContainer.Href.URL))
                     {
                         t.LastChanged = track.ConvertData().LastChanged;
                         t.TimeTrialPopularity = track.ConvertData().TimeTrialPopularity;
@@ -165,6 +164,7 @@ namespace MKBB.Commands
                 {
                     var newTrack = track.ConvertData();
                     newTrack.LeaderboardLink = track.LinkContainer.Href.URL;
+                    newTrack.CustomTrack = true;
                     var web = new HtmlWeb();
                     web.UserAgent = Util.GetUserAgent();
                     HtmlDocument wikiPage = await web.LoadFromWebAsync("https://wiki.tockdom.com/wiki/CTGP_Revolution");
@@ -208,11 +208,14 @@ namespace MKBB.Commands
                             newTrack.Authors = v[3].ToString();
                             newTrack.Version = v[4].ToString();
                             newTrack.TrackSlot = v[6].ToString().Split('/')[0].Trim(' ');
-                            newTrack.MusicSlot = Regex.Replace(v[6].ToString().Split('/')[1], @"\s+", "");
+                            newTrack.MusicSlot = Regex.Replace(v[6].ToString().Split('/')[1], @"\s+", " ").TrimStart();
                             newTrack.SpeedMultiplier = decimal.Parse(v[7].ToString().Split('/')[0].Trim(' '));
                             newTrack.LapCount = int.Parse(v[7].ToString().Split('/')[1].Trim(' '));
-                            newTrack.EasyStaffSHA1 = v[9].ToString();
-                            newTrack.ExpertStaffSHA1 = v[11].ToString();
+                            if (dbCtx.Tracks.ToList().FindIndex(x => x.SHA1 == newTrack.SHA1) == -1)
+                            {
+                                newTrack.EasyStaffSHA1 = v[9].ToString();
+                                newTrack.ExpertStaffSHA1 = v[11].ToString();
+                            }
                         }
                     }
                     HtmlDocument leaderboardPage = new HtmlDocument();
@@ -221,39 +224,63 @@ namespace MKBB.Commands
                     var h1s = leaderboardPage.DocumentNode.SelectNodes("//h1");
                     foreach (var h1 in h1s)
                     {
-                        if (!h1.InnerText.Contains("Normal") && !h1.InnerText.Contains("No-shortcut") && !h1.InnerText.Contains("Shortcut") && !h1.InnerText.Contains("Glitch"))
+                        if (!h1.InnerText.Contains("No-shortcut") && !h1.InnerText.Contains("Shortcut") && !h1.InnerText.Contains("Glitch"))
                         {
                             newTrack.CategoryName = "Normal";
+                        }
+                        else if (h1.InnerText.Contains("No-shortcut"))
+                        {
+                            newTrack.CategoryName = "No-shortcut";
+                        }
+                        else if (h1.InnerText.Contains("Shortcut"))
+                        {
+                            newTrack.CategoryName = "Shortcut";
+                        }
+                        else if (h1.InnerText.Contains("Glitch"))
+                        {
+                            newTrack.CategoryName = "Glitch";
                         }
                         else
                         {
                             newTrack.CategoryName = h1.InnerText.Split(' ')[h1.InnerText.Split(' ').Count() - 1];
                         }
                     }
-                    foreach (var ct in currentTracks.Where(x => x.SlotID == newTrack.SlotID))
+                    foreach (var ct in dbCtx.Tracks.Where(x => x.SlotID == newTrack.SlotID && x.SHA1 != newTrack.SHA1))
                     {
-                        oldDatabaseTracks.Add(ct.ConvertToOld());
-                        databaseTracks.Remove(ct);
+                        dbCtx.OldTracks.Add(ct.ConvertToOld());
+                        dbCtx.Tracks.Remove(ct);
 
                         request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A2:H219");
                         request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
                         response = await request.ExecuteAsync();
+                        foreach (var c in response.Values)
+                        {
+                            while (c.Count < 7)
+                            {
+                                c.Add("");
+                            }
+                        }
                         var ix = response.Values.FindIndex(x => x[0].ToString() == ct.Name);
-                        response.Values[ix][0] = newTrack.Name;
-                        response.Values[ix][1] = newTrack.Authors;
-                        response.Values[ix][2] = newTrack.Version;
-                        response.Values[ix][3] = $"{newTrack.TrackSlot} / {newTrack.MusicSlot}";
-                        response.Values[ix][4] = $"{newTrack.SpeedMultiplier} / {newTrack.LapCount}";
-                        response.Values[ix][5] = "";
-                        response.Values[ix][6] = "";
-                        response.Values = response.Values.OrderBy(x => x[0]).ToList();
-                        var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A2:H219");
-                        updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
-                        var update = await updateRequest.ExecuteAsync();
+                        if (ix != -1)
+                        {
+                            response.Values[ix][0] = newTrack.Name;
+                            response.Values[ix][1] = newTrack.Authors;
+                            response.Values[ix][2] = newTrack.Version;
+                            response.Values[ix][3] = $"{newTrack.TrackSlot} / {newTrack.MusicSlot}";
+                            response.Values[ix][4] = $"{newTrack.SpeedMultiplier} / {newTrack.LapCount}";
+                            response.Values[ix][5] = "";
+                            response.Values[ix][6] = "";
+                            response.Values = response.Values.OrderBy(x => x[0]).ToList();
+                            var updateRequest = service.Spreadsheets.Values.Update(response, "1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'!A2:H219");
+                            updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                            var update = await updateRequest.ExecuteAsync();
+                        }
                     }
-                    databaseTracks.Add(newTrack);
+                    dbCtx.Tracks.Add(newTrack);
+                    dbCtx.SaveChanges();
                 }
             }
+            dbCtx.SaveChanges();
 
             // Get most up to date data from Wiimmfi
             // // Nintendo Tracks
@@ -301,7 +328,7 @@ namespace MKBB.Commands
             }
             for (int i = 0; i < names.Count; i++)
             {
-                foreach (var t in databaseTracks)
+                foreach (var t in dbCtx.Tracks)
                 {
                     if (names[i].Split('(')[0].Replace("Wii", "").Trim(' ') == t.Name && !t.CustomTrack)
                     {
@@ -314,6 +341,7 @@ namespace MKBB.Commands
                         break;
                     }
                 }
+                dbCtx.SaveChanges();
             }
 
             // // Custom Tracks
@@ -443,9 +471,9 @@ namespace MKBB.Commands
             {
                 if (bodyNodes[i].InnerHtml.Contains("SHA1"))
                 {
-                    foreach (var track in databaseTracks)
+                    foreach (var track in dbCtx.Tracks)
                     {
-                        if (bodyNodes[i].InnerText.Replace("SHA1", "").Trim(' ').ToLowerInvariant() == track.SHA1.ToLowerInvariant() && track.CustomTrack)
+                        if (bodyNodes[i].InnerText.Replace("SHA1: ", "").ToLowerInvariant() == track.SHA1.ToLowerInvariant() && track.CustomTrack)
                         {
                             Console.WriteLine($"Checking SHA1s for {track.Name} from {bodyNodes[i].InnerHtml}");
                             track.M1 = int.Parse(m1s[i]);
@@ -454,9 +482,9 @@ namespace MKBB.Commands
                             track.M6 = int.Parse(m6s[i]);
                             track.M9 = int.Parse(m9s[i]);
                             track.M12 = int.Parse(m12s[i]);
-                            break;
                         }
                     }
+                    dbCtx.SaveChanges();
                 }
                 else
                 {
@@ -466,7 +494,7 @@ namespace MKBB.Commands
                     var tts = trackHtml.DocumentNode.SelectNodes("//tr/td/tt");
                     foreach (var tt in tts)
                     {
-                        foreach (var track in databaseTracks)
+                        foreach (var track in dbCtx.Tracks)
                         {
                             if (tt.InnerText.ToLowerInvariant() == track.SHA1.ToLowerInvariant() && track.CustomTrack)
                             {
@@ -477,14 +505,12 @@ namespace MKBB.Commands
                                 track.M6 = int.Parse(m6s[i]);
                                 track.M9 = int.Parse(m9s[i]);
                                 track.M12 = int.Parse(m12s[i]);
-                                break;
                             }
                         }
+                        dbCtx.SaveChanges();
                     }
                 }
             }
-            dbCtx.SaveChanges();
-
             File.WriteAllText(@"C:\WebApps\MKBB\wwwroot\api\rts.json", JsonConvert.SerializeObject(dbCtx.Tracks.Where(x => !x.CustomTrack && !x.Is200cc).ToList()));
             File.WriteAllText(@"C:\WebApps\MKBB\wwwroot\api\rts200.json", JsonConvert.SerializeObject(dbCtx.Tracks.Where(x => !x.CustomTrack && x.Is200cc).ToList()));
             File.WriteAllText(@"C:\WebApps\MKBB\wwwroot\api\cts.json", JsonConvert.SerializeObject(dbCtx.Tracks.Where(x => x.CustomTrack && !x.Is200cc).ToList()));
