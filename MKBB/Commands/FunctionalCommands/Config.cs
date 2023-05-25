@@ -17,7 +17,7 @@ namespace MKBB.Commands
 
         [SlashCommand("botchannel", "Configures the channel(s) in which commands will no longer be ephemeral (requires admin).")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task ConfigureBotChannel(InteractionContext ctx,
+        public static async Task ConfigureBotChannel(InteractionContext ctx,
             [Choice("True", 1)]
             [Choice("False", 0)]
             [Option("no-channels", "If you would like no channels configured, set this to true.")] bool noChannels = false)
@@ -28,9 +28,9 @@ namespace MKBB.Commands
 
                 if (noChannels)
                 {
-                    using var dbCtx = new MKBBContext();
+                    using MKBBContext dbCtx = new();
                     List<ServerData> servers = dbCtx.Servers.ToList();
-                    foreach (var server in servers)
+                    foreach (ServerData server in servers)
                     {
                         if (ctx.Guild.Id == server.ServerID)
                         {
@@ -39,7 +39,7 @@ namespace MKBB.Commands
                         }
                     }
 
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Success:**__",
@@ -50,11 +50,11 @@ namespace MKBB.Commands
                         }
                     };
 
-                    var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                    DiscordMessage message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                 }
                 else
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Choose your channels:**__",
@@ -65,9 +65,9 @@ namespace MKBB.Commands
                         }
                     };
 
-                    var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed).AddComponents(Util.GenerateChannelConfigSelectMenu()));
+                    DiscordMessage message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed).AddComponents(Util.GenerateChannelConfigSelectMenu()));
 
-                    PendingChannelConfigInteraction pending = new PendingChannelConfigInteraction() { Context = ctx, MessageId = message.Id };
+                    PendingChannelConfigInteraction pending = new() { Context = ctx, MessageId = message.Id };
                     Util.PendingChannelConfigInteractions.Add(pending);
                 }
             }

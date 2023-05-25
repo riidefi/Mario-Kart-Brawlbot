@@ -5,6 +5,7 @@ using DSharpPlus.SlashCommands.Attributes;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
+using Google.Apis.Sheets.v4.Data;
 using MKBB.Class;
 using Newtonsoft.Json;
 using System;
@@ -21,7 +22,7 @@ namespace MKBB.Commands
     {
         [SlashCommand("gbaddtrack", "Adds a new track for Ghostbusters to set times on.")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task AddNewTrack(InteractionContext ctx,
+        public static async Task AddNewTrack(InteractionContext ctx,
             [Option("track-name", "The name of the track to add.")] string track,
             [Option("track-id", "The id of the track (also known as the SHA1).")] string trackId)
         {
@@ -31,19 +32,19 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
-                var response = await request.ExecuteAsync();
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
+                ValueRange response = await request.ExecuteAsync();
 
                 foreach (var t in response.Values)
                 {
@@ -84,7 +85,7 @@ namespace MKBB.Commands
                 var updateRequest = service.Spreadsheets.Values.Update(response, "1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", $"'Ghostbusters Submissions'!{Util.ConvertToSheetRange(0, 0, response.Values.Count - 1, response.Values[0].Count - 1)}");
                 updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                 var update = await updateRequest.ExecuteAsync();
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__*Success:*__",
@@ -104,7 +105,7 @@ namespace MKBB.Commands
 
         [SlashCommand("gbaddsha1", "Edits the information for a track on the Ghostbusters sheet.")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task EditNewTrack(InteractionContext ctx,
+        public static async Task EditNewTrack(InteractionContext ctx,
             [Option("track-name", "The name of the track you want to edit.")] string track,
             [Option("track-id", "The new id of the track (also known as the SHA1).")] string newTrackId)
         {
@@ -114,19 +115,19 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
-                var response = await request.ExecuteAsync();
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
+                ValueRange response = await request.ExecuteAsync();
 
                 foreach (var t in response.Values)
                 {
@@ -169,7 +170,7 @@ namespace MKBB.Commands
                 var updateRequest = service.Spreadsheets.Values.Update(response, "1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", $"'Ghostbusters Submissions'!{Util.ConvertToSheetRange(0, 0, response.Values.Count - 1, response.Values[0].Count - 1)}");
                 updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                 var update = await updateRequest.ExecuteAsync();
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__*Success:*__",
@@ -189,7 +190,7 @@ namespace MKBB.Commands
 
         [SlashCommand("gbremovetrack", "Removes a track for Ghostbusters.")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task RemoveNewTrack(InteractionContext ctx,
+        public static async Task RemoveNewTrack(InteractionContext ctx,
             [Option("track-name", "The name of the track you want to edit.")] string track)
         {
 
@@ -199,19 +200,19 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
-                var response = await request.ExecuteAsync();
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
+                ValueRange response = await request.ExecuteAsync();
 
                 foreach (var t in response.Values)
                 {
@@ -261,7 +262,7 @@ namespace MKBB.Commands
                 var updateRequest = service.Spreadsheets.Values.Update(response, "1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", $"'Ghostbusters Submissions'!{Util.ConvertToSheetRange(0, 0, response.Values.Count - 1, response.Values[0].Count - 1)}");
                 updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                 var update = await updateRequest.ExecuteAsync();
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__*Success:*__",
@@ -280,7 +281,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("gbsubmittime", "Submits a time for a new track.")]
-        public async Task SubmitGBTime(InteractionContext ctx,
+        public static async Task SubmitGBTime(InteractionContext ctx,
             [Option("ghost-url", "The Chadsoft URL of the time you would like to submit.")] string ghost,
             [Option("comments", "Comments you would like to make about your ghost e.g. how long it took to set.")] string comments = "")
         {
@@ -290,19 +291,19 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
-                var response = await request.ExecuteAsync();
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
+                ValueRange response = await request.ExecuteAsync();
 
                 foreach (var t in response.Values)
                 {
@@ -314,15 +315,15 @@ namespace MKBB.Commands
 
                 if (ghost.Contains("rkg"))
                 {
-                    WebClient webClient = new WebClient();
-                    Ghost ghostData = new Ghost();
+                    WebClient webClient = new();
+                    Ghost ghostData = new();
                     try
                     {
-                        ghostData = JsonConvert.DeserializeObject<Ghost>(await webClient.DownloadStringTaskAsync(ghost.Substring(0, ghost.Length - 4) + "json"));
+                        ghostData = JsonConvert.DeserializeObject<Ghost>(await webClient.DownloadStringTaskAsync(ghost[..^4] + "json"));
                     }
                     catch
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__*Error:*__",
@@ -423,7 +424,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("gblist", "Gets the list of all the tracks current being reviewed by Ghostbusters.")]
-        public async Task GetGBList(InteractionContext ctx)
+        public static async Task GetGBList(InteractionContext ctx)
         {
             try
             {
@@ -431,19 +432,19 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
-                var response = await request.ExecuteAsync();
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
+                ValueRange response = await request.ExecuteAsync();
 
                 foreach (var t in response.Values)
                 {
@@ -453,7 +454,7 @@ namespace MKBB.Commands
                     }
                 }
 
-                List<string> tracks = new List<string>();
+                List<string> tracks = new();
 
                 for (int i = 0; i < response.Values[response.Values.Count - 1].Count / 5; i++)
                 {
@@ -480,7 +481,7 @@ namespace MKBB.Commands
                     description = "*No tracks currently listed.*";
                 }
 
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Current Ghostbusters Tracks:**__",

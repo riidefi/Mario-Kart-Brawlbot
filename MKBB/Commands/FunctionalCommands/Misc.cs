@@ -2,80 +2,23 @@
 using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Services;
-using Google.Apis.Sheets.v4;
 using MKBB.Class;
 using MKBB.Data;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace MKBB.Commands
 {
-    public class Misc : ApplicationCommandModule
+    public partial class Misc : ApplicationCommandModule
     {
-        //[SlashCommand("dmrole", "Direct messages members of a role specified.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task DMRole(InteractionContext ctx,
-            [Option("role", "The member role you want to send a direct message to.")] DiscordRole role,
-            [Option("message", "The message you would like to send in the direct message.")] string message)
-        {
-            try
-            {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-
-                var members = ctx.Guild.GetAllMembersAsync();
-                foreach (var member in members.Result)
-                {
-                    foreach (var r in member.Roles)
-                    {
-                        if (r == role)
-                        {
-                            try
-                            {
-                                await member.SendMessageAsync(message).ConfigureAwait(false);
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine(ex.Message);
-                                Console.WriteLine("DMs are likely closed.");
-                            }
-                        }
-                    }
-
-                    var embed = new DiscordEmbedBuilder
-                    {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = "__**Success:**__",
-                        Description = $"*Message was sent to {role.Mention} successfully.*",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    };
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-                }
-            }
-            catch (Exception ex)
-            {
-                await Util.ThrowError(ctx, ex);
-            }
-        }
+        [GeneratedRegex("\\d\\d\\d\\d-\\d\\d-\\d\\d\\.zip")]
+        private static partial Regex DateTimeZipRegex();
 
         [SlashCommand("addtool", "Adds a tool to the list of tools.")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task AddTool(InteractionContext ctx,
+        public static async Task AddTool(InteractionContext ctx,
             [Option("name", "The name of the tool you would like to add.")] string toolName,
             [Option("creators", "The name(s) of the creators of the tool.")] string toolCreators,
             [Option("description", "The description of the tool i.e. what it does.")] string toolDescription,
@@ -85,7 +28,7 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<ToolData> toolList = dbCtx.Tools.ToList();
 
                 toolList.Add(new ToolData
@@ -99,7 +42,7 @@ namespace MKBB.Commands
                 string tools = JsonConvert.SerializeObject(toolList);
                 await dbCtx.SaveChangesAsync();
 
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Tool was added:**__",
@@ -126,7 +69,7 @@ namespace MKBB.Commands
 
         [SlashCommand("edittool", "Adds a tool to the list of tools.")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task EditTool(InteractionContext ctx,
+        public static async Task EditTool(InteractionContext ctx,
             [Option("old-name", "The name of the tool you would like to edit.")] string oldToolName,
             [Option("name", "The new name for the tool you are editing.")] string toolName = "",
             [Option("creators", "The new name(s) of the creators of the tool.")] string toolCreators = "",
@@ -137,12 +80,12 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<ToolData> toolList = dbCtx.Tools.ToList();
 
                 int index = Util.ListNameCheck(toolList, oldToolName);
 
-                var embed = new DiscordEmbedBuilder();
+                DiscordEmbedBuilder embed = new();
                 if (index > -1)
                 {
                     if (toolName != "")
@@ -205,14 +148,14 @@ namespace MKBB.Commands
 
         [SlashCommand("deltool", "Removes a tool from the list of tools.")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task DeleteTool(InteractionContext ctx,
+        public static async Task DeleteTool(InteractionContext ctx,
             [Option("name", "The name of the tool you would like to delete.")] string toolName)
         {
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<ToolData> toolList = dbCtx.Tools.ToList();
 
                 int index = Util.ListNameCheck(toolList, toolName);
@@ -222,7 +165,7 @@ namespace MKBB.Commands
 
                 await dbCtx.SaveChangesAsync();
 
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = "__**Success:**__",
@@ -242,18 +185,18 @@ namespace MKBB.Commands
 
         [SlashCommand("uploadtestpack", "Uploads the test pack .zip file (named with the date of the test YYYY-MM-DD)")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task UploadTestPack(InteractionContext ctx,
+        public static async Task UploadTestPack(InteractionContext ctx,
             [Option("test-pack-zip", "The .zip file for the test pack (named with the date of the test YYYY-MM-DD)")] DiscordAttachment file)
         {
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
-                if (Regex.Match(file.FileName, "\\d\\d\\d\\d-\\d\\d-\\d\\d\\.zip").Success)
+                if (DateTimeZipRegex().Match(file.FileName).Success)
                 {
-                    WebClient webClient = new WebClient();
+                    WebClient webClient = new();
                     await webClient.DownloadFileTaskAsync(file.Url, $"C:/Files/Tests/{file.FileName}");
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Success:**__",
@@ -267,7 +210,7 @@ namespace MKBB.Commands
                 }
                 else
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",

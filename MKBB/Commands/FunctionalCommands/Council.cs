@@ -18,7 +18,7 @@ namespace MKBB.Commands
     {
         [SlashCommand("addhw", "Adds homework to the council sheet.")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task AddHomework(InteractionContext ctx,
+        public static async Task AddHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track being added.")] string track,
             [Option("authors", "The author or authors of the track being added.")] string author,
             [Option("version", "The version number of the track being added.")] string version,
@@ -32,12 +32,12 @@ namespace MKBB.Commands
                 string description = string.Empty;
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
@@ -45,11 +45,11 @@ namespace MKBB.Commands
 
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
-                var countRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                SpreadsheetsResource.ValuesResource.GetRequest countRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
                 countRequest.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                var countResponse = await countRequest.ExecuteAsync();
+                ValueRange countResponse = await countRequest.ExecuteAsync();
 
-                var due = DateTime.Today;
+                DateTime due = DateTime.Today;
 
                 if (due.Month == 2 && due.Day > 11 && due.Day < 20)
                 {
@@ -67,11 +67,11 @@ namespace MKBB.Commands
                     }
                 }
 
-                check:
-                var sameDueCount = 0;
+            check:
+                int sameDueCount = 0;
                 for (int i = 1; i < countResponse.Values.Count; i++)
                 {
-                    if (int.Parse(countResponse.Values[i][1].ToString()) == Convert.ToInt32(due.Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.CurrentCulture)).TotalDays+1))
+                    if (int.Parse(countResponse.Values[i][1].ToString()) == Convert.ToInt32(due.Subtract(DateTime.ParseExact("31/12/1899", "dd/MM/yyyy", CultureInfo.CurrentCulture)).TotalDays + 1))
                     {
                         sameDueCount++;
                     }
@@ -134,15 +134,15 @@ namespace MKBB.Commands
                             };
                 IList<IList<object>> values = new List<IList<object>> { obj };
 
-                var appendRequest = service.Spreadsheets.Values.Append(new ValueRange() { Values = values }, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                SpreadsheetsResource.ValuesResource.AppendRequest appendRequest = service.Spreadsheets.Values.Append(new ValueRange() { Values = values }, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
                 appendRequest.InsertDataOption = SpreadsheetsResource.ValuesResource.AppendRequest.InsertDataOptionEnum.INSERTROWS;
                 appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
                 appendRequest.ResponseValueRenderOption = SpreadsheetsResource.ValuesResource.AppendRequest.ResponseValueRenderOptionEnum.FORMULA;
-                var appendResponse = await appendRequest.ExecuteAsync();
+                AppendValuesResponse appendResponse = await appendRequest.ExecuteAsync();
 
                 notes = notes != "" ? $"*{notes}*" : notes;
 
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Success:**__",
@@ -158,7 +158,7 @@ namespace MKBB.Commands
                 DiscordChannel councilAnnouncements = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(635313521487511554);
                 DiscordChannel councilLogs = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402205231730698);
                 DiscordChannel announcements = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402229491581061);
-                var ping = "";
+                string ping = "";
 #if RELEASE
     ping = "<@&608386209655554058> ";
 #endif
@@ -174,7 +174,7 @@ namespace MKBB.Commands
 
         [SlashCommand("delhw", "Deletes homework from the council sheet.")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task DeleteHomework(InteractionContext ctx,
+        public static async Task DeleteHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track being removed.")] string track)
         {
             try
@@ -187,19 +187,19 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
-                var response = await request.ExecuteAsync();
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                ValueRange response = await request.ExecuteAsync();
 
                 int ix = -1;
 
@@ -215,7 +215,7 @@ namespace MKBB.Commands
                 }
                 if (ix < 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -230,7 +230,7 @@ namespace MKBB.Commands
                 }
                 else
                 {
-                    var req = new Request
+                    Request req = new()
                     {
                         DeleteDimension = new DeleteDimensionRequest
                         {
@@ -244,11 +244,11 @@ namespace MKBB.Commands
                         }
                     };
 
-                    var deleteRequest = new BatchUpdateSpreadsheetRequest { Requests = new List<Request> { req } };
-                    var deleteResponse = service.Spreadsheets.BatchUpdate(deleteRequest, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss").Execute();
+                    BatchUpdateSpreadsheetRequest deleteRequest = new() { Requests = new List<Request> { req } };
+                    BatchUpdateSpreadsheetResponse deleteResponse = service.Spreadsheets.BatchUpdate(deleteRequest, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss").Execute();
 
 
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Success:**__",
@@ -269,7 +269,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("submithw", "For council to submit their votes and feedback")]
-        public async Task SubmitHomework(InteractionContext ctx,
+        public static async Task SubmitHomework(InteractionContext ctx,
             [Choice("Yes", "Yes")]
             [Choice("No", "No")]
             [Choice("Neutral", "Neutral")]
@@ -286,10 +286,10 @@ namespace MKBB.Commands
                 string json = string.Empty;
                 string member = string.Empty;
 
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
-                foreach (var m in councilJson)
+                foreach (CouncilMemberData m in councilJson)
                 {
                     if (m.DiscordID == ctx.Member.Id.ToString())
                     {
@@ -299,20 +299,20 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
                 request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                var response = await request.ExecuteAsync();
+                ValueRange response = await request.ExecuteAsync();
 
                 int row = -1;
                 int col = -1;
@@ -340,7 +340,7 @@ namespace MKBB.Commands
 
                 if (row == -1)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -357,17 +357,19 @@ namespace MKBB.Commands
                 else
                 {
 
-                    ValueRange updateValueRange = new ValueRange();
-                    updateValueRange.Values = new List<IList<object>>()
+                    ValueRange updateValueRange = new()
+                    {
+                        Values = new List<IList<object>>()
                 {
                     new List<object>(){ response.Values[row][col] }
-                };
+                }
+                    };
 
-                    var updateRequest = service.Spreadsheets.Values.Update(updateValueRange, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!{Util.ConvertToSheetRange(row, col)}");
+                    SpreadsheetsResource.ValuesResource.UpdateRequest updateRequest = service.Spreadsheets.Values.Update(updateValueRange, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Track Evaluating'!{Util.ConvertToSheetRange(row, col)}");
                     updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-                    var update = await updateRequest.ExecuteAsync();
+                    UpdateValuesResponse update = await updateRequest.ExecuteAsync();
 
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Success:**__",
@@ -388,7 +390,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("gethw", "For council and admins to get homework feedback.")]
-        public async Task GetSpecificHomework(InteractionContext ctx,
+        public static async Task GetSpecificHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track you're requesting feedback of.")] string track,
             [Option("member", "The council member you are requesting the feedback of.")] DiscordUser member)
         {
@@ -396,7 +398,7 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
                 int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
@@ -405,7 +407,7 @@ namespace MKBB.Commands
 
                 if (ix < 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -422,20 +424,20 @@ namespace MKBB.Commands
                 {
                     string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                    var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                    X509Certificate2 certificate = new(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                    ServiceAccountCredential credential = new(
                        new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                    var service = new SheetsService(new BaseClientService.Initializer()
+                    SheetsService service = new(new BaseClientService.Initializer()
                     {
                         HttpClientInitializer = credential,
                         ApplicationName = "Mario Kart Brawlbot",
                     });
 
-                    var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                    SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
                     request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                    var response = await request.ExecuteAsync();
+                    ValueRange response = await request.ExecuteAsync();
 
                     for (int i = 0; i < response.Values.Count; i++)
                     {
@@ -460,7 +462,7 @@ namespace MKBB.Commands
                     int l = 0;
                     string trackDisplay = string.Empty;
 
-                    foreach (var m in response.Values[0])
+                    foreach (object m in response.Values[0])
                     {
                         if (m.ToString() == councilJson[ix].Name)
                         {
@@ -468,11 +470,11 @@ namespace MKBB.Commands
                         }
                     }
 
-                    List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                    List<DiscordEmbedBuilder> embeds = new();
 
                     if (sheetIx > 0)
                     {
-                        foreach (var t in response.Values)
+                        foreach (IList<Object> t in response.Values)
                         {
                             while (t.Count < response.Values[0].Count)
                             {
@@ -507,7 +509,7 @@ namespace MKBB.Commands
 
                     if (sheetIx < 0)
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
@@ -522,7 +524,7 @@ namespace MKBB.Commands
                     }
                     else if (l == 0)
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
@@ -537,7 +539,7 @@ namespace MKBB.Commands
                     }
                     else
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**{trackDisplay}**__",
@@ -559,7 +561,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("hw", "Gets a list of all the current homework, and information related to it.")]
-        public async Task GetHomework(InteractionContext ctx)
+        public static async Task GetHomework(InteractionContext ctx)
         {
             try
             {
@@ -567,40 +569,40 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2("key.p12", "notasecret");
+                X509Certificate2 certificate = new("key.p12", "notasecret");
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var temp = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluation Log'");
-                var tempResponse = await temp.ExecuteAsync();
-                var today = int.Parse(tempResponse.Values[tempResponse.Values.Count - 1][tempResponse.Values[tempResponse.Values.Count - 1].Count - 1].ToString());
+                SpreadsheetsResource.ValuesResource.GetRequest temp = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluation Log'");
+                ValueRange tempResponse = await temp.ExecuteAsync();
+                int today = int.Parse(tempResponse.Values[tempResponse.Values.Count - 1][tempResponse.Values[tempResponse.Values.Count - 1].Count - 1].ToString());
 
-                var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
-                var responseRaw = await request.ExecuteAsync();
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+                ValueRange responseRaw = await request.ExecuteAsync();
 
                 request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                var response = await request.ExecuteAsync();
+                ValueRange response = await request.ExecuteAsync();
 
-                var tRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
-                var tResponseRaw = await tRequest.ExecuteAsync();
+                SpreadsheetsResource.ValuesResource.GetRequest tRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                ValueRange tResponseRaw = await tRequest.ExecuteAsync();
 
                 tRequest.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                var tResponse = await tRequest.ExecuteAsync();
-                foreach (var t in response.Values)
+                ValueRange tResponse = await tRequest.ExecuteAsync();
+                foreach (IList<object> t in response.Values)
                 {
                     while (t.Count < response.Values[0].Count)
                     {
                         t.Add("");
                     }
                 }
-                foreach (var t in tResponse.Values)
+                foreach (IList<object> t in tResponse.Values)
                 {
                     while (t.Count < tResponse.Values[0].Count)
                     {
@@ -610,7 +612,7 @@ namespace MKBB.Commands
 
                 if ((response.Values.Count < 2 || response.Values[1][0].ToString() == "") && (tResponse.Values.Count < 2 || tResponse.Values[1][0].ToString() == ""))
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Council Homework:**__",
@@ -628,14 +630,14 @@ namespace MKBB.Commands
                     string description = "__**Submissions**__\n";
                     for (int i = 1; i < response.Values.Count; i++)
                     {
-                        var t = response.Values[i];
-                        var tRaw = responseRaw.Values[i];
+                        IList<object> t = response.Values[i];
+                        IList<object> tRaw = responseRaw.Values[i];
                         string tally = "*Unreviewed*";
                         try
                         {
                             if (today >= int.Parse(t[1].ToString()))
                             {
-                                var emote = string.Empty;
+                                string emote = string.Empty;
                                 if ((double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString())) / (double.Parse(tRaw[8].ToString()) + double.Parse(tRaw[9].ToString()) + double.Parse(tRaw[11].ToString())) >= 2.0 / 3.0)
                                 {
                                     emote = DiscordEmoji.FromName(ctx.Client, ":yes:");
@@ -664,11 +666,11 @@ namespace MKBB.Commands
                     description += "__**Threads**__\n";
                     for (int i = 1; i < tResponse.Values.Count; i++)
                     {
-                        var t = tResponse.Values[i];
-                        var tRaw = tResponseRaw.Values[i];
+                        IList<object> t = tResponse.Values[i];
+                        IList<object> tRaw = tResponseRaw.Values[i];
                         description += $"{t[0]} | {tRaw[1]} | [Thread]({t[3].ToString().Split('"')[1]})\n";
                     }
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Council Homework:**__",
@@ -689,18 +691,18 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("strikes", "Gets a specific member's strike count.")]
-        public async Task DisplayStrikes(InteractionContext ctx,
+        public static async Task DisplayStrikes(InteractionContext ctx,
             [Option("member", "The name of the council member you are requesting the missed homework count of.")] DiscordUser member)
         {
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
 
                 int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
-                var embed = new DiscordEmbedBuilder();
+                DiscordEmbedBuilder embed = new();
                 if (ix < 0)
                 {
                     embed = new DiscordEmbedBuilder
@@ -737,22 +739,22 @@ namespace MKBB.Commands
 
         [SlashCommand("allstrikes", "Gets a list of all council member's strikes.")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task DisplayAllStrikes(InteractionContext ctx)
+        public static async Task DisplayAllStrikes(InteractionContext ctx)
         {
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
                 string description = string.Empty;
 
-                foreach (var m in councilJson)
+                foreach (CouncilMemberData m in councilJson)
                 {
                     description += $"*{m.Name}: {m.Strikes}*\n";
                 }
 
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Council Members Strike Count:**__",
@@ -771,7 +773,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("addthreadhw", "Adds thread homework to the council sheet.")]
-        public async Task AddThreadHomework(InteractionContext ctx,
+        public static async Task AddThreadHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track being added.")] string track,
             [Option("authors", "The author or authors of the track being added.")] string author,
             [Option("thread", "The thread of the track being added.")] DiscordChannel thread,
@@ -785,7 +787,7 @@ namespace MKBB.Commands
 
                 if (thread.ParentId != 369281592407097345 && thread.ParentId != 1046936322574655578)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -803,21 +805,21 @@ namespace MKBB.Commands
                     string description = string.Empty;
                     string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                    var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                    X509Certificate2 certificate = new(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                    ServiceAccountCredential credential = new(
                        new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                    var service = new SheetsService(new BaseClientService.Initializer()
+                    SheetsService service = new(new BaseClientService.Initializer()
                     {
                         HttpClientInitializer = credential,
                         ApplicationName = "Mario Kart Brawlbot",
                     });
 
-                    var countRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
-                    var countResponse = await countRequest.ExecuteAsync();
+                    SpreadsheetsResource.ValuesResource.GetRequest countRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                    ValueRange countResponse = await countRequest.ExecuteAsync();
 
-                    var due = DateTime.Today.AddDays(5);
+                    DateTime due = DateTime.Today.AddDays(5);
 
                     IList<object> obj = new List<object>
                             {
@@ -831,15 +833,15 @@ namespace MKBB.Commands
                             };
                     IList<IList<object>> values = new List<IList<object>> { obj };
 
-                    var appendRequest = service.Spreadsheets.Values.Append(new ValueRange() { Values = values }, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                    SpreadsheetsResource.ValuesResource.AppendRequest appendRequest = service.Spreadsheets.Values.Append(new ValueRange() { Values = values }, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
                     appendRequest.InsertDataOption = SpreadsheetsResource.ValuesResource.AppendRequest.InsertDataOptionEnum.INSERTROWS;
                     appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
                     appendRequest.ResponseValueRenderOption = SpreadsheetsResource.ValuesResource.AppendRequest.ResponseValueRenderOptionEnum.FORMULA;
-                    var appendResponse = await appendRequest.ExecuteAsync();
+                    AppendValuesResponse appendResponse = await appendRequest.ExecuteAsync();
 
                     notes = notes != "" ? $"*{notes}*" : notes;
 
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Success:**__",
@@ -855,7 +857,7 @@ namespace MKBB.Commands
 
                     DiscordChannel councilAnnouncements = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(635313521487511554);
                     DiscordChannel councilLogs = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402205231730698);
-                    var ping = "";
+                    string ping = "";
 #if RELEASE
     ping = "<@&608386209655554058> ";
 #endif
@@ -872,7 +874,7 @@ namespace MKBB.Commands
 
         [SlashCommand("delthreadhw", "Deletes thread homework from the council sheet.")]
         [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public async Task DeleteThreadHomework(InteractionContext ctx,
+        public static async Task DeleteThreadHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track being removed.")] string track)
         {
             try
@@ -885,19 +887,19 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
-                var response = await request.ExecuteAsync();
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                ValueRange response = await request.ExecuteAsync();
 
                 int ix = -1;
 
@@ -913,7 +915,7 @@ namespace MKBB.Commands
                 }
                 if (ix < 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -928,7 +930,7 @@ namespace MKBB.Commands
                 }
                 else
                 {
-                    var req = new Request
+                    Request req = new()
                     {
                         DeleteDimension = new DeleteDimensionRequest
                         {
@@ -942,10 +944,10 @@ namespace MKBB.Commands
                         }
                     };
 
-                    var deleteRequest = new BatchUpdateSpreadsheetRequest { Requests = new List<Request> { req } };
+                    BatchUpdateSpreadsheetRequest deleteRequest = new() { Requests = new List<Request> { req } };
                     var deleteResponse = service.Spreadsheets.BatchUpdate(deleteRequest, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss").Execute();
 
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Success:**__",
@@ -966,7 +968,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("submitthreadhw", "For council to submit feedback on threads.")]
-        public async Task SubmitTheadHomework(InteractionContext ctx,
+        public static async Task SubmitTheadHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track you're adding feedback to.")] string track,
             [Option("feedback", "Evidence of your feedback to the author.")] string feedback)
         {
@@ -978,7 +980,7 @@ namespace MKBB.Commands
                 string json = string.Empty;
                 string member = string.Empty;
 
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
                 foreach (var m in councilJson)
@@ -991,20 +993,20 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
                 request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                var response = await request.ExecuteAsync();
+                ValueRange response = await request.ExecuteAsync();
 
                 int row = -1;
                 int col = -1;
@@ -1033,7 +1035,7 @@ namespace MKBB.Commands
 
                 if (row == -1)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -1049,16 +1051,18 @@ namespace MKBB.Commands
                 else
                 {
 
-                    ValueRange updateValueRange = new ValueRange();
-                    updateValueRange.Values = new List<IList<object>>()
+                    ValueRange updateValueRange = new()
+                    {
+                        Values = new List<IList<object>>()
                     {
                         new List<object>(){ response.Values[row][col] }
+                    }
                     };
 
                     var updateRequest = service.Spreadsheets.Values.Update(updateValueRange, "1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", $"'Thread Homework'!{Util.ConvertToSheetRange(row, col)}");
                     updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                     var update = await updateRequest.ExecuteAsync();
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Success:**__",
@@ -1079,14 +1083,14 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("getthreadhw", "For council and admins to get thread homework.")]
-        public async Task GetSpecificThreadHomework(InteractionContext ctx,
+        public static async Task GetSpecificThreadHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track you're requesting feedback of.")] string track,
             [Option("member", "The council member you are requesting the feedback of.")] DiscordUser member)
         {
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
 
                 int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
@@ -1095,7 +1099,7 @@ namespace MKBB.Commands
 
                 if (ix < 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -1112,20 +1116,20 @@ namespace MKBB.Commands
                 {
                     string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                    var certificate = new X509Certificate2(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                    X509Certificate2 certificate = new(@".\key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                    ServiceAccountCredential credential = new(
                        new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                    var service = new SheetsService(new BaseClientService.Initializer()
+                    SheetsService service = new(new BaseClientService.Initializer()
                     {
                         HttpClientInitializer = credential,
                         ApplicationName = "Mario Kart Brawlbot",
                     });
 
-                    var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
+                    SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
                     request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                    var response = await request.ExecuteAsync();
+                    ValueRange response = await request.ExecuteAsync();
 
                     for (int i = 0; i < response.Values.Count; i++)
                     {
@@ -1158,7 +1162,7 @@ namespace MKBB.Commands
                         }
                     }
 
-                    List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                    List<DiscordEmbedBuilder> embeds = new();
 
                     if (sheetIx > 0)
                     {
@@ -1197,7 +1201,7 @@ namespace MKBB.Commands
 
                     if (sheetIx < 0)
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
@@ -1212,7 +1216,7 @@ namespace MKBB.Commands
                     }
                     else if (l == 0)
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
@@ -1227,7 +1231,7 @@ namespace MKBB.Commands
                     }
                     else
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**{trackDisplay}**__",

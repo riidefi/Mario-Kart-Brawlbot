@@ -6,6 +6,7 @@ using FluentScheduler;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
+using Google.Apis.Sheets.v4.Data;
 using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -26,7 +27,7 @@ namespace MKBB.Commands
     {
         [SlashCommand("starttimer", "Starts the timer for updating data for the bot.")]
         [SlashRequireOwner]
-        public async Task StartTimers(InteractionContext ctx)
+        public static async Task StartTimers(InteractionContext ctx)
         {
             if (ctx != null)
             {
@@ -43,7 +44,7 @@ namespace MKBB.Commands
 
             if (ctx != null)
             {
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Notice:**__",
@@ -57,7 +58,7 @@ namespace MKBB.Commands
             }
         }
 
-        public async Task ExecuteTimer(InteractionContext ctx)
+        public static async Task ExecuteTimer(InteractionContext ctx)
         {
             Util.PendingPageInteractions = new List<PendingPagesInteraction>();
             Util.PendingChannelConfigInteractions = new List<PendingChannelConfigInteraction>();
@@ -74,7 +75,7 @@ namespace MKBB.Commands
 
         [SlashCommand("update", "Updates the database with information from Chadsoft and Wiimmfi.")]
         [SlashRequireOwner]
-        public async Task UpdateInit(InteractionContext ctx)
+        public static async Task UpdateInit(InteractionContext ctx)
         {
             if (ctx != null && ctx.CommandName == "update")
             {
@@ -86,7 +87,7 @@ namespace MKBB.Commands
                 await UpdateDatabase();
                 if (ctx != null && ctx.CommandName == "update")
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Notice:**__",
@@ -113,7 +114,7 @@ namespace MKBB.Commands
             }
         }
 
-        public async Task UpdateDatabase()
+        public static async Task UpdateDatabase()
         {
             string rtttUrl = "http://tt.chadsoft.co.uk/original-track-leaderboards.json";
             string ctttUrl = "http://tt.chadsoft.co.uk/ctgp-leaderboards.json";
@@ -124,14 +125,16 @@ namespace MKBB.Commands
             string ctwwUrl3 = "https://wiimmfi.de/stats/track/mv/ctgp?m=json&p=std,c2,0,200";
             string wwUrl = "https://wiimmfi.de/stats/track/mv/ww?m=json&p=std,c2,0";
 
-            using var dbCtx = new MKBBContext();
+            using MKBBContext dbCtx = new();
 
             // Leaderboards
 
-            var webClient = new WebClient();
-            webClient.Encoding = Encoding.UTF8;
+            WebClient webClient = new()
+            {
+                Encoding = Encoding.UTF8
+            };
 
-            var currentTracks = dbCtx.Tracks.ToList();
+            List<TrackData> currentTracks = dbCtx.Tracks.ToList();
 
             // Get most up to date data from Chadsoft
 
@@ -151,7 +154,7 @@ namespace MKBB.Commands
 
             foreach (var track in newChadsoftData)
             {
-                if (currentTracks.Where(x => x.SHA1 == track.SHA1).Count() != 0) // If the track already exists in the database
+                if (currentTracks.Where(x => x.SHA1 == track.SHA1).Any()) // If the track already exists in the database
                 {
                     foreach (var t in dbCtx.Tracks.Where(x => x.SHA1 == track.SHA1 && x.LeaderboardLink == track.LinkContainer.Href.URL))
                     {
@@ -165,8 +168,10 @@ namespace MKBB.Commands
                     var newTrack = track.ConvertData();
                     newTrack.LeaderboardLink = track.LinkContainer.Href.URL;
                     newTrack.CustomTrack = true;
-                    var web = new HtmlWeb();
-                    web.UserAgent = Util.GetUserAgent();
+                    HtmlWeb web = new()
+                    {
+                        UserAgent = Util.GetUserAgent()
+                    };
                     HtmlDocument wikiPage = await web.LoadFromWebAsync("https://wiki.tockdom.com/wiki/CTGP_Revolution");
                     var tds = wikiPage.DocumentNode.SelectNodes("//table/tbody/tr/td");
                     for (int i = 0; i < tds.Count; i++)
@@ -180,20 +185,20 @@ namespace MKBB.Commands
                     }
                     string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                    var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                    X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                    ServiceAccountCredential credential = new ServiceAccountCredential(
+                    ServiceAccountCredential credential = new(
                        new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                    var service = new SheetsService(new BaseClientService.Initializer()
+                    SheetsService service = new(new BaseClientService.Initializer()
                     {
                         HttpClientInitializer = credential,
                         ApplicationName = "Mario Kart Brawlbot",
                     });
 
-                    var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Update Queue'");
+                    SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Update Queue'");
                     request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                    var response = await request.ExecuteAsync();
+                    ValueRange response = await request.ExecuteAsync();
                     foreach (var c in response.Values)
                     {
                         while (c.Count < 11)
@@ -218,7 +223,7 @@ namespace MKBB.Commands
                             }
                         }
                     }
-                    HtmlDocument leaderboardPage = new HtmlDocument();
+                    HtmlDocument leaderboardPage = new();
                     leaderboardPage.LoadHtml(await webClient.DownloadStringTaskAsync($"https://chadsoft.co.uk/time-trials{newTrack.LeaderboardLink.Replace("json", "html")}"));
                     Console.WriteLine($"Downloading leaderboard for {newTrack.Name}");
                     var h1s = leaderboardPage.DocumentNode.SelectNodes("//h1");
@@ -242,7 +247,7 @@ namespace MKBB.Commands
                         }
                         else
                         {
-                            newTrack.CategoryName = h1.InnerText.Split(' ')[h1.InnerText.Split(' ').Count() - 1];
+                            newTrack.CategoryName = h1.InnerText.Split(' ')[^1];
                         }
                     }
                     foreach (var ct in dbCtx.Tracks.Where(x => x.SlotID == newTrack.SlotID && x.SHA1 != newTrack.SHA1))
@@ -285,16 +290,16 @@ namespace MKBB.Commands
             // Get most up to date data from Wiimmfi
             // // Nintendo Tracks
 
-            HtmlDocument wwHtml = new HtmlDocument();
+            HtmlDocument wwHtml = new();
             wwHtml.LoadHtml(await webClient.DownloadStringTaskAsync(wwUrl));
             var innerText1 = wwHtml.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
-            var m1s = new List<string>();
-            var m2s = new List<string>();
-            var m3s = new List<string>();
-            var m6s = new List<string>();
-            var m9s = new List<string>();
-            var m12s = new List<string>();
-            var names = new List<string>();
+            List<string> m1s = new();
+            List<string> m2s = new();
+            List<string> m3s = new();
+            List<string> m6s = new();
+            List<string> m9s = new();
+            List<string> m12s = new();
+            List<string> names = new();
             for (int i = 0; i < 32 * 11; i++)
             {
                 if (i % 11 - 2 == 0)
@@ -346,9 +351,9 @@ namespace MKBB.Commands
 
             // // Custom Tracks
 
-            HtmlDocument ctwwHtml1 = new HtmlDocument();
-            HtmlDocument ctwwHtml2 = new HtmlDocument();
-            HtmlDocument ctwwHtml3 = new HtmlDocument();
+            HtmlDocument ctwwHtml1 = new();
+            HtmlDocument ctwwHtml2 = new();
+            HtmlDocument ctwwHtml3 = new();
             ctwwHtml1.LoadHtml(await webClient.DownloadStringTaskAsync(ctwwUrl1));
             var bodyNodes = ctwwHtml1.DocumentNode.SelectNodes("//td[contains(@class, 'LL')]");
             innerText1 = ctwwHtml1.DocumentNode.SelectNodes("//tr[contains(@id, 'p0-')]/td");
@@ -489,7 +494,7 @@ namespace MKBB.Commands
                 else
                 {
                     var dl = await webClient.DownloadStringTaskAsync($"{bodyNodes[i].InnerHtml.Split('"')[1]}?m=json");
-                    var trackHtml = new HtmlDocument();
+                    HtmlDocument trackHtml = new();
                     trackHtml.LoadHtml(dl);
                     var tts = trackHtml.DocumentNode.SelectNodes("//tr/td/tt");
                     foreach (var tt in tts)
@@ -519,16 +524,18 @@ namespace MKBB.Commands
             var today = DateTime.Now;
             File.WriteAllText("lastUpdated.txt", today.ToString("dd/MM/yyyy HH:mm:ss"));
 
-            DiscordActivity activity = new DiscordActivity();
-            activity.Name = $"Last Updated: {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}" +
-                $" | /help";
+            DiscordActivity activity = new()
+            {
+                Name = $"Last Updated: {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}" +
+                $" | /help"
+            };
             await Bot.Client.UpdateStatusAsync(activity);
 
         }
 
         [SlashCommand("checkstrikes", "Checks missed homework and notifies if there is homework due.")]
         [SlashRequireOwner]
-        public async Task CheckStrikesInit(InteractionContext ctx)
+        public static async Task CheckStrikesInit(InteractionContext ctx)
         {
             if (ctx != null && ctx.CommandName == "checkstrikes")
             {
@@ -540,7 +547,7 @@ namespace MKBB.Commands
 
                 if (ctx != null && ctx.CommandName == "checkstrikes")
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Notice:**__",
@@ -566,15 +573,15 @@ namespace MKBB.Commands
             }
         }
 
-        public async Task CheckStrikes(InteractionContext ctx)
+        public static async Task CheckStrikes(InteractionContext ctx)
         {
             string json;
 
             string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-            ServiceAccountCredential credential = new ServiceAccountCredential(
+            X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+            ServiceAccountCredential credential = new(
                new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-            var service = new SheetsService(new BaseClientService.Initializer()
+            SheetsService service = new(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
                 ApplicationName = "Mario Kart Brawlbot",
@@ -585,9 +592,9 @@ namespace MKBB.Commands
             var tempResponse = await temp.ExecuteAsync();
             var today = int.Parse(tempResponse.Values[tempResponse.Values.Count - 1][tempResponse.Values[tempResponse.Values.Count - 1].Count - 1].ToString());
 
-            var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
+            SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluating'");
             request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-            var response = await request.ExecuteAsync();
+            ValueRange response = await request.ExecuteAsync();
 
             var tRequest = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Thread Homework'");
             tRequest.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
@@ -607,19 +614,19 @@ namespace MKBB.Commands
                 }
             }
 
-            using var dbCtx = new MKBBContext();
+            using MKBBContext dbCtx = new();
             List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
             var hwCompleted = new bool?[councilJson.Count];
             var threadHwCompleted = new bool?[councilJson.Count];
             var threadHwCompleted3 = new bool?[councilJson.Count];
 
-            List<string> tracks = new List<string>();
-            List<string> threadTracks = new List<string>();
-            List<string> dueTracks = new List<string>();
-            List<string> dueThreadTracks = new List<string>();
+            List<string> tracks = new();
+            List<string> threadTracks = new();
+            List<string> dueTracks = new();
+            List<string> dueThreadTracks = new();
 
-            List<string> inconsistentMembers = new List<string>();
-            List<string> inconsistentMembersThreads = new List<string>();
+            List<string> inconsistentMembers = new();
+            List<string> inconsistentMembersThreads = new();
             for (int i = 1; i < response.Values.Count; i++)
             {
                 if (response.Values[i][1].ToString() != "")
@@ -635,7 +642,7 @@ namespace MKBB.Commands
                         for (int j = 12; j < response.Values[0].Count; j++)
                         {
                             int ix = councilJson.FindIndex(x => x.Name == response.Values[0][j].ToString());
-                            bool isAuthor = response.Values[0][j].ToString() == councilJson[ix].Name ? true : false;
+                            bool isAuthor = response.Values[0][j].ToString() == councilJson[ix].Name;
                             if (response.Values[i][j].ToString() == "" ||
                                     response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
                                     response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
@@ -668,7 +675,7 @@ namespace MKBB.Commands
                         for (int j = 7; j < tResponse.Values[0].Count; j++)
                         {
                             int ix = councilJson.FindIndex(x => x.Name == tResponse.Values[0][j].ToString());
-                            bool isAuthor = tResponse.Values[0][j].ToString() == councilJson[ix].Name ? true : false;
+                            bool isAuthor = tResponse.Values[0][j].ToString() == councilJson[ix].Name;
                             if (tResponse.Values[i][j].ToString() == "" &&
                                     isAuthor == false)
                             {
@@ -812,7 +819,7 @@ namespace MKBB.Commands
 
             if (hwCompleted.Select(x => x == false).ToArray().Length > 0 && dueTracks.Count > 0 && description != string.Empty)
             {
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Members who missed homework:**__",
@@ -837,7 +844,7 @@ namespace MKBB.Commands
 
             if (threadHwCompleted.Select(x => x == false).ToArray().Length > 0 && dueThreadTracks.Count > 0 && description != string.Empty)
             {
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Members who missed thread homework:**__",
@@ -862,7 +869,7 @@ namespace MKBB.Commands
 
             if (threadHwCompleted3.Select(x => x == false).ToArray().Length > 0 && dueThreadTracks.Count > 0 && description != string.Empty)
             {
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Members who missed 3 thread homeworks in a row:**__",
@@ -879,9 +886,11 @@ namespace MKBB.Commands
             var now = DateTime.Now;
             File.WriteAllText("lastUpdated.txt", now.ToString("dd/MM/yyyy HH:mm:ss"));
 
-            DiscordActivity activity = new DiscordActivity();
-            activity.Name = $"Last Updated: {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}" +
-                $" | /help";
+            DiscordActivity activity = new()
+            {
+                Name = $"Last Updated: {DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()}" +
+                $" | /help"
+            };
             await Bot.Client.UpdateStatusAsync(activity);
         }
     }

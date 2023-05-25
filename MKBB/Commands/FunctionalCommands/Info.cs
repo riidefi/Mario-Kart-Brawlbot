@@ -24,22 +24,22 @@ namespace MKBB.Commands
     public class Info : ApplicationCommandModule
     {
         [SlashCommand("tools", "Gives a list of useful tools or the ability to search for one.")]
-        public async Task ListTools(InteractionContext ctx,
+        public static async Task ListTools(InteractionContext ctx,
             [Option("tool-name", "The name of the tool you wish to search for.")] string toolName = "")
         {
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
 
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<ToolData> toolList = dbCtx.Tools.ToList();
 
                 if (toolName == "")
                 {
-                    List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                    List<DiscordEmbedBuilder> embeds = new();
                     foreach (var tool in toolList)
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Useful Tools:**__",
@@ -70,7 +70,7 @@ namespace MKBB.Commands
 
                     if (embeds.Count > 1)
                     {
-                        PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                        PendingPagesInteraction pending = new() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
                         Util.PendingPageInteractions.Add(pending);
                     }
@@ -79,7 +79,7 @@ namespace MKBB.Commands
                 {
                     int index = Util.ListNameCheck(toolList, toolName);
 
-                    var embed = new DiscordEmbedBuilder();
+                    DiscordEmbedBuilder embed = new();
                     if (index > -1)
                     {
                         embed = new DiscordEmbedBuilder
@@ -124,27 +124,27 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("nextupdate", "Displays the next update(s) coming to CTGP.")]
-        public async Task GetNextUpdate(InteractionContext ctx)
+        public static async Task GetNextUpdate(InteractionContext ctx)
         {
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Update Queue'");
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'Update Queue'");
                 request.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                var response = await request.ExecuteAsync();
+                ValueRange response = await request.ExecuteAsync();
                 response.Values.Add(new List<object>());
                 foreach (var t in response.Values)
                 {
@@ -159,7 +159,7 @@ namespace MKBB.Commands
                 string title = $"__**{response.Values[k][1]}:**__";
                 k += 2;
 
-                List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                List<DiscordEmbedBuilder> embeds = new();
 
             NewEmbed:
                 string description = $"**{response.Values[k][1]}:**";
@@ -179,7 +179,7 @@ namespace MKBB.Commands
 
                 if (response.Values[k][2].ToString() == "")
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = title,
@@ -215,7 +215,7 @@ namespace MKBB.Commands
 
                 if (embeds.Count > 1)
                 {
-                    PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingPagesInteraction pending = new() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
                     Util.PendingPageInteractions.Add(pending);
                 }
@@ -227,7 +227,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("summary", "Gets the summary review from submission of the track specified.")]
-        public async Task GetSummary(InteractionContext ctx,
+        public static async Task GetSummary(InteractionContext ctx,
             [Option("track-name", "The track name of the summary requested.")] string track)
         {
             try
@@ -237,19 +237,19 @@ namespace MKBB.Commands
 
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
                 });
 
-                var request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluation Log'");
-                var response = await request.ExecuteAsync();
+                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1I9yFsomTcvFT4hp6eN2azsfv6MsIy1897tBFX_gmtss", "'Track Evaluation Log'");
+                ValueRange response = await request.ExecuteAsync();
                 foreach (var t in response.Values)
                 {
                     while (t.Count < 7)
@@ -299,7 +299,7 @@ namespace MKBB.Commands
                 }
                 if (index < 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -314,7 +314,7 @@ namespace MKBB.Commands
                 }
                 else
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Summary for {trackDisplay} (First result):**__",
@@ -335,14 +335,14 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("info", "Gets the information for the track specified.")]
-        public async Task GetTrackInfo(InteractionContext ctx,
+        public static async Task GetTrackInfo(InteractionContext ctx,
             [Option("track-name", "The track the information is being requested for.")] string track)
         {
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
                 track = Util.Convert3DSTrackName(track);
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<TrackData> trackList = dbCtx.Tracks.ToList();
 
                 int ix = Util.ListNameCheck(trackList, track);
@@ -351,7 +351,7 @@ namespace MKBB.Commands
 
                 if (ix < 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -366,7 +366,7 @@ namespace MKBB.Commands
                 }
                 else
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**{trackList[ix].Name} *(First result)*:**__",
@@ -387,7 +387,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("pop", "Gets the amount of times a track has been played on Wiimmfi for the last 3 months")]
-        public async Task PopularityRequest(InteractionContext ctx,
+        public static async Task PopularityRequest(InteractionContext ctx,
             [Option("search", "Can use rts/cts to get a leaderboard, or input a track name to get the popularity for it.")] string arg,
             [Choice("M1", "m1")]
             [Choice("M2", "m2")]
@@ -417,7 +417,7 @@ namespace MKBB.Commands
                 string description10 = string.Empty;
                 string description11 = string.Empty;
 
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<TrackData> trackListCts = dbCtx.Tracks.AsEnumerable()
                     .Where(x=>(x.CategoryName == "Normal" || x.CategoryName == "No-shortcut") && x.CustomTrack && !x.Is200cc)
                     .DistinctBy(x=>x.Name)
@@ -430,17 +430,17 @@ namespace MKBB.Commands
                     .OrderByDescending(x => metric == "online" ? x.ReturnOnlinePopularity(month) : x.TimeTrialPopularity)
                     .ToList();
 
-                List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                List<DiscordEmbedBuilder> embeds = new();
 
                 if (arg.ToLowerInvariant().Contains("rts"))
                 {
                     for (int i = 0; i < 21; i++)
                     {
-                        description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialPopularity)})*\n";
+                        description1 += $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 21; i < 32; i++)
                     {
-                        description2 = description2 + $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialPopularity)})*\n";
+                        description2 += $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialPopularity)})*\n";
                     }
                     embeds = new List<DiscordEmbedBuilder>{
                         new DiscordEmbedBuilder
@@ -472,47 +472,47 @@ namespace MKBB.Commands
                 {
                     for (int i = 0; i < 21; i++)
                     {
-                        description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                        description1 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 21; i < 42; i++)
                     {
-                        description2 = description2 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                        description2 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 42; i < 63; i++)
                     {
-                        description3 = description3 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                        description3 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 63; i < 84; i++)
                     {
-                        description4 = description4 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                        description4 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 84; i < 105; i++)
                     {
-                        description5 = description5 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                        description5 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 105; i < 126; i++)
                     {
-                        description6 = description6 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                        description6 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 126; i < 147; i++)
                     {
-                        description7 = description7 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                        description7 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 147; i < 168; i++)
                     {
-                        description8 = description8 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                        description8 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 168; i < 189; i++)
                     {
-                        description9 = description9 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                        description9 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 189; i < 210; i++)
                     {
-                        description10 = description10 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                        description10 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     for (int i = 210; i < 218; i++)
                     {
-                        description11 = description11 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                        description11 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
                     embeds = new List<DiscordEmbedBuilder>{
                         new DiscordEmbedBuilder
@@ -648,7 +648,7 @@ namespace MKBB.Commands
                     {
                         if (Util.CompareStrings(trackListRts[i].Name, arg) || Util.CompareIncompleteStrings(trackListRts[i].Name, arg) || Util.CompareStringAbbreviation(arg, trackListRts[i].Name) || Util.CompareStringsLevenshteinDistance(arg, trackListRts[i].Name))
                         {
-                            description1 = description1 + $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialPopularity)})*\n";
+                            description1 += $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialPopularity)})*\n";
                         }
                     }
                     if (description1 == $"__**Nintendo Tracks**__:\n")
@@ -665,7 +665,7 @@ namespace MKBB.Commands
                     {
                         if (Util.CompareStrings(trackListCts[i].Name, arg) || Util.CompareIncompleteStrings(trackListCts[i].Name, arg) || Util.CompareStringAbbreviation(arg, trackListCts[i].Name) || Util.CompareStringsLevenshteinDistance(arg, trackListCts[i].Name))
                         {
-                            description1 = description1 + $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
+                            description1 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                             c++;
                         }
                     }
@@ -683,7 +683,7 @@ namespace MKBB.Commands
                 }
                 if (description1 == "")
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -701,13 +701,13 @@ namespace MKBB.Commands
                 {
                     var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows()));
 
-                    PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingPagesInteraction pending = new() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
                     Util.PendingPageInteractions.Add(pending);
                 }
                 else
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = metric == "online" ? $"__**Displaying tracks containing *{arg} ({month.ToUpper()})* [Online]:**__" : $"__**Displaying tracks containing *{arg}* [Time Trials]:**__",
@@ -728,7 +728,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("rating", "Gets the ranking from the most recent track rating forms.")]
-        public async Task GetTrackRating(InteractionContext ctx,
+        public static async Task GetTrackRating(InteractionContext ctx,
             [Option("track-name", "The track that the best-known times are set on.")] string track = "")
         {
             try
@@ -739,12 +739,12 @@ namespace MKBB.Commands
                 string description = "";
                 string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-                var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-                ServiceAccountCredential credential = new ServiceAccountCredential(
+                ServiceAccountCredential credential = new(
                    new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                SheetsService service = new(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Mario Kart Brawlbot",
@@ -752,8 +752,8 @@ namespace MKBB.Commands
 
                 SpreadsheetsResource.ValuesResource.GetRequest request = null;
                 ValueRange response = null;
-                List<string> earlyTrackDisplay = new List<string>();
-                List<string> midTrackDisplay = new List<string>();
+                List<string> earlyTrackDisplay = new();
+                List<string> midTrackDisplay = new();
 
                 bool thisYear = false;
                 bool halfLastYear = false;
@@ -848,7 +848,7 @@ namespace MKBB.Commands
                 }
                 if (!thisYear && !halfLastYear && !lastYear)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -877,49 +877,50 @@ namespace MKBB.Commands
                     string description11 = "";
                     for (int i = 0; i < 21; i++)
                     {
-                        description1 = description1 + $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
+                        description1 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
                     for (int i = 21; i < 42; i++)
                     {
-                        description2 = description2 + $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
+                        description2 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
                     for (int i = 42; i < 63; i++)
                     {
-                        description3 = description3 + $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
+                        description3 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
                     for (int i = 63; i < 84; i++)
                     {
-                        description4 = description4 + $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
+                        description4 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
                     for (int i = 84; i < 105; i++)
                     {
-                        description5 = description5 + $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
+                        description5 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
                     for (int i = 105; i < 126; i++)
                     {
-                        description6 = description6 + $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
+                        description6 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
                     for (int i = 126; i < 147; i++)
                     {
-                        description7 = description7 + $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
+                        description7 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
                     for (int i = 147; i < 168; i++)
                     {
-                        description8 = description8 + $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
+                        description8 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
                     for (int i = 168; i < 189; i++)
                     {
-                        description9 = description9 + $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
+                        description9 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
                     for (int i = 189; i < 210; i++)
                     {
-                        description10 = description10 + $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
+                        description10 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
                     for (int i = 210; i < 218; i++)
                     {
-                        description11 = description11 + $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
+                        description11 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
-                    List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>{
+                    List<DiscordEmbedBuilder> embeds = new()
+                    {
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
@@ -1044,7 +1045,7 @@ namespace MKBB.Commands
                     };
                     var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows()));
 
-                    PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingPagesInteraction pending = new() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
                     Util.PendingPageInteractions.Add(pending);
                 }
@@ -1205,7 +1206,7 @@ namespace MKBB.Commands
 
                     if (description.ToCharArray().Length == 0)
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -1220,7 +1221,7 @@ namespace MKBB.Commands
                     }
                     else
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Track Ratings for {track} (Remove/Indifferent/Keep - Rank):**__",
@@ -1243,7 +1244,7 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("issues", "Displays a list of issues in order of issue count.")]
-        public async Task GetTrackIssues(InteractionContext ctx,
+        public static async Task GetTrackIssues(InteractionContext ctx,
             [Option("track-name", "The track that the issues were found on.")] string track = "")
         {
             await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.Id == 842035247734587453 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
@@ -1254,19 +1255,19 @@ namespace MKBB.Commands
 
             string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
 
-            var certificate = new X509Certificate2(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
+            X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
 
-            ServiceAccountCredential credential = new ServiceAccountCredential(
+            ServiceAccountCredential credential = new(
                new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
 
-            var service = new SheetsService(new BaseClientService.Initializer()
+            SheetsService service = new(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
                 ApplicationName = "Mario Kart Brawlbot",
             });
 
-            var request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
-            var response = await request.ExecuteAsync();
+            SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", "'CTGP Track Issues'");
+            ValueRange response = await request.ExecuteAsync();
             foreach (var t in response.Values)
             {
                 while (t.Count < 7)
@@ -1283,7 +1284,7 @@ namespace MKBB.Commands
                 if (track == "")
                 {
                     int j = 0;
-                    Dictionary<string, int> issueCount = new Dictionary<string, int>();
+                    Dictionary<string, int> issueCount = new();
 
                     foreach (var v in response.Values)
                     {
@@ -1303,7 +1304,7 @@ namespace MKBB.Commands
                     }
                     issueCount = issueCount.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
 
-                    List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                    List<DiscordEmbedBuilder> embeds = new();
 
                     foreach (var t in issueCount.Keys.ToList())
                     {
@@ -1330,7 +1331,7 @@ namespace MKBB.Commands
                                 description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*";
                                 j++;
 
-                                var embed = new DiscordEmbedBuilder
+                                DiscordEmbedBuilder embed = new()
                                 {
                                     Color = new DiscordColor("#FF0000"),
                                     Title = $"__**Known issues on {response.Values[i][0]}:**__",
@@ -1348,7 +1349,7 @@ namespace MKBB.Commands
 
                     var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows()));
 
-                    PendingPagesInteraction pending = new PendingPagesInteraction() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                    PendingPagesInteraction pending = new() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
                     Util.PendingPageInteractions.Add(pending);
                 }
@@ -1379,7 +1380,7 @@ namespace MKBB.Commands
 
                     if (ix < 0)
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Error:**__",
@@ -1394,7 +1395,7 @@ namespace MKBB.Commands
                     }
                     else
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Known issues on {response.Values[ix][0]} *(First result)*:**__",

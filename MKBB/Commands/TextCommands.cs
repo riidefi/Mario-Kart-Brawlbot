@@ -96,7 +96,7 @@ namespace MKBB.Commands
                             "\n/botchannel no-channels";
             }
 
-            var embed = new DiscordEmbedBuilder
+            DiscordEmbedBuilder embed = new()
             {
                 Color = new DiscordColor("#FF0000"),
                 Title = "__**Help**__",
@@ -118,7 +118,7 @@ namespace MKBB.Commands
         public async Task CTTP(InteractionContext ctx)
         {
             await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
-            var embed = new DiscordEmbedBuilder
+            DiscordEmbedBuilder embed = new()
             {
                 Color = new DiscordColor("#FF0000"),
                 Title = "__**Custom Track Test Pack Links**__",
@@ -179,7 +179,7 @@ namespace MKBB.Commands
             }
             message.AddComponents(buttons);
 
-            var embed = new DiscordEmbedBuilder
+            DiscordEmbedBuilder embed = new()
             {
                 Color = new DiscordColor("#FF0000"),
                 Title = "__**Useful Google Sheets Pages**__",
@@ -197,7 +197,7 @@ namespace MKBB.Commands
         public async Task SourceCode(InteractionContext ctx)
         {
             await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = Util.CheckEphemeral(ctx) });
-            var embed = new DiscordEmbedBuilder
+            DiscordEmbedBuilder embed = new()
             {
                 Color = new DiscordColor("#FF0000"),
                 Title = "__**Source Code:**__",

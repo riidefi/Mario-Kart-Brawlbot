@@ -7,7 +7,6 @@ using DSharpPlus.Interactivity.Enums;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MKBB.Class;
 using MKBB.Commands;
@@ -28,7 +27,7 @@ namespace MKBB
         {
             Client.MessageReactionAdded += async (s, e) =>
             {
-                foreach (var papr in Util.PendingAdminPinReactions)
+                foreach (PendingAdminPin papr in Util.PendingAdminPinReactions)
                 {
                     if (papr.Message.Id == e.Message.Id)
                     {
@@ -67,7 +66,7 @@ namespace MKBB
                                     }
                                 );
                             }
-                            foreach (var emoji in Util.GenerateTickAndCrossEmojis())
+                            foreach (DiscordEmoji emoji in Util.GenerateTickAndCrossEmojis())
                             {
                                 await papr.Message.DeleteReactionsEmojiAsync(emoji);
                             }
@@ -83,12 +82,12 @@ namespace MKBB
                 e.Channel.ParentId == 1046936322574655578 || e.Channel.ParentId == 369281592407097345)
                 {
                     DiscordThreadChannel thread = (DiscordThreadChannel)e.Channel;
-                    var opPost = thread.GetMessagesAsync(1).Result[0];
+                    DiscordMessage opPost = thread.GetMessagesAsync(1).Result[0];
                     if (opPost.Attachments.Count > 0 &&
                     opPost.Attachments.Any(x => x.FileName.EndsWith(".szs")))
                     {
                         DiscordChannel channel = s.GetGuildAsync(180306609233330176).Result.GetChannel(1071555342829363281);
-                        var message = await channel.SendMessageAsync(
+                        DiscordMessage message = await channel.SendMessageAsync(
                             new DiscordEmbedBuilder
                             {
                                 Color = new DiscordColor("#FF0000"),
@@ -101,7 +100,7 @@ namespace MKBB
                                 }
                             }
                         );
-                        foreach (var emoji in Util.GenerateTickAndCrossEmojis())
+                        foreach (DiscordEmoji emoji in Util.GenerateTickAndCrossEmojis())
                         {
                             await message.CreateReactionAsync(emoji);
                         }
@@ -112,18 +111,18 @@ namespace MKBB
 
             Client.GuildCreated += async (s, e) =>
                 {
-                    using var dbCtx = new MKBBContext();
+                    using MKBBContext dbCtx = new();
                     dbCtx.Servers.Add(new ServerData()
                     {
                         Name = e.Guild.Name,
                         ServerID = e.Guild.Id
                     });
-                    dbCtx.SaveChanges();
+                    await dbCtx.SaveChangesAsync();
                 };
 
             Client.GuildDeleted += async (s, e) =>
                     {
-                        using var dbCtx = new MKBBContext();
+                        using MKBBContext dbCtx = new();
                         List<ServerData> servers = dbCtx.Servers.ToList();
                         for (int i = 0; i < servers.Count; i++)
                         {
@@ -133,14 +132,14 @@ namespace MKBB
                                 break;
                             }
                         }
-                        dbCtx.SaveChanges();
+                        await dbCtx.SaveChangesAsync();
                     };
 
             SlashCommands.SlashCommandErrored += async (s, e) =>
             {
                 if (e.Exception is SlashExecutionChecksFailedException slex)
                 {
-                    foreach (var check in slex.FailedChecks)
+                    foreach (SlashCheckBaseAttribute check in slex.FailedChecks)
                     {
                         if (check is SlashRequireUserPermissionsAttribute rqu)
                         {
@@ -166,7 +165,7 @@ namespace MKBB
             await Task.CompletedTask;
         }
 
-        private async Task Interactions()
+        private static async Task Interactions()
         {
             Client.InteractionCreated += async (s, e) =>
             {
@@ -176,13 +175,13 @@ namespace MKBB
 
                 if (e.Interaction.Data.Options != null)
                 {
-                    foreach (var option in e.Interaction.Data.Options)
+                    foreach (DiscordInteractionDataOption option in e.Interaction.Data.Options)
                     {
                         options += $" {option.Name}: *{option.Value}*";
                     }
                 }
 
-                var embed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Notice:**__",
@@ -197,14 +196,14 @@ namespace MKBB
 
             Client.ComponentInteractionCreated += async (s, e) =>
             {
-                foreach (var p in Util.PendingPageInteractions)
+                foreach (PendingPagesInteraction p in Util.PendingPageInteractions)
                 {
                     if (e.Id == "rightButton")
                     {
                         if (e.Message.Id == p.MessageId)
                         {
                             p.CurrentPage = (p.CurrentPage + 1) % p.Pages.Count;
-                            var responseBuilder = new DiscordInteractionResponseBuilder();
+                            DiscordInteractionResponseBuilder responseBuilder = new();
                             if (p.CategoryNames != null)
                             {
                                 if (p.CategoryNames.Count != 1)
@@ -221,7 +220,7 @@ namespace MKBB
                         if (e.Message.Id == p.MessageId)
                         {
                             p.CurrentPage = p.CurrentPage - 1 == -1 ? p.Pages.Count - 1 : p.CurrentPage - 1;
-                            var responseBuilder = new DiscordInteractionResponseBuilder();
+                            DiscordInteractionResponseBuilder responseBuilder = new();
                             if (p.CategoryNames != null)
                             {
                                 if (p.CategoryNames.Count != 1)
@@ -241,26 +240,26 @@ namespace MKBB
                             p.CurrentCategory = p.CategoryNames.FindIndex(x => x.CategoryName == e.Values[0]);
                             p.Pages = p.Categories[p.CurrentCategory];
 
-                            var responseBuilder = new DiscordInteractionResponseBuilder();
+                            DiscordInteractionResponseBuilder responseBuilder = new();
                             responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
                             responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows());
                             await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, responseBuilder);
                         }
                     }
                 }
-                foreach (var p in Util.PendingChannelConfigInteractions)
+                foreach (PendingChannelConfigInteraction p in Util.PendingChannelConfigInteractions)
                 {
                     if (e.Message.Id == p.MessageId)
                     {
-                        using var dbCtx = new MKBBContext();
+                        using MKBBContext dbCtx = new();
                         List<ServerData> servers = dbCtx.Servers.ToList();
-                        var ids = "";
-                        foreach (var value in e.Values)
+                        string ids = "";
+                        foreach (string value in e.Values)
                         {
                             ids += $"{value}, ";
                         }
                         ids = ids.Remove(ids.Length - 2, 2);
-                        foreach (var server in servers)
+                        foreach (ServerData server in servers)
                         {
                             if (server.ServerID == e.Guild.Id)
                             {
@@ -270,12 +269,12 @@ namespace MKBB
                         }
                         await dbCtx.SaveChangesAsync();
                         string channelsDisplay = "";
-                        foreach (var id in ids.Split(',').ToList())
+                        foreach (string id in ids.Split(',').ToList())
                         {
                             channelsDisplay += $"<#{id.Trim(' ')}>\n";
                         }
 
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Success:**__",
@@ -297,15 +296,15 @@ namespace MKBB
 
         public async Task RunAsync()
         {
-            var json = string.Empty;
+            string json = string.Empty;
 
-            using (var fs = File.OpenRead("config.json"))
-            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+            using (FileStream fs = File.OpenRead("config.json"))
+            using (StreamReader sr = new(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync().ConfigureAwait(false);
 
-            var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
+            ConfigJson configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
 
-            var config = new DiscordConfiguration
+            DiscordConfiguration config = new()
             {
                 Token = configJson.Token,
                 TokenType = TokenType.Bot,
@@ -324,7 +323,7 @@ namespace MKBB
                 Timeout = TimeSpan.FromSeconds(60)
             });
 
-            var commandsConfig = new CommandsNextConfiguration
+            CommandsNextConfiguration commandsConfig = new()
             {
                 StringPrefixes = new string[] { configJson.Prefix },
                 EnableDms = false,
@@ -334,7 +333,7 @@ namespace MKBB
 
             SlashCommands = Client.UseSlashCommands();
 #if DEBUG
-            SlashCommands.RegisterCommands<Testing>(1095401690120851558);
+            SlashCommands.RegisterCommands<Testing>(180306609233330176);
 #endif
             SlashCommands.RegisterCommands<Config>();
             SlashCommands.RegisterCommands<TimeTrialManagement>();
@@ -346,24 +345,22 @@ namespace MKBB
             SlashCommands.RegisterCommands<Misc>(180306609233330176);
             SlashCommands.RegisterCommands<Ghostbusters>(180306609233330176);
 
-            //SlashCommands.RegisterCommands<Update>(1095401690120851558);
-            //SlashCommands.RegisterCommands<Council>(1095401690120851558);
-            //SlashCommands.RegisterCommands<Ghostbusters>(1095401690120851558);
-
             await Events();
 
             await Interactions();
 
-            DiscordActivity activity = new DiscordActivity();
-            activity.Name = $"Bot is currently under maintenance. Please be patient :)";
+            DiscordActivity activity = new()
+            {
+                Name = $"Bot is currently under maintenance. Please be patient :)"
+            };
 
             await Client.ConnectAsync(activity);
 
-            Update update = new Update();
+            Update update = new();
 
-            await update.StartTimers(null);
+            await Update.StartTimers(null);
 
-            using var dbCtx = new MKBBContext();
+            using MKBBContext dbCtx = new();
 
             //await dbCtx.Database.EnsureCreatedAsync();
 

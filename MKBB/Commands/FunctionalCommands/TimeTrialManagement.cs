@@ -35,7 +35,7 @@ namespace MKBB.Commands
                 }
                 if (fail)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -49,7 +49,7 @@ namespace MKBB.Commands
                 }
                 else
                 {
-                    using var dbCtx = new MKBBContext();
+                    using MKBBContext dbCtx = new();
                     List<PlayerData> playerList = dbCtx.Players.ToList();
 
                     int ix = playerList.FindIndex(x => x.PlayerID == player.PlayerID);
@@ -57,7 +57,7 @@ namespace MKBB.Commands
 
                     if (ix2 > -1)
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Notice:**__",
@@ -74,7 +74,7 @@ namespace MKBB.Commands
                         dbCtx.Players.Add(player);
                         dbCtx.SaveChanges();
 
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Success:**__",
@@ -88,7 +88,7 @@ namespace MKBB.Commands
                     }
                     else
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = "__**Notice:**__",
@@ -116,14 +116,14 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
 
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<PlayerData> playerList = dbCtx.Players.ToList();
 
                 int ix = playerList.FindIndex(x => x.DiscordID == user.Id);
 
                 if (ix < 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",
@@ -140,7 +140,7 @@ namespace MKBB.Commands
                     var webClient = new WebClient();
                     var starsJson = JsonConvert.DeserializeObject<GetStars>(await webClient.DownloadStringTaskAsync(playerList[ix].PlayerLink));
 
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Stars of {user.Username}:**__",
@@ -175,7 +175,7 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
                 track = Util.Convert3DSTrackName(track);
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
 
                 List<PlayerData> playerList = dbCtx.Players.ToList();
                 int playerIx = playerList.FindIndex(x => x.DiscordID == user.Id);
@@ -185,7 +185,7 @@ namespace MKBB.Commands
                 int trackIx = Util.ListNameCheck(trackList, track);
                 if (playerIx < 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -199,7 +199,7 @@ namespace MKBB.Commands
                 }
                 else if (trackIx < 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -282,7 +282,7 @@ namespace MKBB.Commands
                     }
                     if (applicableGhosts.Count == 0)
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
@@ -320,7 +320,7 @@ namespace MKBB.Commands
 
                             string controllerId = (ghost.ControllerID != 0 && ghost.ControllerID != 1 && ghost.ControllerID != 2 && ghost.ControllerID != 3) ? "???" : Util.Controllers[ghost.ControllerID];
 
-                            var embed = new DiscordEmbedBuilder
+                            DiscordEmbedBuilder embed = new()
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**{trackList[trackIx].Name} - {ghost.CategoryName} {(!cc ? "(150cc)" : "(200cc)")}{(vehicleRestriction == "" ? "" : $" [{vehicleRestriction}]")}:**__",
@@ -379,13 +379,13 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
                 track = Util.Convert3DSTrackName(track);
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<TrackData> trackList = dbCtx.Tracks.Where(x => x.Is200cc == cc).ToList();
 
                 int trackIx = Util.ListNameCheck(trackList, track);
                 if (trackIx < 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -440,7 +440,7 @@ namespace MKBB.Commands
                             leaderboardDisplay += $"**{leaderboard.Ghosts.FindIndex(x => x.LinkContainer.Href.URL == ghost.LinkContainer.Href.URL) + 1})** {ghost.ExtraInfo.MiiName} - {ghost.FinishTimeSimple}\n";
                         }
 
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**{allTrackCategories[i].Name} - {allTrackCategories[i].CategoryName} {(!cc ? "(150cc)" : "(200cc)")}{(vehicleRestriction == "" ? "" : $"[ {vehicleRestriction}]")}:**__",
@@ -555,7 +555,7 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
                 track = Util.Convert3DSTrackName(track);
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<PlayerData> players = dbCtx.Players.ToList();
                 var allMembers = ctx.Guild.GetAllMembersAsync().Result;
                 List<ulong> allMemberIds = new List<ulong>();
@@ -567,7 +567,7 @@ namespace MKBB.Commands
 
                 if (players.Count == 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = $"__**Error:**__",
@@ -585,7 +585,7 @@ namespace MKBB.Commands
                     int trackIx = Util.ListNameCheck(trackList, track);
                     if (trackIx < 0)
                     {
-                        var embed = new DiscordEmbedBuilder
+                        DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**Error:**__",
@@ -643,7 +643,7 @@ namespace MKBB.Commands
                                 leaderboardDisplay += $"**{leaderboard.Ghosts.FindIndex(x => x.LinkContainer.Href.URL == ghost.LinkContainer.Href.URL) + 1})** <@{playerId}> - {ghost.FinishTimeSimple}\n";
                             }
 
-                            var embed = new DiscordEmbedBuilder
+                            DiscordEmbedBuilder embed = new()
                             {
                                 Color = new DiscordColor("#FF0000"),
                                 Title = $"__**{allTrackCategories[i].Name} - {allTrackCategories[i].CategoryName} {(!cc ? "(150cc)" : "(200cc)")}{(vehicleRestriction == "" ? "" : $" [{vehicleRestriction}]")}:**__",
@@ -745,14 +745,14 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
                 track = Util.Convert3DSTrackName(track);
-                using var dbCtx = new MKBBContext();
+                using MKBBContext dbCtx = new();
                 List<TrackData> trackList = dbCtx.Tracks.Where(x => x.EasyStaffSHA1 != null && x.ExpertStaffSHA1 != null).ToList();
 
                 int ix = Util.ListNameCheck(trackList, track);
 
                 if (ix < 0)
                 {
-                    var embed = new DiscordEmbedBuilder
+                    DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FF0000"),
                         Title = "__**Error:**__",

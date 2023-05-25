@@ -63,22 +63,16 @@ namespace MKBB.Data
 
         public int ReturnOnlinePopularity(string month)
         {
-            switch (month)
+            return month switch
             {
-                case "m1":
-                    return M1;
-                case "m2":
-                    return M2;
-                case "m3":
-                    return M3;
-                case "m6":
-                    return M6;
-                case "m9":
-                    return M9;
-                case "m12":
-                    return M12;
-            }
-            return -1;
+                "m1" => M1,
+                "m2" => M2,
+                "m3" => M3,
+                "m6" => M6,
+                "m9" => M9,
+                "m12" => M12,
+                _ => -1,
+            };
         }
     }
 
