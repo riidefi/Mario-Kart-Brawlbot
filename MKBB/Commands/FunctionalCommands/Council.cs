@@ -157,7 +157,7 @@ namespace MKBB.Commands
 
                 DiscordChannel councilAnnouncements = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(635313521487511554);
                 DiscordChannel councilLogs = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402205231730698);
-                DiscordChannel announcements = Bot.Client.GetGuildAsync(1095401690120851558).Result.GetChannel(1095402229491581061);
+                DiscordChannel announcements = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(180328109688487937);
                 string ping = "";
 #if RELEASE
     ping = "<@&608386209655554058> ";

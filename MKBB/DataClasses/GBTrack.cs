@@ -1,13 +1,19 @@
-﻿using Newtonsoft.Json;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MKBB.Data
 {
-    public class ServerData
+    public class GBTrackData
     {
         [Key] public int ID { get; set; }
-        public ulong ServerID { get; set; }
         public string Name { get; set; }
-        public string? BotChannelIDs { get; set; }
+        public string SHA1s { get; set; }
+    }
+    public class GBTimeData
+    {
+        [Key] public int ID { get; set; }
+        public string TrackSHA1 { get; set; }
+        public string User { get; set; }
+        public string URL { get; set; }
+        public string? Comments { get; set; }
     }
 }

@@ -11,6 +11,8 @@ namespace MKBB.Data
         public DbSet<ToolData> Tools { get; set; }
         public DbSet<TrackData> Tracks { get; set; }
         public DbSet<OldTrackData> OldTracks { get; set; }
+        public DbSet<GBTrackData> GBTracks { get; set; }
+        public DbSet<GBTimeData> GBTimes { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
@@ -26,6 +28,8 @@ namespace MKBB.Data
             modelBuilder.Entity<ToolData>().ToTable("Tools");
             modelBuilder.Entity<TrackData>().ToTable("Tracks");
             modelBuilder.Entity<OldTrackData>().ToTable("OldTracks");
+            modelBuilder.Entity<GBTrackData>().ToTable("GBTracks");
+            modelBuilder.Entity<GBTimeData>().ToTable("GBTimes");
         }
     }
 }

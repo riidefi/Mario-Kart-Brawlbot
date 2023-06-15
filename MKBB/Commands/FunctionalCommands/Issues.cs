@@ -13,7 +13,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace MKBB.Commands
 {
-    public class Testing : ApplicationCommandModule
+    public class Issues : ApplicationCommandModule
     {
         [SlashCommand("test", "this is a test")]
         [SlashRequireOwner]
