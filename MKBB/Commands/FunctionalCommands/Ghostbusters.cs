@@ -6,23 +6,27 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
+using HtmlAgilityPack;
 using MKBB.Class;
+using MKBB.Data;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Runtime.InteropServices.JavaScript;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using static Google.Apis.Sheets.v4.SpreadsheetsResource.ValuesResource;
+using static IronPython.Modules._ast;
 
 namespace MKBB.Commands
 {
     public class Ghostbusters : ApplicationCommandModule
     {
         [SlashCommand("gbaddtrack", "Adds a new track for Ghostbusters to set times on.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public static async Task AddNewTrack(InteractionContext ctx,
+        public static async Task AddNewGBTrack(InteractionContext ctx,
             [Option("track-name", "The name of the track to add.")] string track,
             [Option("track-id", "The id of the track (also known as the SHA1).")] string trackId)
         {
@@ -30,38 +34,16 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
-                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+                using MKBBContext dbCtx = new();
 
-                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                ServiceAccountCredential credential = new(
-                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                SheetsService service = new(new BaseClientService.Initializer()
+                foreach (GBTrackData gbTrack in dbCtx.GBTracks.ToList())
                 {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "Mario Kart Brawlbot",
-                });
-
-                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
-                ValueRange response = await request.ExecuteAsync();
-
-                foreach (var t in response.Values)
-                {
-                    while (t.Count < response.Values[response.Values.Count - 1].Count)
-                    {
-                        t.Add("");
-                    }
-                }
-
-                for (int i = 0; i < response.Values[response.Values.Count - 1].Count / 5; i++)
-                {
-                    if (response.Values[0][5 * i].ToString() == track)
+                    if (Util.CompareStrings(gbTrack.Name, track))
                     {
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__*Error:*__",
+                            Title = $"__**Error:**__",
                             Description = "*The track is already added.*",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
@@ -70,25 +52,18 @@ namespace MKBB.Commands
                         }));
                         return;
                     }
-                    else if (response.Values[0][5 * i].ToString() == "")
-                    {
-                        response.Values[0][5 * i] = track;
-                        response.Values[1][5 * i] = "SHA1s";
-                        response.Values[2][5 * i] = trackId.ToUpperInvariant();
-                        response.Values[1][5 * i + 1] = "Players";
-                        response.Values[1][5 * i + 2] = "Times";
-                        response.Values[1][5 * i + 3] = "Combo";
-                        response.Values[1][5 * i + 4] = "Comments";
-                        break;
-                    }
                 }
-                var updateRequest = service.Spreadsheets.Values.Update(response, "1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", $"'Ghostbusters Submissions'!{Util.ConvertToSheetRange(0, 0, response.Values.Count - 1, response.Values[0].Count - 1)}");
-                updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-                var update = await updateRequest.ExecuteAsync();
+                dbCtx.GBTracks.Add(new GBTrackData()
+                {
+                    Name = track,
+                    SHA1s = trackId.ToUpperInvariant()
+                });
+                await dbCtx.SaveChangesAsync();
+
                 DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FF0000"),
-                    Title = $"__*Success:*__",
+                    Title = $"__**Success:**__",
                     Description = $"*{track} has been added successfully.*",
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
@@ -96,6 +71,31 @@ namespace MKBB.Commands
                     }
                 };
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+
+                DiscordMessage message = await ctx.Client
+                    .GetGuildAsync(180306609233330176).Result
+                    .GetChannel(1118995806754721853)
+                    .GetMessageAsync(1119015755736961164);
+
+                string description = "";
+                foreach (GBTrackData t in dbCtx.GBTracks)
+                {
+                    description += $"* *{t.Name}*\n";
+                }
+                description = description == "" ? "*No tracks currently assigned.*" : description.Trim('\n');
+
+                embed = new()
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = "__**Current Ghostbusters Tracks:**__",
+                    Description = description,
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+                await message.ModifyAsync(new DiscordMessageBuilder().AddEmbed(embed));
+
             }
             catch (Exception ex)
             {
@@ -103,9 +103,8 @@ namespace MKBB.Commands
             }
         }
 
-        [SlashCommand("gbaddsha1", "Edits the information for a track on the Ghostbusters sheet.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public static async Task EditNewTrack(InteractionContext ctx,
+        [SlashCommand("gbaddsha1", "Adds an additional SHA1 for multiple versions of the same track.")]
+        public static async Task EditNewGBTrack(InteractionContext ctx,
             [Option("track-name", "The name of the track you want to edit.")] string track,
             [Option("track-id", "The new id of the track (also known as the SHA1).")] string newTrackId)
         {
@@ -113,221 +112,23 @@ namespace MKBB.Commands
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
-                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+                using MKBBContext dbCtx = new();
 
-                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                ServiceAccountCredential credential = new(
-                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                SheetsService service = new(new BaseClientService.Initializer()
+                foreach (GBTrackData gbTrack in dbCtx.GBTracks.ToList())
                 {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "Mario Kart Brawlbot",
-                });
-
-                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
-                ValueRange response = await request.ExecuteAsync();
-
-                foreach (var t in response.Values)
-                {
-                    while (t.Count < response.Values[response.Values.Count - 1].Count)
+                    if (Util.CompareStrings(gbTrack.Name, track))
                     {
-                        t.Add("");
-                    }
-                }
-
-                for (int i = 0; i < response.Values[response.Values.Count - 1].Count / 5; i++)
-                {
-                    if (Util.CompareStrings(response.Values[0][5 * i].ToString(), track))
-                    {
-                        for (int j = 2; j < response.Values.Count; j++)
+                        if (gbTrack.SHA1s != "")
                         {
-                            if (response.Values[j][5 * i].ToString() == "")
-                            {
-                                response.Values[j][5 * i] = newTrackId.ToUpperInvariant();
-                                break;
-                            }
+                            gbTrack.SHA1s += ",,";
                         }
-                        break;
-                    }
-                    else if (response.Values[0][5 * i].ToString() == "")
-                    {
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__*Error:*__",
-                            Description = $"*{track} could not be found.*",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        }));
-                        return;
-                    }
-                }
-
-                var updateRequest = service.Spreadsheets.Values.Update(response, "1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", $"'Ghostbusters Submissions'!{Util.ConvertToSheetRange(0, 0, response.Values.Count - 1, response.Values[0].Count - 1)}");
-                updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-                var update = await updateRequest.ExecuteAsync();
-                DiscordEmbedBuilder embed = new()
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__*Success:*__",
-                    Description = "*The track ID was added successfully.*",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-            }
-            catch (Exception ex)
-            {
-                await Util.ThrowError(ctx, ex);
-            }
-        }
-
-        [SlashCommand("gbremovetrack", "Removes a track for Ghostbusters.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
-        public static async Task RemoveNewTrack(InteractionContext ctx,
-            [Option("track-name", "The name of the track you want to edit.")] string track)
-        {
-
-            try
-            {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
-
-                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                ServiceAccountCredential credential = new(
-                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                SheetsService service = new(new BaseClientService.Initializer()
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "Mario Kart Brawlbot",
-                });
-
-                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
-                ValueRange response = await request.ExecuteAsync();
-
-                foreach (var t in response.Values)
-                {
-                    while (t.Count < response.Values[response.Values.Count - 1].Count)
-                    {
-                        t.Add("");
-                    }
-                }
-
-                for (int i = 0; i < response.Values[response.Values.Count - 1].Count / 5; i++)
-                {
-                    if (Util.CompareStrings(response.Values[0][5 * i].ToString(), track))
-                    {
-                        for (int j = 0; j < response.Values.Count; j++)
-                        {
-                            response.Values[j].RemoveAt(5 * i);
-                            response.Values[j].RemoveAt(5 * i);
-                            response.Values[j].RemoveAt(5 * i);
-                            response.Values[j].RemoveAt(5 * i);
-                            response.Values[j].RemoveAt(5 * i);
-                            response.Values[j].Add("");
-                            response.Values[j].Add("");
-                            response.Values[j].Add("");
-                            response.Values[j].Add("");
-                            response.Values[j].Add("");
-                        }
-                        response.Values[response.Values.Count - 1][response.Values[response.Values.Count - 1].Count - 6] = "";
-                        response.Values[response.Values.Count - 1][response.Values[response.Values.Count - 1].Count - 1] = "End";
-                        break;
-                    }
-                    else if (response.Values[0][5 * i].ToString() == "")
-                    {
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__*Error:*__",
-                            Description = $"*{track} could not be found.*",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        }));
-                        return;
-                    }
-                }
-
-                var updateRequest = service.Spreadsheets.Values.Update(response, "1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", $"'Ghostbusters Submissions'!{Util.ConvertToSheetRange(0, 0, response.Values.Count - 1, response.Values[0].Count - 1)}");
-                updateRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-                var update = await updateRequest.ExecuteAsync();
-                DiscordEmbedBuilder embed = new()
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__*Success:*__",
-                    Description = "*The track was removed successfully.*",
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
-            }
-            catch (Exception ex)
-            {
-                await Util.ThrowError(ctx, ex);
-            }
-        }
-
-        [SlashCommand("gbsubmittime", "Submits a time for a new track.")]
-        public static async Task SubmitGBTime(InteractionContext ctx,
-            [Option("ghost-url", "The Chadsoft URL of the time you would like to submit.")] string ghost,
-            [Option("comments", "Comments you would like to make about your ghost e.g. how long it took to set.")] string comments = "")
-        {
-            try
-            {
-                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
-
-                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
-
-                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                ServiceAccountCredential credential = new(
-                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                SheetsService service = new(new BaseClientService.Initializer()
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "Mario Kart Brawlbot",
-                });
-
-                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
-                ValueRange response = await request.ExecuteAsync();
-
-                foreach (var t in response.Values)
-                {
-                    while (t.Count < response.Values[response.Values.Count - 1].Count)
-                    {
-                        t.Add("");
-                    }
-                }
-
-                if (ghost.Contains("rkg"))
-                {
-                    WebClient webClient = new();
-                    Ghost ghostData = new();
-                    try
-                    {
-                        ghostData = JsonConvert.DeserializeObject<Ghost>(await webClient.DownloadStringTaskAsync(ghost[..^4] + "json"));
-                    }
-                    catch
-                    {
+                        gbTrack.SHA1s += newTrackId.ToUpperInvariant();
+                        await dbCtx.SaveChangesAsync();
                         DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FF0000"),
-                            Title = $"__*Error:*__",
-                            Description = "*Invalid ghost link.*",
+                            Title = $"__**Success:**__",
+                            Description = $"*The new track ID has been added successfully.*",
                             Footer = new DiscordEmbedBuilder.EmbedFooter
                             {
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
@@ -336,164 +137,224 @@ namespace MKBB.Commands
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
                         return;
                     }
-
-                    bool found = false;
-                    string track = "";
-
-                    for (int i = 0; i < response.Values[response.Values.Count - 1].Count / 5; i++)
-                    {
-                        for (int j = 2; j < response.Values.Count; j++)
-                        {
-                            if (Util.CompareStrings(response.Values[j][5 * i].ToString(), ghostData.TrackID))
-                            {
-                                found = true;
-                                track = response.Values[0][5 * i].ToString();
-                                break;
-                            }
-                        }
-                        if (found)
-                        {
-                            for (int j = 2; j < response.Values.Count; j++)
-                            {
-                                if (response.Values[j][5 * i + 1].ToString() == "")
-                                {
-                                    response.Values[j][5 * i + 1] = ctx.Member.Username;
-                                    response.Values[j][5 * i + 2] = ghostData.FinishTimeSimple;
-                                    response.Values[j][5 * i + 3] = $"{Util.Characters[ghostData.DriverID]} + {Util.Vehicles[ghostData.VehicleID]}";
-                                    response.Values[j][5 * i + 4] = comments;
-                                    break;
-                                }
-                            }
-                            break;
-                        }
-                    }
-
-                    if (found)
-                    {
-                        var updateRequest = service.Spreadsheets.Values.Update(response, "1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", $"'Ghostbusters Submissions'!{Util.ConvertToSheetRange(0, 0, response.Values.Count - 1, response.Values[0].Count - 1)}");
-                        updateRequest.ValueInputOption = UpdateRequest.ValueInputOptionEnum.USERENTERED;
-                        await updateRequest.ExecuteAsync();
-
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__*Success:*__",
-                            Description = $"*The time was added successfully.*" +
-                            $"\nTrack: *{track}*" +
-                            $"\nTime: *{ghostData.FinishTimeSimple}*" +
-                            $"\nCombo: *{Util.Characters[ghostData.DriverID]} + {Util.Vehicles[ghostData.VehicleID]}*",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        }));
-                    }
-                    else
-                    {
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(new DiscordEmbedBuilder
-                        {
-                            Color = new DiscordColor("#FF0000"),
-                            Title = $"__*Error:*__",
-                            Description = $"*The track SHA1 of the ghost link was not found on any new tracks.*",
-                            Footer = new DiscordEmbedBuilder.EmbedFooter
-                            {
-                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                            }
-                        }));
-                    }
                 }
-                else
+
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(new DiscordEmbedBuilder
                 {
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(new DiscordEmbedBuilder
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__*Error:*__",
+                    Description = $"*{track} could not be found. Please make sure to specify the exact name.*",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
-                        Color = new DiscordColor("#FF0000"),
-                        Title = $"__*Error:*__",
-                        Description = $"*This is not a valid ghost link.*",
-                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                        {
-                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                        }
-                    }));
-                }
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                }));
             }
-
             catch (Exception ex)
             {
                 await Util.ThrowError(ctx, ex);
             }
         }
 
-        [SlashCommand("gblist", "Gets the list of all the tracks current being reviewed by Ghostbusters.")]
-        public static async Task GetGBList(InteractionContext ctx)
+        [SlashCommand("gbremovesha1", "Removes a SHA1 from a Ghostbusters track.")]
+        public static async Task RemoveGBSHA1(InteractionContext ctx,
+            [Option("track-name", "The name of the track.")] string track,
+            [Option("track-id", "The id you want to remove (also known as the SHA1).")] string trackId)
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+
+                using MKBBContext dbCtx = new();
+
+                foreach (GBTrackData gbTrack in dbCtx.GBTracks.ToList())
+                {
+                    if (Util.CompareStrings(gbTrack.Name, track))
+                    {
+                        gbTrack.SHA1s = gbTrack.SHA1s.Replace($"{trackId.ToUpperInvariant()}", "").Replace(",,,,", ",,");
+                        if (gbTrack.SHA1s == ",,")
+                        {
+                            gbTrack.SHA1s = "";
+                        }
+                        await dbCtx.SaveChangesAsync();
+                        DiscordEmbedBuilder embed = new()
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__**Success:**__",
+                            Description = $"*The SHA1 for {track} has been removed successfully.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                        return;
+                    }
+                }
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Error:**__",
+                    Description = $"*{track} could not be found. Please make sure to specify the exact name.*",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
+        [SlashCommand("gbremovetrack", "Removes a track for Ghostbusters.")]
+        public static async Task RemoveGBTrack(InteractionContext ctx,
+            [Option("track-name", "The name of the track you want to remove.")] string track)
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+
+                using MKBBContext dbCtx = new();
+
+                foreach (GBTrackData gbTrack in dbCtx.GBTracks.ToList())
+                {
+                    if (Util.CompareStrings(gbTrack.Name, track))
+                    {
+                        dbCtx.GBTracks.Remove(gbTrack);
+                        foreach (GBTimeData time in dbCtx.GBTimes.Where(x=>gbTrack.SHA1s.Contains(x.TrackSHA1)))
+                        {
+                            dbCtx.GBTimes.Remove(time);
+                        }
+                        await dbCtx.SaveChangesAsync();
+                        DiscordEmbedBuilder embed = new()
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = $"__*Success:*__",
+                            Description = $"*{track} has been removed successfully.*",
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+
+                        DiscordMessage message = await ctx.Client
+                            .GetGuildAsync(180306609233330176).Result
+                            .GetChannel(1118995806754721853)
+                            .GetMessageAsync(1119015755736961164);
+
+                        string description = "";
+                        foreach (GBTrackData t in dbCtx.GBTracks)
+                        {
+                            description += $"* *{t.Name}*\n";
+                        }
+                        description = description == "" ? "*No tracks currently assigned.*" : description.Trim('\n');
+
+                        embed = new()
+                        {
+                            Color = new DiscordColor("#FF0000"),
+                            Title = "__**Current Ghostbusters Tracks:**__",
+                            Description = description,
+                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                            {
+                                Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                            }
+                        };
+                        await message.ModifyAsync(new DiscordMessageBuilder().AddEmbed(embed));
+                        return;
+                    }
+                }
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(new DiscordEmbedBuilder
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__*Error:*__",
+                    Description = $"*{track} could not be found. Please make sure to specify the exact name.*",
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
+        [SlashCommand("gbtimes", "Gets a time of a player on a track as part of a Ghostbuster submission.")]
+        public static async Task GetGBTimes(InteractionContext ctx,
+            [Option("player", "The user of the player you want to find a time of.")] DiscordUser player)
         {
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = ctx.Guild.Id == 180306609233330176 ? !(ctx.Channel.ParentId == 755509221394743467 || !Util.CheckEphemeral(ctx)) : Util.CheckEphemeral(ctx) });
 
-                string serviceAccountEmail = "brawlbox@custom-track-testing-bot.iam.gserviceaccount.com";
+                using MKBBContext dbCtx = new();
 
-                X509Certificate2 certificate = new(@"key.p12", "notasecret", X509KeyStorageFlags.Exportable);
-
-                ServiceAccountCredential credential = new(
-                   new ServiceAccountCredential.Initializer(serviceAccountEmail).FromCertificate(certificate));
-
-                SheetsService service = new(new BaseClientService.Initializer()
+                List<GBTimeData> gbTimes = dbCtx.GBTimes.Where(x => x.Player == player.Id.ToString()).ToList();
+                if (gbTimes.Count == 0)
                 {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "Mario Kart Brawlbot",
-                });
-
-                SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get("1lEn_ex9LtSZhNQ6_T-t13dBGgcWhN8XZXcCtzc49HEY", "'Ghostbusters Submissions'");
-                ValueRange response = await request.ExecuteAsync();
-
-                foreach (var t in response.Values)
-                {
-                    while (t.Count < response.Values[response.Values.Count - 1].Count)
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(new DiscordEmbedBuilder
                     {
-                        t.Add("");
-                    }
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Notice:**__",
+                        Description = $"*No times could be found for {player.Mention}.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    }));
+                    return;
+                }
+                List<DiscordEmbed> embeds = new();
+                foreach (GBTimeData time in gbTimes)
+                {
+                    WebClient webClient = new();
+                    Ghost ghost = JsonConvert.DeserializeObject<Ghost>(await webClient.DownloadStringTaskAsync(time.URL.Replace("html", "json")));
+                    ghost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(await webClient.DownloadStringTaskAsync(time.URL.Replace("html", "json")));
+                    string controllerId = (ghost.ControllerID != 0 && ghost.ControllerID != 1 && ghost.ControllerID != 2 && ghost.ControllerID != 3) ? "???" : Util.Controllers[ghost.ControllerID];
+
+                    DiscordEmbedBuilder embed = new()
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Ghostbusters Times:**__",
+                        Description = $"<@{player.Id}>'s time on {ghost.TrackName}:\n\n" +
+                        $"**Time:** {ghost.FinishTimeSimple}\n\n" +
+                        $"**Splits:** {string.Join(" - ", ghost.ExtraInfo.SplitsSimple.ToArray())}\n\n" +
+                        $"**Combo:** {Util.Characters[ghost.DriverID]} on {Util.Vehicles[ghost.VehicleID]}\n\n" +
+                        $"**Date Set:** {ghost.DateSet.Split('T')[0]}\n\n" +
+                        $"**Controller:**\n{controllerId}\n\n" +
+                        $"**Extra Details:**\n" +
+                        $"*Exact Finish Time: {ghost.FinishTime}*\n\n" +
+                        $"*Exact Splits: {string.Join(" - ", ghost.ExtraInfo.Splits.ToArray())}*\n\n" +
+                        $"*Comments: {(time.Comments == null ? "No comments" : time.Comments)}*",
+                        Url = time.URL.Replace("json", "html"),
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                    embeds.Add(embed);
                 }
 
-                List<string> tracks = new();
+                DiscordWebhookBuilder builder = new DiscordWebhookBuilder().AddEmbed(embeds[0]);
 
-                for (int i = 0; i < response.Values[response.Values.Count - 1].Count / 5; i++)
+                if (embeds.Count > 1)
                 {
-                    if (response.Values[0][5 * i].ToString() == "")
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        tracks.Add(response.Values[0][5 * i].ToString());
-                    }
-                }
-                string description = "";
-
-                if (tracks.Count > 0)
-                {
-                    foreach (var track in tracks)
-                    {
-                        description += $"*{track}*\n";
-                    }
-                }
-                else
-                {
-                    description = "*No tracks currently listed.*";
+                    builder.AddComponents(Util.GeneratePageArrows());
                 }
 
-                DiscordEmbedBuilder embed = new()
+                var message = await ctx.EditResponseAsync(builder);
+
+                if (embeds.Count > 1)
                 {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Current Ghostbusters Tracks:**__",
-                    Description = description,
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed).AddComponents(Util.GetBackroomLinkButton()));
+                    PendingPagesInteraction pending = new() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+
+                    Util.PendingPageInteractions.Add(pending);
+                }
             }
-
             catch (Exception ex)
             {
                 await Util.ThrowError(ctx, ex);

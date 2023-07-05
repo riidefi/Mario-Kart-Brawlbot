@@ -17,7 +17,6 @@ namespace MKBB.Commands
         private static partial Regex DateTimeZipRegex();
 
         [SlashCommand("addtool", "Adds a tool to the list of tools.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public static async Task AddTool(InteractionContext ctx,
             [Option("name", "The name of the tool you would like to add.")] string toolName,
             [Option("creators", "The name(s) of the creators of the tool.")] string toolCreators,
@@ -68,7 +67,6 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("edittool", "Adds a tool to the list of tools.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public static async Task EditTool(InteractionContext ctx,
             [Option("old-name", "The name of the tool you would like to edit.")] string oldToolName,
             [Option("name", "The new name for the tool you are editing.")] string toolName = "",
@@ -147,7 +145,6 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("deltool", "Removes a tool from the list of tools.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public static async Task DeleteTool(InteractionContext ctx,
             [Option("name", "The name of the tool you would like to delete.")] string toolName)
         {
@@ -184,7 +181,6 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("uploadtestpack", "Uploads the test pack .zip file (named with the date of the test YYYY-MM-DD)")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public static async Task UploadTestPack(InteractionContext ctx,
             [Option("test-pack-zip", "The .zip file for the test pack (named with the date of the test YYYY-MM-DD)")] DiscordAttachment file)
         {

@@ -36,7 +36,7 @@ namespace MKBB.Commands
 
                 if (toolName == "")
                 {
-                    List<DiscordEmbedBuilder> embeds = new();
+                    List<DiscordEmbed> embeds = new();
                     foreach (var tool in toolList)
                     {
                         DiscordEmbedBuilder embed = new()
@@ -159,7 +159,7 @@ namespace MKBB.Commands
                 string title = $"__**{response.Values[k][1]}:**__";
                 k += 2;
 
-                List<DiscordEmbedBuilder> embeds = new();
+                List<DiscordEmbed> embeds = new();
 
             NewEmbed:
                 string description = $"**{response.Values[k][1]}:**";
@@ -419,8 +419,8 @@ namespace MKBB.Commands
 
                 using MKBBContext dbCtx = new();
                 List<TrackData> trackListCts = dbCtx.Tracks.AsEnumerable()
-                    .Where(x=>(x.CategoryName == "Normal" || x.CategoryName == "No-shortcut") && x.CustomTrack && !x.Is200cc)
-                    .DistinctBy(x=>x.Name)
+                    .Where(x => (x.CategoryName == "Normal" || x.CategoryName == "No-shortcut") && x.CustomTrack && !x.Is200cc)
+                    .DistinctBy(x => x.Name)
                     .OrderByDescending(x => metric == "online" ? x.ReturnOnlinePopularity(month) : x.TimeTrialPopularity)
                     .ToList();
 
@@ -430,7 +430,7 @@ namespace MKBB.Commands
                     .OrderByDescending(x => metric == "online" ? x.ReturnOnlinePopularity(month) : x.TimeTrialPopularity)
                     .ToList();
 
-                List<DiscordEmbedBuilder> embeds = new();
+                List<DiscordEmbed> embeds = new();
 
                 if (arg.ToLowerInvariant().Contains("rts"))
                 {
@@ -442,7 +442,7 @@ namespace MKBB.Commands
                     {
                         description2 += $"**{i + 1})** {trackListRts[i].Name} *({(metric == "online" ? trackListRts[i].ReturnOnlinePopularity(month) : trackListRts[i].TimeTrialPopularity)})*\n";
                     }
-                    embeds = new List<DiscordEmbedBuilder>{
+                    embeds = new(){
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
@@ -514,7 +514,7 @@ namespace MKBB.Commands
                     {
                         description11 += $"**{i + 1})** {trackListCts[i].Name} *({(metric == "online" ? trackListCts[i].ReturnOnlinePopularity(month) : trackListCts[i].TimeTrialPopularity)})*\n";
                     }
-                    embeds = new List<DiscordEmbedBuilder>{
+                    embeds = new(){
                         new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
@@ -820,31 +820,62 @@ namespace MKBB.Commands
                 }
                 catch
                 {
-                    request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year - 1} Track Rating Data'!A226:Y443");
-                    response = await request.ExecuteAsync();
-
-                    earlyTrackDisplay = new List<string>();
-
-                    for (int i = 0; i < response.Values.Count; i++)
+                    if (DateTime.Now.Month > 6)
                     {
-                        if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year - 1} Track Rating Data'!A226:Y443");
+                        response = await request.ExecuteAsync();
+
+                        earlyTrackDisplay = new List<string>();
+
+                        for (int i = 0; i < response.Values.Count; i++)
                         {
-                            earlyTrackDisplay.Add(response.Values[i][0].ToString());
+                            if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                            {
+                                earlyTrackDisplay.Add(response.Values[i][0].ToString());
+                            }
                         }
+                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year} Track Rating Data'!A226:Y443");
+                        response = await request.ExecuteAsync();
+
+                        midTrackDisplay = new List<string>();
+
+                        for (int i = 0; i < response.Values.Count; i++)
+                        {
+                            if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                            {
+                                midTrackDisplay.Add(response.Values[i][0].ToString());
+                            }
+                        }
+                        halfLastYear = true;
                     }
-                    request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year - 1} Track Rating Data'!A226:Y443");
-                    response = await request.ExecuteAsync();
-
-                    midTrackDisplay = new List<string>();
-
-                    for (int i = 0; i < response.Values.Count; i++)
+                    else
                     {
-                        if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Early {DateTime.Now.Year - 1} Track Rating Data'!A226:Y443");
+                        response = await request.ExecuteAsync();
+
+                        earlyTrackDisplay = new List<string>();
+
+                        for (int i = 0; i < response.Values.Count; i++)
                         {
-                            midTrackDisplay.Add(response.Values[i][0].ToString());
+                            if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                            {
+                                earlyTrackDisplay.Add(response.Values[i][0].ToString());
+                            }
                         }
+                        request = service.Spreadsheets.Values.Get("1xwhKoyypCWq5tCRTI69ijJoDiaoAVsvYAxz-q4UBNqM", $"'Mid {DateTime.Now.Year - 1} Track Rating Data'!A226:Y443");
+                        response = await request.ExecuteAsync();
+
+                        midTrackDisplay = new List<string>();
+
+                        for (int i = 0; i < response.Values.Count; i++)
+                        {
+                            if (Util.CompareStrings(response.Values[i][0].ToString(), track) || Util.CompareIncompleteStrings(response.Values[i][0].ToString(), track) || Util.CompareStringAbbreviation(track, response.Values[i][0].ToString()) || Util.CompareStringsLevenshteinDistance(track, response.Values[i][0].ToString()))
+                            {
+                                midTrackDisplay.Add(response.Values[i][0].ToString());
+                            }
+                        }
+                        lastYear = true;
                     }
-                    lastYear = true;
                 }
                 if (!thisYear && !halfLastYear && !lastYear)
                 {
@@ -919,7 +950,7 @@ namespace MKBB.Commands
                     {
                         description11 += $"**{i + 1})** {response.Values[i][0]} *({Util.RankNumber(response.Values[i][12].ToString())} / {Util.RankNumber(response.Values[i][18].ToString())} / {Util.RankNumber(response.Values[i][24].ToString())})*\n";
                     }
-                    List<DiscordEmbedBuilder> embeds = new()
+                    List<DiscordEmbed> embeds = new()
                     {
                         new DiscordEmbedBuilder
                         {
@@ -1104,7 +1135,7 @@ namespace MKBB.Commands
                         {
                             description += $"__**Early {DateTime.Now.Year} Track Rating Data (Average: {firstAverage}%):**__\n";
                         }
-                        else  if (halfLastYear)
+                        else if (halfLastYear)
                         {
                             description += $"__**Mid {DateTime.Now.Year - 1} Track Rating Data (Average: {firstAverage}%):**__\n";
                         }
@@ -1281,6 +1312,11 @@ namespace MKBB.Commands
                 string maj = string.Empty;
                 string min = string.Empty;
 
+                DiscordButtonComponent sendLinksButton = new(
+                    ButtonStyle.Primary,
+                    "issuesEmbedding",
+                    "Embed Images/Videos");
+
                 if (track == "")
                 {
                     int j = 0;
@@ -1304,7 +1340,7 @@ namespace MKBB.Commands
                     }
                     issueCount = issueCount.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
 
-                    List<DiscordEmbedBuilder> embeds = new();
+                    List<DiscordEmbed> embeds = new();
 
                     foreach (var t in issueCount.Keys.ToList())
                     {
@@ -1314,19 +1350,19 @@ namespace MKBB.Commands
                             {
                                 if (response.Values[i][5].ToString() == "")
                                 {
-                                    maj = "-No reported bugs";
+                                    maj = "- No reported bugs";
                                 }
                                 else
                                 {
-                                    maj = response.Values[i][5].ToString();
+                                    maj = response.Values[i][5].ToString().Trim();
                                 }
                                 if (response.Values[i][6].ToString() == "")
                                 {
-                                    min = "-No reported bugs";
+                                    min = "- No reported bugs";
                                 }
                                 else
                                 {
-                                    min = response.Values[i][6].ToString();
+                                    min = response.Values[i][6].ToString().Trim();
                                 }
                                 description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*";
                                 j++;
@@ -1347,7 +1383,7 @@ namespace MKBB.Commands
                         }
                     }
 
-                    var message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows()));
+                    DiscordMessage message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embeds[0]).AddComponents(Util.GeneratePageArrows()).AddComponents(sendLinksButton));
 
                     PendingPagesInteraction pending = new() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
 
@@ -1361,21 +1397,21 @@ namespace MKBB.Commands
                     {
                         if (response.Values[ix][5].ToString() == "")
                         {
-                            maj = "-No reported bugs";
+                            maj = "- No reported bugs";
                         }
                         else
                         {
-                            maj = response.Values[ix][5].ToString();
+                            maj = response.Values[ix][5].ToString().Trim();
                         }
                         if (response.Values[ix][6].ToString() == "")
                         {
-                            min = "-No reported bugs";
+                            min = "- No reported bugs";
                         }
                         else
                         {
-                            min = response.Values[ix][6].ToString();
+                            min = response.Values[ix][6].ToString().Trim();
                         }
-                        description = $"**Major:**\n*{maj}*\n**Minor:**\n*{min}*";
+                        description = $"## Major:\n*{maj}*\n## Minor:\n*{min}*";
                     }
 
                     if (ix < 0)
@@ -1406,7 +1442,7 @@ namespace MKBB.Commands
                                 Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                             }
                         };
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed).AddComponents(sendLinksButton));
                     }
                 }
             }

@@ -24,6 +24,8 @@ namespace MKBB.Class
         public int DriverID { get; set; }
         [JsonProperty("controller")]
         public int ControllerID { get; set; }
+        [JsonProperty("trackName")]
+        public string TrackName { get; set; }
         [JsonProperty("trackId")]
         public string TrackID { get; set; }
         [JsonProperty("categoryId")]

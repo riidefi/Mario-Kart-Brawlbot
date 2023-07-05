@@ -12,7 +12,7 @@ namespace MKBB.Data
     {
         [Key] public int ID { get; set; }
         public string TrackSHA1 { get; set; }
-        public string User { get; set; }
+        public string Player { get; set; }
         public string URL { get; set; }
         public string? Comments { get; set; }
     }

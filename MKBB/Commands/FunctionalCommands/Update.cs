@@ -8,13 +8,10 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 using HtmlAgilityPack;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.Scripting.Utils;
 using MKBB.Class;
 using MKBB.Data;
 using Newtonsoft.Json;
-using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
@@ -66,6 +63,7 @@ namespace MKBB.Commands
             {
                 await CheckStrikesInit(ctx);
                 await UpdateInit(ctx);
+                //await RefreshButtons(ctx);
             }
             catch (Exception ex)
             {
@@ -618,7 +616,6 @@ namespace MKBB.Commands
             List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
             var hwCompleted = new bool?[councilJson.Count];
             var threadHwCompleted = new bool?[councilJson.Count];
-            var threadHwCompleted3 = new bool?[councilJson.Count];
 
             List<string> tracks = new();
             List<string> threadTracks = new();
@@ -642,7 +639,7 @@ namespace MKBB.Commands
                         for (int j = 12; j < response.Values[0].Count; j++)
                         {
                             int ix = councilJson.FindIndex(x => x.Name == response.Values[0][j].ToString());
-                            bool isAuthor = response.Values[0][j].ToString() == councilJson[ix].Name;
+                            bool isAuthor = councilJson[ix].Name.Contains(response.Values[i][2].ToString());
                             if (response.Values[i][j].ToString() == "" ||
                                     response.Values[i][j].ToString().ToLowerInvariant() == "yes" ||
                                     response.Values[i][j].ToString().ToLowerInvariant() == "no" ||
@@ -675,7 +672,7 @@ namespace MKBB.Commands
                         for (int j = 7; j < tResponse.Values[0].Count; j++)
                         {
                             int ix = councilJson.FindIndex(x => x.Name == tResponse.Values[0][j].ToString());
-                            bool isAuthor = tResponse.Values[0][j].ToString() == councilJson[ix].Name;
+                            bool isAuthor = councilJson[ix].Name.Contains(response.Values[i][2].ToString());
                             if (tResponse.Values[i][j].ToString() == "" &&
                                     isAuthor == false)
                             {
@@ -698,66 +695,70 @@ namespace MKBB.Commands
                 if (inconsistentMembersThreads.Contains(councilJson[i].DiscordID))
                 {
                     threadHwCompleted[i] = false;
-                    if (councilJson[i].MissedThreadHW > 2)
-                    {
-                        threadHwCompleted3[i] = false;
-                    }
-                    else
-                    {
-                        councilJson[i].MissedThreadHW++;
-                    }
                 }
                 else if (dueThreadTracks.Count > 0)
                 {
-                    threadHwCompleted3[i] = true;
                     threadHwCompleted[i] = true;
-                    councilJson[i].MissedThreadHW = 0;
                 }
             }
             for (int i = 0; i < councilJson.Count; i++)
             {
-                if (hwCompleted[i] == true && threadHwCompleted3[i] == true)
+                bool send = false;
+                if (hwCompleted[i] == true)
                 {
                     councilJson[i].CompletedHW++;
-                    if (councilJson[i].CompletedHW > 4)
-                    {
-                        councilJson[i].Strikes = 0;
-                    }
                 }
-                else if (hwCompleted[i] == false || threadHwCompleted3[i] == false)
+                else if (hwCompleted[i] == false)
                 {
                     councilJson[i].Strikes++;
                     councilJson[i].CompletedHW = 0;
                     if (councilJson[i].Strikes > 2)
                     {
-                        string message = $"Hello {councilJson[i].Name}. Just to let you know, you appear to have not completed council homework in a while, have been inconsistent with your homework, or are not completing it sufficiently enough. Just to remind you, if you miss homework too many times, admins might have to remove you from council. If you have an issue which stops you from doing homework, please let an admin know.";
+                        send = true;
+                    }
+                }
+                if (threadHwCompleted[i] == true && councilJson[i].ThreadStrikes > -4)
+                {
+                    councilJson[i].ThreadStrikes--;
+                }
+                else if (threadHwCompleted[i] == false)
+                {
+                    councilJson[i].ThreadStrikes += 2;
+                    councilJson[i].CompletedHW = 0;
+                    if (councilJson[i].Strikes > 4)
+                    {
+                        send = true;
+                    }
+                }
 
-                        var members = Bot.Client.GetGuildAsync(180306609233330176).Result.GetAllMembersAsync();
-                        foreach (var member in members.Result)
+                if (send)
+                {
+                    string message = $"Hello {councilJson[i].Name}. Just to let you know, you appear to have not completed council homework in a while, have been inconsistent with your homework, or are not completing it sufficiently enough. Just to remind you, if you miss homework too many times, admins might have to remove you from council. If you have an issue which stops you from doing homework, please let an admin know.";
+
+                    var members = Bot.Client.GetGuildAsync(180306609233330176).Result.GetAllMembersAsync();
+                    foreach (var member in members.Result)
+                    {
+                        if (member.Id.ToString() == councilJson[i].DiscordID)
                         {
-                            if (member.Id.ToString() == councilJson[i].DiscordID)
+                            try
                             {
-                                try
-                                {
-                                    Console.WriteLine($"DM'd Member: {councilJson[i].Name}");
+                                Console.WriteLine($"DM'd Member: {councilJson[i].Name}");
 
 #if RELEASE
     await member.SendMessageAsync(message);
 #endif
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine(ex.Message);
-                                    Console.WriteLine("DMs are likely closed.");
-                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                                Console.WriteLine("DMs are likely closed.");
                             }
                         }
                     }
                 }
             }
-#if RELEASE
+
             dbCtx.SaveChanges();
-#endif
 
             DiscordChannel councilAnnouncements = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(635313521487511554);
 
@@ -858,31 +859,6 @@ namespace MKBB.Commands
                 await strikeLogs.SendMessageAsync(embed);
             }
 
-            description = string.Empty;
-            for (int i = 0; i < threadHwCompleted3.Length; i++)
-            {
-                if (threadHwCompleted3[i] == false)
-                {
-                    description += $"{councilJson[i].Name}\n";
-                }
-            }
-
-            if (threadHwCompleted3.Select(x => x == false).ToArray().Length > 0 && dueThreadTracks.Count > 0 && description != string.Empty)
-            {
-                DiscordEmbedBuilder embed = new()
-                {
-                    Color = new DiscordColor("#FF0000"),
-                    Title = $"__**Members who missed 3 thread homeworks in a row:**__",
-                    Description = description,
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
-                    }
-                };
-                await strikeAnnouncements.SendMessageAsync(embed);
-                await strikeLogs.SendMessageAsync(embed);
-            }
-
             var now = DateTime.Now;
             File.WriteAllText("lastUpdated.txt", now.ToString("dd/MM/yyyy HH:mm:ss"));
 
@@ -892,6 +868,49 @@ namespace MKBB.Commands
                 $" | /help"
             };
             await Bot.Client.UpdateStatusAsync(activity);
+        }
+
+        [SlashCommand("refreshbuttons", "Refreshes the buttons in the CTGP server for submitted information.")]
+        [SlashRequireOwner]
+        public static async Task RefreshButtons(InteractionContext ctx)
+        {
+            if (ctx != null && ctx.CommandName == "refreshbuttons")
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+            }
+            try
+            {
+                // Ghostbusters
+                DiscordChannel channel = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(1118995806754721853);
+                DiscordMessage message = channel.GetMessagesAsync().Result[0];
+                await channel.DeleteMessageAsync(message);
+                await channel.SendMessageAsync(new DiscordMessageBuilder().AddEmbed(message.Embeds[0]).AddComponents(message.Components));
+
+                // Bug Reports
+                channel = Bot.Client.GetGuildAsync(180306609233330176).Result.GetChannel(1122585223306162296);
+                message = channel.GetMessagesAsync().Result[0];
+                await channel.DeleteMessageAsync(message);
+                await channel.SendMessageAsync(new DiscordMessageBuilder().AddEmbed(message.Embeds[0]).AddComponents(message.Components));
+
+                if (ctx != null && ctx.CommandName == "refreshbuttons")
+                {
+                    DiscordEmbedBuilder embed = new()
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Success:**__",
+                        Description = $"*All buttons have been refreshed successfully.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Server Time: {DateTime.Now}"
+                        }
+                    };
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+                }
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowInteractionlessError(ex);
+            }
         }
     }
 }

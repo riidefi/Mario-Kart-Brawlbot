@@ -296,7 +296,7 @@ namespace MKBB.Commands
                     }
                     else
                     {
-                        List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                        List<DiscordEmbed> embeds = new();
                         allTrackCategories = allTrackCategories.OrderByDescending(x => x.CategoryName).ToList();
                         applicableGhosts = applicableGhosts.OrderByDescending(x => x.CategoryName).ToList();
 
@@ -404,7 +404,7 @@ namespace MKBB.Commands
                     List<TrackData> allTrackCategories = trackList.Where(x => x.SHA1 == foundTrack.SHA1).DistinctBy(x => x.CategoryName).ToList();
                     allTrackCategories = allTrackCategories.OrderByDescending(x => x.CategoryName.Length).ToList();
 
-                    List<List<DiscordEmbedBuilder>> categories = new List<List<DiscordEmbedBuilder>>();
+                    List<List<DiscordEmbed>> categories = new();
 
                     for (int i = 0; i < allTrackCategories.Count(); i++)
                     {
@@ -429,7 +429,7 @@ namespace MKBB.Commands
                             Console.WriteLine("Already <=10.");
                         }
 
-                        List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                        List<DiscordEmbed> embeds = new();
                         string leaderboardDisplay = "";
 
                         foreach (var ghost in leaderboard.Ghosts)
@@ -604,7 +604,7 @@ namespace MKBB.Commands
                         List<TrackData> allTrackCategories = trackList.Where(x => x.SHA1 == foundTrack.SHA1).ToList();
                         allTrackCategories = allTrackCategories.OrderByDescending(x => x.CategoryName.Length).ToList();
 
-                        List<List<DiscordEmbedBuilder>> categories = new List<List<DiscordEmbedBuilder>>();
+                        List<List<DiscordEmbed>> categories = new();
 
                         for (int i = 0; i < allTrackCategories.Count(); i++)
                         {
@@ -632,7 +632,7 @@ namespace MKBB.Commands
                                 Console.WriteLine("Already <=10.");
                             }
 
-                            List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>();
+                            List<DiscordEmbed> embeds = new();
                             string leaderboardDisplay = "";
 
                             foreach (var ghost in leaderboard.Ghosts)
@@ -776,7 +776,7 @@ namespace MKBB.Commands
                     Ghost expertGhost = JsonConvert.DeserializeObject<Ghost>(expertGhostJson);
                     expertGhost.ExtraInfo = JsonConvert.DeserializeObject<ExtraInfo>(expertGhostJson);
 
-                    List<DiscordEmbedBuilder> embeds = new List<DiscordEmbedBuilder>()
+                    List<DiscordEmbed> embeds = new()
                     {
                         new DiscordEmbedBuilder
                         {

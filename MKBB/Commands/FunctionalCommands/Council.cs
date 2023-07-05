@@ -17,7 +17,6 @@ namespace MKBB.Commands
     public class Council : ApplicationCommandModule
     {
         [SlashCommand("addhw", "Adds homework to the council sheet.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public static async Task AddHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track being added.")] string track,
             [Option("authors", "The author or authors of the track being added.")] string author,
@@ -173,7 +172,6 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("delhw", "Deletes homework from the council sheet.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public static async Task DeleteHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track being removed.")] string track)
         {
@@ -470,7 +468,7 @@ namespace MKBB.Commands
                         }
                     }
 
-                    List<DiscordEmbedBuilder> embeds = new();
+                    List<DiscordEmbed> embeds = new();
 
                     if (sheetIx > 0)
                     {
@@ -737,8 +735,54 @@ namespace MKBB.Commands
             }
         }
 
+        [SlashCommand("threadstrikes", "Gets a specific member's thread strike count.")]
+        public static async Task DisplayThreadStrikes(InteractionContext ctx,
+            [Option("member", "The name of the council member you are requesting the missed thread homework count of.")] DiscordUser member)
+        {
+            try
+            {
+                await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
+                using MKBBContext dbCtx = new();
+                List<CouncilMemberData> councilJson = dbCtx.Council.ToList();
+
+
+                int ix = councilJson.FindIndex(x => x.DiscordID == member.Id.ToString());
+                DiscordEmbedBuilder embed = new();
+                if (ix < 0)
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = "__**Error:**__",
+                        Description = $"*{member.Mention} could not be found on council.*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                }
+                else
+                {
+                    embed = new DiscordEmbedBuilder
+                    {
+                        Color = new DiscordColor("#FF0000"),
+                        Title = $"__**Council Members Thread Strike Count:**__",
+                        Description = $"*{councilJson[ix].Name}: {councilJson[ix].ThreadStrikes}*",
+                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                        {
+                            Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                        }
+                    };
+                }
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+            }
+            catch (Exception ex)
+            {
+                await Util.ThrowError(ctx, ex);
+            }
+        }
+
         [SlashCommand("allstrikes", "Gets a list of all council member's strikes.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public static async Task DisplayAllStrikes(InteractionContext ctx)
         {
             try
@@ -754,7 +798,9 @@ namespace MKBB.Commands
                     description += $"*{m.Name}: {m.Strikes}*\n";
                 }
 
-                DiscordEmbedBuilder embed = new()
+                List<DiscordEmbed> embeds = new();
+
+                DiscordEmbed strikes = new DiscordEmbedBuilder()
                 {
                     Color = new DiscordColor("#FF0000"),
                     Title = $"__**Council Members Strike Count:**__",
@@ -764,7 +810,32 @@ namespace MKBB.Commands
                         Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
                     }
                 };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
+
+                description = string.Empty;
+
+                foreach (CouncilMemberData m in councilJson)
+                {
+                    description += $"*{m.Name}: {m.ThreadStrikes}*\n";
+                }
+
+                DiscordEmbed threadStrikes = new DiscordEmbedBuilder()
+                {
+                    Color = new DiscordColor("#FF0000"),
+                    Title = $"__**Council Members Thread Strike Count:**__",
+                    Description = description,
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        Text = $"Last Updated: {File.ReadAllText("lastUpdated.txt")}"
+                    }
+                };
+
+                embeds.Add(strikes);
+                embeds.Add(threadStrikes);
+
+                DiscordMessage message = await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(strikes).AddComponents(Util.GeneratePageArrows()));
+
+                PendingPagesInteraction pending = new() { CurrentPage = 0, MessageId = message.Id, Context = ctx, Pages = embeds };
+                Util.PendingPageInteractions.Add(pending);
             }
             catch (Exception ex)
             {
@@ -873,7 +944,6 @@ namespace MKBB.Commands
         }
 
         [SlashCommand("delthreadhw", "Deletes thread homework from the council sheet.")]
-        [SlashRequireUserPermissions(Permissions.ManageGuild)]
         public static async Task DeleteThreadHomework(InteractionContext ctx,
             [Option("track-name", "The name of the track being removed.")] string track)
         {
@@ -1162,7 +1232,7 @@ namespace MKBB.Commands
                         }
                     }
 
-                    List<DiscordEmbedBuilder> embeds = new();
+                    List<DiscordEmbed> embeds = new();
 
                     if (sheetIx > 0)
                     {

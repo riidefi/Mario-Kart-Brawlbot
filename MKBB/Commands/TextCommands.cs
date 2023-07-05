@@ -39,8 +39,7 @@ namespace MKBB.Commands
                     if (role.Name == "Ghostbusters" || ctx.Member.Id == 105742694730457088)
                     {
                         description += "\n\n__**Ghostbusters Commands:**__" +
-                            "\n/gblist" +
-                            "\n/gbsubmittime chadsoft-url (comments)";
+                            "\n/gbtimes player";
                         break;
                     }
                 }
@@ -63,6 +62,7 @@ namespace MKBB.Commands
                             "\n/getthreadhw track member" +
                             "\n/hw" +
                             "\n/strikes member" +
+                            "\n/threadstrikes member" +
                             "\n/submithw yes/fixes/neutral/no track feedback" +
                             "\n/submitthreadhw track feedback";
                         break;
@@ -83,6 +83,7 @@ namespace MKBB.Commands
                                 "\n/edittool oldname name creators description download" +
                                 "\n/gbaddsha1 sha1" +
                                 "\n/gbaddtrack track-name sha1" +
+                                "\n/gbremovesha1 track-name" +
                                 "\n/gbremovetrack" +
                                 "\n/uploadtestpack test-pack-zip";
                             break;
@@ -143,24 +144,27 @@ namespace MKBB.Commands
             var message = new DiscordWebhookBuilder();
             bool admin = false;
             bool councilMember = false;
-            foreach (var role in ctx.Member.Roles)
+            if (Util.CheckEphemeral(ctx))
             {
-                if (role.Id == 228909597090512896 && ctx.Channel.Id != 908709951411716166)
+                foreach (var role in ctx.Member.Roles)
                 {
-                    admin = true;
-                }
-                if ((role.Id == 608386209655554058 || role.Id == 228909597090512896) && ctx.Channel.Id != 908709951411716166)
-                {
-                    councilMember = true;
-                }
-                if (ctx.Member.Id == 105742694730457088)
-                {
-                    admin = true;
-                    councilMember = true;
-                }
-                if (councilMember && admin)
-                {
-                    break;
+                    if (role.Id == 228909597090512896 && ctx.Channel.Id != 908709951411716166)
+                    {
+                        admin = true;
+                    }
+                    if ((role.Id == 608386209655554058 || role.Id == 228909597090512896) && ctx.Channel.Id != 908709951411716166)
+                    {
+                        councilMember = true;
+                    }
+                    if (ctx.Member.Id == 105742694730457088)
+                    {
+                        admin = true;
+                        councilMember = true;
+                    }
+                    if (councilMember && admin)
+                    {
+                        break;
+                    }
                 }
             }
             List<DiscordLinkButtonComponent> buttons = new List<DiscordLinkButtonComponent> {

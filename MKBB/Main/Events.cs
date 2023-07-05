@@ -13,63 +13,11 @@ namespace MKBB
     {
         public async Task AssignAllEvents()
         {
-            Bot.Client.MessageReactionAdded += HandlePendingPins;
             Bot.Client.MessageCreated += GeneratePendingPins;
             Bot.Client.GuildCreated += AddGuild;
             Bot.Client.GuildDeleted += RemoveGuild;
             Bot.SlashCommands.SlashCommandErrored += SlashCommandErrorHandler;
             await Task.CompletedTask;
-        }
-
-        private async Task HandlePendingPins(DiscordClient s, MessageReactionAddEventArgs e)
-        {
-            foreach (PendingAdminPin papr in Util.PendingAdminPinReactions)
-            {
-                if (papr.Message.Id == e.Message.Id)
-                {
-                    if (!e.User.IsBot)
-                    {
-                        if (e.Emoji.Id == 1088583759844081664)
-                        {
-                            await papr.Message.ModifyAsync(
-                                (DiscordEmbed)new DiscordEmbedBuilder
-                                {
-                                    Color = new DiscordColor("#FF0000"),
-                                    Title = $"__**Pin Accepted:**__",
-                                    Description = $"{papr.ThreadMessage.Channel.Name}" +
-                                    $"\n{papr.ThreadMessage.JumpLink}",
-                                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                                    {
-                                        Text = $"Server Time: {DateTime.Now}"
-                                    }
-                                }
-                            );
-                            await papr.ThreadMessage.PinAsync();
-                        }
-                        else
-                        {
-                            await papr.Message.ModifyAsync(
-                                (DiscordEmbed)new DiscordEmbedBuilder
-                                {
-                                    Color = new DiscordColor("#FF0000"),
-                                    Title = $"__**Pin Rejected:**__",
-                                    Description = $"{papr.ThreadMessage.Channel.Name}" +
-                                    $"\n{papr.ThreadMessage.JumpLink}",
-                                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                                    {
-                                        Text = $"Server Time: {DateTime.Now}"
-                                    }
-                                }
-                            );
-                        }
-                        foreach (DiscordEmoji emoji in Util.GenerateTickAndCrossEmojis())
-                        {
-                            await papr.Message.DeleteReactionsEmojiAsync(emoji);
-                        }
-                        Util.PendingAdminPinReactions.Remove(papr);
-                    }
-                }
-            }
         }
         private async Task GeneratePendingPins(DiscordClient s, MessageCreateEventArgs e)
         {
@@ -81,9 +29,18 @@ namespace MKBB
                 if (opPost.Attachments.Count > 0 &&
                 opPost.Attachments.Any(x => x.FileName.EndsWith(".szs")))
                 {
+                    DiscordButtonComponent acceptButton = new DiscordButtonComponent(
+                        ButtonStyle.Success,
+                        "pinAccept",
+                        "Accept");
+                    DiscordButtonComponent rejectButton = new DiscordButtonComponent(
+                        ButtonStyle.Danger,
+                        "pinReject",
+                        "Reject");
+
                     DiscordChannel channel = s.GetGuildAsync(180306609233330176).Result.GetChannel(1071555342829363281);
                     DiscordMessage message = await channel.SendMessageAsync(
-                        new DiscordEmbedBuilder
+                        new DiscordMessageBuilder().AddEmbed(new DiscordEmbedBuilder
                         {
                             Color = new DiscordColor("#FF0000"),
                             Title = $"__**New Pending Pin:**__",
@@ -93,13 +50,9 @@ namespace MKBB
                             {
                                 Text = $"Server Time: {DateTime.Now}"
                             }
-                        }
+                        })
+                        .AddComponents(acceptButton, rejectButton)
                     );
-                    foreach (DiscordEmoji emoji in Util.GenerateTickAndCrossEmojis())
-                    {
-                        await message.CreateReactionAsync(emoji);
-                    }
-                    Util.PendingAdminPinReactions.Add(new PendingAdminPin { Message = message, ThreadMessage = e.Message });
                 }
             }
         }
