@@ -197,12 +197,16 @@ namespace MKBB
             if (e.Message.Id == p.MessageId)
             {
                 p.CurrentPage = 0;
-                p.CurrentCategory = p.CategoryNames.FindIndex(x => x.CategoryName == e.Values[0]);
+                p.CurrentCategory = p.CategoryNames.FindIndex(x => x == e.Values[0]);
                 p.Pages = p.Categories[p.CurrentCategory];
 
                 DiscordInteractionResponseBuilder responseBuilder = new();
                 responseBuilder.AddComponents(Util.GenerateCategorySelectMenu(p.CategoryNames, p.CurrentCategory));
-                responseBuilder.AddEmbed(p.Pages[p.CurrentPage]).AddComponents(Util.GeneratePageArrows());
+                responseBuilder.AddEmbed(p.Pages[p.CurrentPage]);
+                if (p.Pages.Count() > 1)
+                {
+                    responseBuilder.AddComponents(Util.GeneratePageArrows());
+                }
                 await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, responseBuilder);
             }
         }

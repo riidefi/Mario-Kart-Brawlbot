@@ -10,7 +10,7 @@ namespace MKBB.Data
         public InteractionContext Context { get; set; }
         public List<List<DiscordEmbed>> Categories { get; set; }
         public List<DiscordEmbed> Pages { get; set; }
-        public List<TrackData> CategoryNames { get; set; }
+        public List<string> CategoryNames { get; set; }
         public int CurrentCategory { get; set; }
         public int CurrentPage { get; set; }
     }

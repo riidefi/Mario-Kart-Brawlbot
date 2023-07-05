@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using MKBB.Class;
+using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
 namespace MKBB.Data
@@ -11,10 +12,16 @@ namespace MKBB.Data
         public string PlayerLink { get; set; }
     }
 
-    public class GetStars
+    public class Profile
     {
+        [JsonProperty("miiName")]
+        public string MiiName { get; set; }
+        [JsonProperty("controller")]
+        public int ControllerID { get; set; }
         [JsonProperty("stars")]
         public Stars Stars { get; set; }
+        [JsonProperty("ghosts")]
+        public List<Ghost> Ghosts { get; set; }
     }
 
     public class Stars
