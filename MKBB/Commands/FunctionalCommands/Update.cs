@@ -296,7 +296,7 @@ namespace MKBB.Commands
             List<string> m3s = new();
             List<string> m6s = new();
             List<string> m9s = new();
-            List<string> m12s = new();
+            List<string> ms = new();
             List<string> names = new();
             for (int i = 0; i < 32 * 11; i++)
             {
@@ -326,7 +326,7 @@ namespace MKBB.Commands
                 }
                 if (i % 11 - 8 == 0)
                 {
-                    m12s.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
+                    ms.Add(innerText1[i].InnerHtml == "–" ? "0" : innerText1[i].InnerHtml);
                 }
             }
             for (int i = 0; i < names.Count; i++)
@@ -340,7 +340,7 @@ namespace MKBB.Commands
                         t.M3 = int.Parse(m3s[i]);
                         t.M6 = int.Parse(m6s[i]);
                         t.M9 = int.Parse(m9s[i]);
-                        t.M12 = int.Parse(m12s[i]);
+                        t.M = int.Parse(m12s[i]);
                         break;
                     }
                 }
@@ -636,7 +636,7 @@ namespace MKBB.Commands
                     if (lastChecked < today && today == int.Parse(response.Values[i][1].ToString()) + 1)
                     {
                         dueTracks.Add(response.Values[i][0].ToString());
-                        for (int j = 12; j < response.Values[0].Count; j++)
+                        for (int j = 13; j < response.Values[0].Count; j++)
                         {
                             int ix = councilJson.FindIndex(x => x.Name == response.Values[0][j].ToString());
                             bool isAuthor = councilJson[ix].Name.Contains(response.Values[i][2].ToString());
